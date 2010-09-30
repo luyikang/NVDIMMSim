@@ -12,7 +12,7 @@
 
 using std::string;
 
-namespace FDSim{
+namespace FNVDSim{
 	typedef CallbackBase<void,uint,uint64_t,uint64_t> Callback_t;
 	class FlashDIMM : public SimObj{
 		public:

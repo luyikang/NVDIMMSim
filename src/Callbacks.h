@@ -2,7 +2,7 @@
 #ifndef FDSIMCALLBACK_H
 #define FDSIMCALLBACK_H
 
-namespace FDSim {
+namespace NVDSim {
 
 template <typename ReturnT, typename Param1T, typename Param2T, 
                     typename Param3T>

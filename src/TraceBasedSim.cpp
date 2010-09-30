@@ -39,7 +39,7 @@ uint COMMAND_TIME= 10;
 */
 uint OUTPUT= 1;
 
-using namespace FDSim;
+using namespace NVDSim;
 using namespace std;
 
 int main(void){

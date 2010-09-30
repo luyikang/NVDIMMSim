@@ -5,7 +5,7 @@
 #include "ChannelPacket.h"
 #include <cmath>
 
-using namespace FDSim;
+using namespace NVDSim;
 using namespace std;
 
 Ftl::Ftl(void){

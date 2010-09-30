@@ -7,7 +7,7 @@
 #include "Block.h"
 #include "ChannelPacket.h"
 
-namespace FDSim{
+namespace NVDSim{
 	class Plane{
 		public:
 			Plane(void);

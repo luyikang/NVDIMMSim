@@ -55,6 +55,7 @@
 	#endif
 #endif
 
+extern std::string DEVICE_TYPE;
 extern uint NUM_PACKAGES;
 extern uint DIES_PER_PACKAGE;
 extern uint PLANES_PER_DIE;

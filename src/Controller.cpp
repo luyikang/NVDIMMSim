@@ -4,7 +4,7 @@
 #include "Controller.h"
 #include "FlashDIMM.h"
 
-using namespace FDSim;
+using namespace NVDSim;
 
 Controller::Controller(FlashDIMM* parent){
 	parentFlashDIMM= parent;

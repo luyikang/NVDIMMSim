@@ -5,7 +5,7 @@
 
 #include "FlashConfiguration.h"
 
-namespace FDSim{
+namespace NVDSim{
 	class Block{
 		public:
 			Block(uint block_num);

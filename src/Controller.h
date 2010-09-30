@@ -10,7 +10,7 @@
 #include "Channel.h"
 #include "FlashTransaction.h"
 
-namespace FDSim{
+namespace NVDSim{
 	typedef struct {
 		Channel *channel;
 		std::vector<Die *> dies;

@@ -8,7 +8,7 @@
 #include "ChannelPacket.h"
 #include "FlashTransaction.h"
 
-namespace FDSim{
+namespace NVDSim{
 	class Controller;
 	class Ftl : public SimObj{
 		public:

@@ -4,7 +4,7 @@
 #include "FlashDIMM.h"
 #include "Init.h"
 
-using namespace FDSim;
+using namespace NVDSim;
 using namespace std;
 
 FlashDIMM::FlashDIMM(uint id, string deviceFile, string sysFile, string pwd, string trc) :

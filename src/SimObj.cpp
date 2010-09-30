@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include "SimObj.h"
 
-using namespace FDSim;
+using namespace NVDSim;
 using namespace std;
 
 void SimObj::step()

@@ -4,7 +4,7 @@
 #include "Block.h"
 
 using namespace std;
-using namespace FDSim;
+using namespace NVDSim;
 
 Block::Block(uint block){
 	block_num= block;

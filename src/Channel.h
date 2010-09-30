@@ -7,7 +7,7 @@
 #include "Die.h"
 #include "ChannelPacket.h"
 
-namespace FDSim{
+namespace NVDSim{
 	enum SenderType{
 		CONTROLLER,
 		DIE
