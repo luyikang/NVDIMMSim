@@ -37,6 +37,7 @@ FlashDIMM::FlashDIMM(uint id, string deviceFile, string sysFile, string pwd, str
 	 }
 	
 	PRINT("\nDevice Information:\n");
+	PRINT("Device Type: "<<DEVICE_TYPE);
 	PRINT("Size (GB): "<<TOTAL_SIZE/(1024*1024));
 	PRINT("Packages/Channels: "<<NUM_PACKAGES);
 	PRINT("Page size (KB): "<<FLASH_PAGE_SIZE);

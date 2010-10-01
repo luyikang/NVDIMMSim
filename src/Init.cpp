@@ -27,6 +27,7 @@ namespace NVDSim
 	//Map the string names to the variables they set
 	static ConfigMap configMap[] = {
 		//DEFINE_UINT_PARAM -- see Init.h
+	        DEFINE_STRING_PARAM(DEVICE_TYPE, DEV_PARAM),
 		DEFINE_UINT_PARAM(NUM_PACKAGES,DEV_PARAM),
 		DEFINE_UINT_PARAM(DIES_PER_PACKAGE,DEV_PARAM),
 		DEFINE_UINT_PARAM(PLANES_PER_DIE,DEV_PARAM),
