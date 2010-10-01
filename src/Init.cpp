@@ -5,6 +5,7 @@ using namespace std;
 // these are the values that are extern'd in SystemConfig.h so that they
 // have global scope even though they are set by Init
 
+std::string DEVICE_TYPE;
 uint NUM_PACKAGES;
 uint DIES_PER_PACKAGE;
 uint PLANES_PER_DIE;
@@ -20,7 +21,7 @@ uint COMMAND_TIME;
 
 uint DEBUG_INIT= 0;
 
-namespace FDSim 
+namespace NVDSim 
 {
 		
 	//Map the string names to the variables they set
