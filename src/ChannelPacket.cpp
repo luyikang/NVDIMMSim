@@ -18,6 +18,33 @@ ChannelPacket::ChannelPacket(ChannelPacketType packtype, uint64_t physicalAddr, 
 	package = package_num;
 }
 
+ChannelPacket::ChannelPacket(ChannelPacketType packtype, uint64_t physicalAddr, uint word_num, uint page_num, uint block_num, uint plane_num, uint die_num, uint package_num, void *dat)
+{
+	physicalAddress = physicalAddr;
+	busPacketType = packtype;
+	data = dat;
+	word = word_num;
+	page = page_num;
+	block = block_num;
+	plane = plane_num;
+	die = die_num;
+	package = package_num;
+}
+
+ChannelPacket::ChannelPacket(ChannelPacketType packtype, uint64_t physicalAddr, uint size, uint word_num, uint page_num, uint block_num, uint plane_num, uint die_num, uint package_num, void *dat)
+{
+	physicalAddress = physicalAddr;
+	busPacketType = packtype;
+	data = dat;
+	size = siz;
+	word = word_num;
+	page = page_num;
+	block = block_num;
+	plane = plane_num;
+	die = die_num;
+	package = package_num;
+}
+
 ChannelPacket::ChannelPacket() {}
 
 void ChannelPacket::print(uint64_t currentClockCycle){

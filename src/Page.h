@@ -5,24 +5,25 @@
 // header file for page class
 
 #include "FlashConfiguration.h"
+#include <stdint.h> 
 
 namespace NVDSim{
   class Page{
     
   public:
     Page();
-    Page(unit page_num);
+    Page(uint page);
 
-    void* read(unit word_num);
+    void* read(uint word_num);
     void* read();
 
-    void write(unit word_num);
+    void write(uint word_num);
     void write();
 
   private:
-    unit page_num;
+    uint page_num;
     void* page_data;
-    std::unordered_map<unit, void*> word_data;
+    std::unordered_map<uint, void*> word_data;
     
   };
 }

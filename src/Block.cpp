@@ -18,7 +18,9 @@ void *Block::read(uint page_num){
 	if (pages.find(page_num) == pages.end()){
 		DEBUG("Request to read page "<<page_num<<" failed: nothing has been written to that address");
 		return (void *)0x0;
-	} else{
+	} else if (DEVICE_TYPE == 'PCM'){
+	        
+	  // pages store words
 		return pages[page_num];
 	}
 }

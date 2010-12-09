@@ -9,7 +9,7 @@
 namespace NVDSim{
 	class Block{
 		public:
-			Block(uint block_num);
+			Block(uint block);
 			Block();
 			void *read(uint page_num);
 			void write(uint page_num, void *data);
