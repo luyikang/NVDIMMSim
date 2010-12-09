@@ -1,13 +1,13 @@
-//FlashDIMM.cpp
-//Class file for flash fimm system wrapper
+//NVDIMM.cpp
+//Class file for nonvolatile memory dimm system wrapper
 
-#include "FlashDIMM.h"
+#include "NVDIMM.h"
 #include "Init.h"
 
 using namespace NVDSim;
 using namespace std;
 
-FlashDIMM::FlashDIMM(uint id, string deviceFile, string sysFile, string pwd, string trc) :
+NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string trc) :
 	dev(deviceFile),
 	sys(sysFile),
 	cDirectory(pwd)
@@ -81,29 +81,29 @@ FlashDIMM::FlashDIMM(uint id, string deviceFile, string sysFile, string pwd, str
 	currentClockCycle= 0;
 }
 
-bool FlashDIMM::add(FlashTransaction &trans){
+bool NVDIMM::add(FlashTransaction &trans){
 	return ftl->addTransaction(trans);
 }
 
-bool FlashDIMM::addTransaction(bool isWrite, uint64_t addr){
+bool NVDIMM::addTransaction(bool isWrite, uint64_t addr){
 	TransactionType type = isWrite ? DATA_WRITE : DATA_READ;
 	FlashTransaction trans = FlashTransaction(type, addr, NULL);
 	return controller->addTransaction(trans);
 }
 
-string FlashDIMM::SetOutputFileName(string tracefilename){
+string NVDIMM::SetOutputFileName(string tracefilename){
 	return "";
 }
 
-void FlashDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB){
+void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB){
 	ReturnReadData = readCB;
 	WriteDataDone = writeCB;
 }
 
-void FlashDIMM::printStats(void){
+void NVDIMM::printStats(void){
 }
 
-void FlashDIMM::update(void){
+void NVDIMM::update(void){
 	uint i, j;
 	Package package;
 	

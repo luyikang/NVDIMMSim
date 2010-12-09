@@ -6,7 +6,7 @@
 
 #include "FlashTransaction.h"
 
-using namespace FDSim;
+using namespace NVDSim;
 using namespace std;
 
 FlashTransaction::FlashTransaction(){}

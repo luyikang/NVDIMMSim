@@ -1,7 +1,7 @@
-#ifndef FLASH_DIMM_H
-#define FLASH_DIMM_H
-//FlashDIMM.h
-//Header for flash flash dimm system wrapper
+#ifndef NVDIMM_H
+#define NVDIMM_H
+//NVDIMM.h
+//Header for nonvolatile memory dimm system wrapper
 
 #include "SimObj.h"
 #include "FlashConfiguration.h"
@@ -15,9 +15,9 @@ using std::string;
 
 namespace NVDSim{
 	typedef CallbackBase<void,uint,uint64_t,uint64_t> Callback_t;
-	class FlashDIMM : public SimObj{
+	class NVDIMM : public SimObj{
 		public:
-			FlashDIMM(uint id, string dev, string sys, string pwd, string trc);
+			NVDIMM(uint id, string dev, string sys, string pwd, string trc);
 			void update(void);
 			bool add(FlashTransaction &trans);
 			bool addTransaction(bool isWrite, uint64_t addr);

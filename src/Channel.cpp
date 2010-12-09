@@ -5,7 +5,7 @@
 #include "ChannelPacket.h"
 #include "Controller.h"
 
-using namespace FDSim;
+using namespace NVDSim;
 
 Channel::Channel(void){
 	sender = -1;

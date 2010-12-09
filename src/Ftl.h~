@@ -9,8 +9,12 @@
 #include "FlashTransaction.h"
 #include "Controller.h"
 
+<<<<<<< HEAD:src/Ftl.h
+namespace FDSim{
+=======
 namespace NVDSim{
 	class Controller;
+>>>>>>> ee31faa068fc18e6718b050ad737473e91ee8f84:src/Ftl.h
 	class Ftl : public SimObj{
 		public:
 			Ftl(Controller *c);

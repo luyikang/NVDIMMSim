@@ -6,7 +6,7 @@
 #include "Controller.h"
 #include "FlashDIMM.h"
 
-using namespace FDSim;
+using namespace NVDSim;
 using namespace std;
 
 Die::Die(FlashDIMM *parent, uint idNum){

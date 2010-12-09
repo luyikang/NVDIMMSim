@@ -4,8 +4,9 @@
 //header file for the Block class
 
 #include "FlashConfiguration.h"
+#include "Page.h"
 
-namespace FDSim{
+namespace NVDSim{
 	class Block{
 		public:
 			Block(uint block_num);
@@ -15,7 +16,7 @@ namespace FDSim{
 			void erase(void);
 		private:
 			uint block_num;
-			std::unordered_map<uint, void *> page_data;
+			std::unordered_map<uint, Page> pages;
 	};
 }
 #endif

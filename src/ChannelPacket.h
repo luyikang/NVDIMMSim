@@ -7,7 +7,7 @@
 
 #include "FlashConfiguration.h"
 
-namespace FDSim
+namespace NVDSim
 {
 	enum ChannelPacketType
 	{

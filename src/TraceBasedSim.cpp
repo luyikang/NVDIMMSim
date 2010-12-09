@@ -39,7 +39,7 @@ uint COMMAND_TIME= 10;
 */
 uint OUTPUT= 1;
 
-using namespace FDSim;
+using namespace NVDSim;
 using namespace std;
 
 int main(void){
@@ -59,35 +59,35 @@ void test_obj::write_cb(uint id, uint64_t address, uint64_t cycle){
 void test_obj::run_test(void){
 	clock_t start= clock(), end;
 	uint write, cycle;
-	FlashDIMM *flashDimm= new FlashDIMM(1,"ini/samsung_K9XXG08UXM.ini","ini/def_system.ini","","");
+	NVDIMM *NVDimm= new NVDIMM(1,"ini/samsung_K9XXG08UXM.ini","ini/def_system.ini","","");
 	typedef CallbackBase<void,uint,uint64_t,uint64_t> Callback_t;
 	Callback_t *r = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::read_cb);
 	Callback_t *w = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::write_cb);
-	flashDimm->RegisterCallbacks(r, w);
+	NVDimm->RegisterCallbacks(r, w);
 	FlashTransaction t;
 
 	for (write= 0; write<NUM_WRITES*64; write+=64){
 		t= FlashTransaction(DATA_WRITE, write, (void *)0xdeadbeef);
-		(*flashDimm).add(t);
+		(*NVDimm).add(t);
 	}
 
 	for (cycle= 0; cycle<SIM_CYCLES; cycle++){
-		(*flashDimm).update();
+		(*NVDimm).update();
 		if (cycle < NUM_WRITES){
 			t= FlashTransaction(DATA_READ, cycle*64, (void *)0xfeedface);
 
-			(*flashDimm).add(t);
-			//(*flashDimm).addTransaction(false, cycle*64);
+			(*NVDimm).add(t);
+			//(*NVDimm).addTransaction(false, cycle*64);
 		}
-		if (flashDimm->numReads == NUM_WRITES)
+		if (NVDimm->numReads == NUM_WRITES)
 			break;
 	}
 
 	end= clock();
 	cout<<"Simulation Results:\n";
 	cout<<"Cycles simulated: "<<cycle<<endl;
-	cout<<"Reads completed: "<<flashDimm->numReads<<endl;
-	cout<<"Writes completed: "<<flashDimm->numWrites<<endl;
-	cout<<"Erases completed: "<<flashDimm->numErases<<endl;
+	cout<<"Reads completed: "<<NVDimm->numReads<<endl;
+	cout<<"Writes completed: "<<NVDimm->numWrites<<endl;
+	cout<<"Erases completed: "<<NVDimm->numErases<<endl;
 	cout<<"Execution time: "<<(end-start)<<" cycles. "<<(double)(end-start)/CLOCKS_PER_SEC<<" seconds.\n";
 }

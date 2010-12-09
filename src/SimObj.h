@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-namespace FDSim
+namespace NVDSim
 {
 	class SimObj
 	{

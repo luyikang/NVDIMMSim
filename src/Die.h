@@ -8,7 +8,7 @@
 #include "ChannelPacket.h"
 #include "Plane.h"
 
-namespace FDSim{
+namespace NVDSim{
 
 	class Channel;
 	class Controller;

@@ -2,7 +2,7 @@
 #ifndef FDSIMCALLBACK_H
 #define FDSIMCALLBACK_H
 
-namespace FDSim {
+namespace NVDSim {
 
 template <typename ReturnT, typename Param1T, typename Param2T, 
                     typename Param3T>
@@ -14,7 +14,7 @@ class CallbackBase
 };
 
 template <typename Return, typename Param1T, typename Param2T, typename Param3T>
-FDSim::CallbackBase<Return,Param1T,Param2T,Param3T>::~CallbackBase(){}
+NVDSim::CallbackBase<Return,Param1T,Param2T,Param3T>::~CallbackBase(){}
 
 template <typename ConsumerT, typename ReturnT, 
                         typename Param1T, typename Param2T, typename Param3T >

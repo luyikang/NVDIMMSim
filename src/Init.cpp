@@ -5,6 +5,7 @@ using namespace std;
 // these are the values that are extern'd in SystemConfig.h so that they
 // have global scope even though they are set by Init
 
+std::string DEVICE_TYPE;
 uint NUM_PACKAGES;
 uint DIES_PER_PACKAGE;
 uint PLANES_PER_DIE;
@@ -21,12 +22,13 @@ uint LOOKUP_TIME;
 
 uint DEBUG_INIT= 0;
 
-namespace FDSim 
+namespace NVDSim 
 {
 		
 	//Map the string names to the variables they set
 	static ConfigMap configMap[] = {
 		//DEFINE_UINT_PARAM -- see Init.h
+	        DEFINE_STRING_PARAM(DEVICE_TYPE, DEV_PARAM),
 		DEFINE_UINT_PARAM(NUM_PACKAGES,DEV_PARAM),
 		DEFINE_UINT_PARAM(DIES_PER_PACKAGE,DEV_PARAM),
 		DEFINE_UINT_PARAM(PLANES_PER_DIE,DEV_PARAM),

@@ -4,7 +4,7 @@
 
 #include "Plane.h"
 
-using namespace FDSim;
+using namespace NVDSim;
 using namespace std;
 
 Plane::Plane(void){
