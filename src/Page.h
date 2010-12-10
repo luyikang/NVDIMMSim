@@ -14,10 +14,10 @@ namespace NVDSim{
     Page();
     Page(uint page);
 
-    void* read(uint word_num);
+    void* read(uint size, uint word_num);
     void* read();
 
-    void write(uint word_num);
+    void write(uint size, uint word_num, void *data);
     void write();
 
   private:

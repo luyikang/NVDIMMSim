@@ -62,6 +62,7 @@ extern uint PLANES_PER_DIE;
 extern uint BLOCKS_PER_PLANE;
 extern uint PAGES_PER_BLOCK;
 extern uint PAGE_SIZE;
+extern uint WORD_SIZE;
 
 #define BLOCK_SIZE (PAGE_SIZE * PAGES_PER_BLOCK)
 #define PLANE_SIZE (PAGE_SIZE * BLOCKS_PER_PLANE * PAGES_PER_BLOCK)
