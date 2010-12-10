@@ -12,8 +12,6 @@ namespace NVDSim
 	enum ChannelPacketType
 	{
 		READ,
-		READ_WORD,
-		READ_SIZE,
 		WRITE,
 		ERASE,
 		DATA
@@ -35,10 +33,8 @@ namespace NVDSim
 		void *data;
 
 		//Functions
-		ChannelPacket(ChannelPacketType packtype, uint64_t physicalAddr, uint page, uint block, uint plane, uint die, uint package, void *dat);
-		ChannelPacket(ChannelPacketType packtype, uint64_t physicalAddr, uint word, uint page, uint block, uint plane, uint die, uint package, void *dat);
-		ChannelPacket(ChannelPacketType packtype, uint64_t physicalAddr, unit siz, unit word, uint page, uint block, uint plane, uint die, 
-			      uint package, void *dat);
+		ChannelPacket(ChannelPacketType packtype, uint64_t physicalAddr, unit siz, unit word, uint page, uint block, uint plane, 
+			      uint die, uint package, void *dat);
 		ChannelPacket();
 
 		//void print();
