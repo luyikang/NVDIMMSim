@@ -11,8 +11,8 @@ namespace NVDSim{
 		public:
 			Block(uint block);
 			Block();
-			void *read(uint size, unit word_num, uint page_num);
-			void write(uint size, unit word_num, uint page_num, void *data);
+			void *read(uint size, uint word_num, uint page_num);
+			void write(uint size, uint word_num, uint page_num, void *data);
 			void erase(void);
 		private:
 			uint block_num;

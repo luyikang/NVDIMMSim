@@ -12,6 +12,7 @@ Ftl::Ftl(Controller *c){
 	int numBlocks = NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE;
 
 	offset = log2(FLASH_PAGE_SIZE * 1024);
+	wordBitWidth = log2(WORDS_PER_BLOCK);
 	pageBitWidth = log2(PAGES_PER_BLOCK);
 	blockBitWidth = log2(BLOCKS_PER_PLANE);
 	planeBitWidth = log2(PLANES_PER_DIE);
@@ -43,6 +44,11 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 	}
 
 	physicalAddress = physicalAddress >> offset;
+
+	tempA = physicalAddress;
+	physicalAddress = physicalAddress >> wordBitWidth;
+	tempB = physicalAddress << wordBitWidth;
+	page = tempA ^ tempB;
 
 	tempA = physicalAddress;
 	physicalAddress = physicalAddress >> pageBitWidth;
