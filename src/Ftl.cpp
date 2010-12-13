@@ -45,10 +45,16 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 
 	physicalAddress = physicalAddress >> offset;
 
-	tempA = physicalAddress;
-	physicalAddress = physicalAddress >> wordBitWidth;
-	tempB = physicalAddress << wordBitWidth;
-	page = tempA ^ tempB;
+
+	// if we're using a memory other than nand, we will have word granularity available
+	if(DEVICE_TYPE != "NAND"){
+	  	tempA = physicalAddress;
+		physicalAddress = physicalAddress >> wordBitWidth;
+		tempB = physicalAddress << wordBitWidth;
+		word = tempA ^ tempB;
+	}else{
+	  word = 0;
+	}
 
 	tempA = physicalAddress;
 	physicalAddress = physicalAddress >> pageBitWidth;
@@ -75,9 +81,9 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 	tempB = physicalAddress << packageBitWidth;
 	package = tempA ^ tempB;
 
-//cout<<package<<" "<<die<<" "<<plane<<" "<<block<<" "<<" "<<page<<endl;
+        cout<<package<<" "<<die<<" "<<plane<<" "<<block<<" "<<" "<<page<<" "<<word<<endl;
 
-	return new ChannelPacket(type, addr, page, block, plane, die, package, NULL);
+	return new ChannelPacket(type, addr, size, word, page, block, plane, die, package, NULL);
 }
 
 bool Ftl::addTransaction(FlashTransaction &t){
