@@ -39,6 +39,11 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	PRINT("\nDevice Information:\n");
 	PRINT("Device Type: "<<DEVICE_TYPE);
 	PRINT("Size (GB): "<<TOTAL_SIZE/(1024*1024));
+	PRINT("Block Size: "<<BLOCK_SIZE);
+	PRINT("Plane Size: "<<PLANE_SIZE);
+	PRINT("Die Size: "<<DIE_SIZE);
+	PRINT("Package Size: "<<PACKAGE_SIZE);
+	PRINT("Total Size: "<<TOTAL_SIZE);
 	PRINT("Packages/Channels: "<<NUM_PACKAGES);
 	PRINT("Page size (KB): "<<PAGE_SIZE);
 	PRINT("Read access size: "<<READ_SIZE);

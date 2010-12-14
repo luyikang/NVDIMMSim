@@ -11,7 +11,7 @@ using namespace std;
 Ftl::Ftl(Controller *c){
 	int numBlocks = NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE;
 
-	offset = log2(PAGE_SIZE * 1024);
+	offset = log2(PAGE_SIZE);
 	wordBitWidth = log2(WORDS_PER_PAGE);
 	pageBitWidth = log2(PAGES_PER_BLOCK);
 	blockBitWidth = log2(BLOCKS_PER_PLANE);
@@ -43,8 +43,6 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 		exit(1);
 	}
 
-	physicalAddress = physicalAddress >> offset;
-
 
 	// if we're using a memory other than nand, we will have word granularity available
 	if(DEVICE_TYPE != "NAND" || (DEVICE_TYPE == "NOR" && type == WRITE)){
@@ -52,9 +50,13 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 		physicalAddress = physicalAddress >> wordBitWidth;
 		tempB = physicalAddress << wordBitWidth;
 		word = tempA ^ tempB;
+		offset = log2(WORD_SIZE);
 	}else{
 	  word = 0;
+	  offset = log2(PAGE_SIZE);
 	}
+
+	physicalAddress = physicalAddress >> offset;
 
 	tempA = physicalAddress;
 	physicalAddress = physicalAddress >> pageBitWidth;
@@ -168,15 +170,15 @@ void Ftl::update(void){
 				break;
 			case DATA_WRITE:
 				if (addressMap.find(vAddr) != addressMap.end()){
-					dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / PAGE_SIZE) % PAGES_PER_BLOCK] = true;
+					dirty[addressMap[vAddr] / (BLOCK_SIZE/1024)][(addressMap[vAddr] / (PAGE_SIZE/1024)) % PAGES_PER_BLOCK] = true;
 				}
 				//look for first free physical page starting at the write pointer
-				start = PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));//yuck!
+				start = (PAGE_SIZE/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));//yuck!
 
-				for (block = start / BLOCK_SIZE ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++)
+				for (block = start / (BLOCK_SIZE/1024) ; block < TOTAL_SIZE / (BLOCK_SIZE/1024) && !done; block++)
 					for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++)
 						if (!used[block][page]){
-							pAddr = (block * BLOCK_SIZE + page * PAGE_SIZE) * 1024;
+							pAddr = (block * (BLOCK_SIZE/1024) + page * (PAGE_SIZE/1024)) * 1024;
 							used[block][page] = true;
 							done = true;
 						}
@@ -184,10 +186,10 @@ void Ftl::update(void){
 				//if we didn't find a free page after scanning til the end, check the beginning
 
 				if (!done)
-					for (block = 0 ; block < start / BLOCK_SIZE && !done ; block++)
+					for (block = 0 ; block < start / (BLOCK_SIZE/1024) && !done ; block++)
 						for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++)
 							if (!used[block][page]){
-								pAddr = (block * BLOCK_SIZE + page * PAGE_SIZE) * 1024;
+								pAddr = (block * (BLOCK_SIZE/1024) + page * (PAGE_SIZE/1024)) * 1024;
 								used[block][page] = true;
 								done = true;
 							}
