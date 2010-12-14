@@ -19,6 +19,10 @@
 #define ERROR(str) std::cerr<<"[ERROR ("<<__FILE__<<":"<<__LINE__<<")]: "<<str<<std::endl;
 #endif
 
+#ifndef WARNING
+#define WARNING(str) std::cout<<"[WARNING ("<<__FILE__<<":"<<__LINE__<<")]: "<<str<<std::endl;
+#endif
+
 #ifdef DEBUG_BUILD
 	#ifndef DEBUG
 	#define DEBUG(str) std::cout<< str <<std::endl;
@@ -63,6 +67,8 @@ extern uint BLOCKS_PER_PLANE;
 extern uint PAGES_PER_BLOCK;
 extern uint PAGE_SIZE;
 extern uint WORDS_PER_PAGE;
+extern uint READ_SIZE;
+extern uint WRITE_SIZE;
 
 #define WORD_SIZE (PAGE_SIZE / WORDS_PER_PAGE)
 #define BLOCK_SIZE (PAGE_SIZE * PAGES_PER_BLOCK)

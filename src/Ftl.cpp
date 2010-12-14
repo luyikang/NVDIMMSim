@@ -11,8 +11,8 @@ using namespace std;
 Ftl::Ftl(Controller *c){
 	int numBlocks = NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE;
 
-	offset = log2(FLASH_PAGE_SIZE * 1024);
-	wordBitWidth = log2(WORDS_PER_BLOCK);
+	offset = log2(PAGE_SIZE * 1024);
+	wordBitWidth = log2(WORDS_PER_PAGE);
 	pageBitWidth = log2(PAGES_PER_BLOCK);
 	blockBitWidth = log2(BLOCKS_PER_PLANE);
 	planeBitWidth = log2(PLANES_PER_DIE);
@@ -35,7 +35,7 @@ Ftl::Ftl(Controller *c){
 }
 
 ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
-	uint package, die, plane, block, page;
+  uint package, die, plane, block, page, word, size;
 	uint64_t tempA, tempB, physicalAddress = addr;
 
 	if (physicalAddress > TOTAL_SIZE*1024 - 1 || physicalAddress < 0){
@@ -47,7 +47,7 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 
 
 	// if we're using a memory other than nand, we will have word granularity available
-	if(DEVICE_TYPE != "NAND"){
+	if(DEVICE_TYPE != "NAND" || (DEVICE_TYPE == "NOR" && type == WRITE)){
 	  	tempA = physicalAddress;
 		physicalAddress = physicalAddress >> wordBitWidth;
 		tempB = physicalAddress << wordBitWidth;
@@ -83,6 +83,58 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 
         cout<<package<<" "<<die<<" "<<plane<<" "<<block<<" "<<" "<<page<<" "<<word<<endl;
 
+	if(DEVICE_TYPE == "NAND"){
+	  if(type == READ){
+	    size = PAGE_SIZE;
+	    if(READ_SIZE != PAGE_SIZE){
+	      ERROR("Invalid read size of "<<READ_SIZE<<" attempted for NAND Flash, using page read instead");
+	    }
+	  }else if(type == WRITE){
+	    size = PAGE_SIZE;
+	    if(WRITE_SIZE != PAGE_SIZE){
+	      ERROR("Invalid write size of "<<WRITE_SIZE<<" attempted for NAND Flash, using page write instead");
+	    }
+	  }else if(type == ERASE){
+	    size = BLOCK_SIZE;
+	  }else{
+	    size = PAGE_SIZE;
+	  }
+	}else if(DEVICE_TYPE == "NOR"){
+	  if(type == READ){
+	    size = WORD_SIZE;
+	    if(READ_SIZE != WORD_SIZE){
+	      ERROR("Invalid read size of "<<READ_SIZE<<" attempted for NOR Flash, using word read instead");
+	    }
+	  }else if(type == WRITE){
+	    size = PAGE_SIZE;
+	    if(WRITE_SIZE != PAGE_SIZE){
+	      ERROR("Invalid write size of "<<WRITE_SIZE<<" attempted for NOR Flash, using page write instead");
+	    }
+	  }else if(type == ERASE){
+	    size = BLOCK_SIZE;
+	  }else{
+	    size = PAGE_SIZE;
+	  }
+	}else if(DEVICE_TYPE == "PCM"){
+	  if(type == READ){
+	    size = READ_SIZE;
+	  }else if(type == WRITE){
+	    size = WRITE_SIZE;
+	  }else{
+	    size = PAGE_SIZE;
+	  }
+	}else if(DEVICE_TYPE == "Memristor"){
+	  if(type == READ){
+	    size = READ_SIZE;
+	  }else if(type == WRITE){
+	     size = WRITE_SIZE;
+	  }else{
+	    size = PAGE_SIZE;
+	  }
+	}else{
+	  size = PAGE_SIZE;
+	}
+
 	return new ChannelPacket(type, addr, size, word, page, block, plane, die, package, NULL);
 }
 
@@ -116,15 +168,15 @@ void Ftl::update(void){
 				break;
 			case DATA_WRITE:
 				if (addressMap.find(vAddr) != addressMap.end()){
-					dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / FLASH_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
+					dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / PAGE_SIZE) % PAGES_PER_BLOCK] = true;
 				}
 				//look for first free physical page starting at the write pointer
-				start = FLASH_PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));//yuck!
+				start = PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));//yuck!
 
 				for (block = start / BLOCK_SIZE ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++)
 					for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++)
 						if (!used[block][page]){
-							pAddr = (block * BLOCK_SIZE + page * FLASH_PAGE_SIZE) * 1024;
+							pAddr = (block * BLOCK_SIZE + page * PAGE_SIZE) * 1024;
 							used[block][page] = true;
 							done = true;
 						}
@@ -135,7 +187,7 @@ void Ftl::update(void){
 					for (block = 0 ; block < start / BLOCK_SIZE && !done ; block++)
 						for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++)
 							if (!used[block][page]){
-								pAddr = (block * BLOCK_SIZE + page * FLASH_PAGE_SIZE) * 1024;
+								pAddr = (block * BLOCK_SIZE + page * PAGE_SIZE) * 1024;
 								used[block][page] = true;
 								done = true;
 							}

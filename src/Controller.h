@@ -15,10 +15,10 @@ namespace NVDSim{
 		std::vector<Die *> dies;
 	} Package;
 
-	class FlashDIMM;
+	class NVDIMM;
 	class Controller : public SimObj{
 		public:
-			Controller(FlashDIMM* parent);
+			Controller(NVDIMM* parent);
 
 			bool addTransaction(FlashTransaction &trans);
 			void attachPackages(vector<Package> *packages);
@@ -27,7 +27,7 @@ namespace NVDSim{
 			void receiveFromChannel(ChannelPacket *busPacket);
 			bool addPacket(ChannelPacket *p);
 			void update(void);
-			FlashDIMM *parentFlashDIMM;
+			NVDIMM *parentNVDIMM;
 			std::list<FlashTransaction> transactionQueue;
 		private:
 

@@ -41,6 +41,8 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	PRINT("Size (GB): "<<TOTAL_SIZE/(1024*1024));
 	PRINT("Packages/Channels: "<<NUM_PACKAGES);
 	PRINT("Page size (KB): "<<PAGE_SIZE);
+	PRINT("Read access size: "<<READ_SIZE);
+	PRINT("Write access size: "<<WRITE_SIZE);
 	PRINT("\nTiming Info:\n");
 	PRINT("Read time: "<<READ_TIME);
 	PRINT("Write Time: "<<WRITE_TIME);
@@ -56,6 +58,9 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 		ERROR("Too many dies.");
 		exit(1);
 	}
+
+	// sanity checks
+	
 
 	for (i= 0; i < NUM_PACKAGES; i++){
 		Package pack = {new Channel(), vector<Die *>()};

@@ -4,14 +4,14 @@
 #include "Die.h"
 #include "Channel.h"
 #include "Controller.h"
-#include "FlashDIMM.h"
+#include "NVDIMM.h"
 
 using namespace NVDSim;
 using namespace std;
 
-Die::Die(FlashDIMM *parent, uint idNum){
+Die::Die(NVDIMM *parent, uint idNum){
 	id = idNum;
-	parentFlashDIMM= parent;
+	parentNVDIMM= parent;
 
 	planes= vector<Plane>(PLANES_PER_DIE, Plane());
 
@@ -74,16 +74,16 @@ void Die::update(void){
 					 break;
 				 case WRITE:
 					 planes[currentCommand->plane].write(currentCommand);
-					 parentFlashDIMM->numWrites++;
+					 parentNVDIMM->numWrites++;
 					 //call write callback
-					 if (parentFlashDIMM->WriteDataDone != NULL){
-						 (*parentFlashDIMM->WriteDataDone)(parentFlashDIMM->systemID, currentCommand->physicalAddress, currentClockCycle);
+					 if (parentNVDIMM->WriteDataDone != NULL){
+						 (*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->physicalAddress, currentClockCycle);
 
 					 }
 					 break;
 				 case ERASE:
 					 planes[currentCommand->plane].erase(currentCommand);
-					 parentFlashDIMM->numErases++;
+					 parentNVDIMM->numErases++;
 					 break;
 				 default:
 					 break;

@@ -19,7 +19,7 @@ namespace NVDSim{
 			void update(void);
 			Controller *controller;
 		private:
-			uint offset, pageBitWidth, blockBitWidth, planeBitWidth, dieBitWidth, packageBitWidth;
+			uint offset, wordBitWidth, pageBitWidth, blockBitWidth, planeBitWidth, dieBitWidth, packageBitWidth;
 			uint channel, die, plane, lookupCounter;
 			FlashTransaction currentTransaction;
 			uint busy;

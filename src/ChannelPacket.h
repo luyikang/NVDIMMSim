@@ -33,7 +33,7 @@ namespace NVDSim
 		void *data;
 
 		//Functions
-		ChannelPacket(ChannelPacketType packtype, uint64_t physicalAddr, unit siz, unit word, uint page, uint block, uint plane, 
+		ChannelPacket(ChannelPacketType packtype, uint64_t physicalAddr, uint siz, uint word, uint page, uint block, uint plane, 
 			      uint die, uint package, void *dat);
 		ChannelPacket();
 

@@ -60,7 +60,7 @@ void *Page::read(){
   return (void *)0x0;
 }
 
-void Page::write(uint word_num, void *data){
+void Page::write(uint size, uint word_num, void *data){
  
         uint word = word_num;
         uint temp_size = size;

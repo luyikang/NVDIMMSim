@@ -12,17 +12,17 @@ namespace NVDSim{
 
 	class Channel;
 	class Controller;
-	class FlashDIMM;
+	class NVDIMM;
 	class Die : public SimObj{
 		public:
-			Die(FlashDIMM *parent, uint id);
+			Die(NVDIMM *parent, uint id);
 			void attachToChannel(Channel *chan);
 			void receiveFromChannel(ChannelPacket *busPacket);
 			int isDieBusy(uint plane);
 			void update(void);
 		private:
 			uint id;
-			FlashDIMM *parentFlashDIMM;
+			NVDIMM *parentNVDIMM;
 			Channel *channel;
 			uint dataCyclesLeft;
 			std::queue<ChannelPacket *> returnDataPackets;

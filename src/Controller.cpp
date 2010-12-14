@@ -2,12 +2,12 @@
 //Class files for controller
 
 #include "Controller.h"
-#include "FlashDIMM.h"
+#include "NVDIMM.h"
 
 using namespace NVDSim;
 
-Controller::Controller(FlashDIMM* parent){
-	parentFlashDIMM= parent;
+Controller::Controller(NVDIMM* parent){
+	parentNVDIMM= parent;
 
 	channelXferCyclesLeft= vector<uint>(NUM_PACKAGES, 0);
 
@@ -28,10 +28,10 @@ bool Controller::addTransaction(FlashTransaction &trans){
 }
 
 void Controller::returnReadData(const FlashTransaction  &trans){
-	if(parentFlashDIMM->ReturnReadData!=NULL){
-		(*parentFlashDIMM->ReturnReadData)(parentFlashDIMM->systemID, trans.address, currentClockCycle);
+	if(parentNVDIMM->ReturnReadData!=NULL){
+		(*parentNVDIMM->ReturnReadData)(parentNVDIMM->systemID, trans.address, currentClockCycle);
 	}
-	parentFlashDIMM->numReads++;
+	parentNVDIMM->numReads++;
 }
 
 void Controller::receiveFromChannel(ChannelPacket *busPacket){

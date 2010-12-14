@@ -78,6 +78,7 @@ void Block::write(uint size, uint word_num, uint page_num, void *data){
 	uint word = word_num;
 
         uint temp_size = size;
+	uint slice_size = 0;
 
 	// taking care of the case where we start writing in the middle of a page	
 	if(word != 0){
@@ -94,7 +95,8 @@ void Block::write(uint size, uint word_num, uint page_num, void *data){
        
 	  // if this page has not yet been accessed yet, create a new page object for it and add it to the pages map
 	  if (pages.find(page) == pages.end()){
-	    pages[page]= data;
+	    pages[page] = Page(page);
+	    pages[page].write(slice_size, word, data);
 	  } else{
 	    /*ERROR("Request to write page "<<page_num<<" failed: page has been written to and not erased"); 
 	      exit(1);*/
@@ -118,7 +120,8 @@ void Block::write(uint size, uint word_num, uint page_num, void *data){
 
 	// if this page has not yet been accessed yet, create a new page object for it and add it to the pages map
 	  if (pages.find(page) == pages.end()){
-	    pages[page]= data;
+	    pages[page] = Page(page);
+	    pages[page].write(slice_size, word, data);
 	  } else{
 	    /*ERROR("Request to write page "<<page_num<<" failed: page has been written to and not erased"); 
 	      exit(1);*/
