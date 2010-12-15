@@ -15,7 +15,8 @@ namespace NVDSim
 	{
 		DATA_READ, 
 		DATA_WRITE,
-		RETURN_DATA
+		RETURN_DATA,
+		BLOCK_ERASE
 	};
 
 	class FlashTransaction

@@ -80,8 +80,8 @@ void test_obj::run_test(void){
 			(*NVDimm).add(t);
 			//(*NVDimm).addTransaction(false, cycle*64);
 		}
-		//if (NVDimm->numReads == NUM_WRITES)
-		//	break;
+		if (NVDimm->numReads == NUM_WRITES)
+			break;
 	}
 
 	end= clock();

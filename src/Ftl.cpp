@@ -26,10 +26,19 @@ Ftl::Ftl(Controller *c){
 
 	busy = 0;
 
-	addressMap = unordered_map<uint64_t, uint64_t>();
-	dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
-	used = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
+	addressMap = std::unordered_map<uint64_t, uint64_t>();
+	if(DEVICE_TYPE != "NAND"){
+	  dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, vector<bool>(WORDS_PER_PAGE, false)));
+	  used = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, vector<bool>(WORDS_PER_PAGE, false)));
+	}else{
+	  // NAND Flash, don't need to keep track of dirty and used words
+	  dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
+	  used = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
+	}
+
 	transactionQueue = list<FlashTransaction>();
+
+	used_page_count = 0;
 
 	controller = c;
 }
@@ -46,21 +55,35 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 
 	// if we're using a memory other than nand, we will have word granularity available
 	if(DEVICE_TYPE != "NAND" || (DEVICE_TYPE == "NOR" && type == WRITE)){
-	  	tempA = physicalAddress;
+	        offset = log2(WORD_SIZE);
+		//cout<<"Word size is "<<WORD_SIZE<<endl;
+		//cout<<"offset is "<<offset<<endl;
+		cout<<"physical address before offset "<<physicalAddress<<endl;
+		physicalAddress = physicalAddress >> offset;
+		//cout<<"physical address after offset "<<physicalAddress<<endl;
+	        tempA = physicalAddress;
+		cout<<"tempA we're oring with "<<tempA<<endl;
 		physicalAddress = physicalAddress >> wordBitWidth;
+		cout<<"the physical address after shifting was "<<physicalAddress<<endl;
+		//cout<<"wordBitWidth is "<<wordBitWidth<<endl;
 		tempB = physicalAddress << wordBitWidth;
+		cout<<"tempB we're oring with "<<tempB<<endl;
 		word = tempA ^ tempB;
-		offset = log2(WORD_SIZE);
+		
+		
+		cout<<"we're checking the word and its "<<word<<endl;
 	}else{
 	  word = 0;
 	  offset = log2(PAGE_SIZE);
+	  physicalAddress = physicalAddress >> offset;
 	}
 
-	physicalAddress = physicalAddress >> offset;
-
 	tempA = physicalAddress;
+	cout<<"the page tempA we're oring with "<<tempA<<endl;
 	physicalAddress = physicalAddress >> pageBitWidth;
+	cout<<"the page physical address after shifting was "<<physicalAddress<<endl;
 	tempB = physicalAddress << pageBitWidth;
+	cout<<"the page thing we're oring with "<<tempB<<endl;
 	page = tempA ^ tempB;
 
 	tempA = physicalAddress;
@@ -148,79 +171,256 @@ bool Ftl::addTransaction(FlashTransaction &t){
 void Ftl::update(void){
 	uint64_t block, page, start;
 
-	if (!busy && !transactionQueue.empty()){
-		busy = 1;
-		currentTransaction = transactionQueue.front();
-		lookupCounter = LOOKUP_TIME;
+	// Decrement block erase counters
+	for (std::unordered_map<uint64_t,uint64_t>::iterator it = erase_counter.begin(); it != erase_counter.end(); it++) {
+
+		// Decrement the counter.
+		uint64_t cnt = (*it).second;
+		cnt--;
+		(*it).second = cnt;
+
+		// Check to see if done.
+		if (cnt == 0) {
+			// Set all the bits in the page to be clean.
+			block = (*it).first;
+			for (page = 0; page < PAGES_PER_BLOCK; page++) {
+				used[block][page] = false;
+				used_page_count--;
+				dirty[block][page] = false;
+			}
+
+			// Remove from erase counter map.
+			erase_counter.erase(it);
+		}
 	}
-	
-	if (lookupCounter == 0){
-		uint64_t vAddr = currentTransaction.address, pAddr;
-		bool done = false;
-		ChannelPacket *commandPacket, *dataPacket;
 
-		switch (currentTransaction.transactionType){
-			case DATA_READ:
-				if (addressMap.find(vAddr) == addressMap.end()){
-					controller->returnReadData(FlashTransaction(RETURN_DATA, 0, (void *)0xdeadbeef));
-				} else {
-					commandPacket = Ftl::translate(READ, addressMap[vAddr]);
-					controller->addPacket(commandPacket);
-				}
-				break;
-			case DATA_WRITE:
-				if (addressMap.find(vAddr) != addressMap.end()){
-					dirty[addressMap[vAddr] / (BLOCK_SIZE/1024)][(addressMap[vAddr] / (PAGE_SIZE/1024)) % PAGES_PER_BLOCK] = true;
-				}
-				//look for first free physical page starting at the write pointer
-				start = (PAGE_SIZE/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));//yuck!
+	if (busy) {
+		if (lookupCounter == 0){
+			uint64_t vAddr = currentTransaction.address, pAddr;
+			bool done = false;
+			ChannelPacket *commandPacket, *dataPacket;
 
-				for (block = start / (BLOCK_SIZE/1024) ; block < TOTAL_SIZE / (BLOCK_SIZE/1024) && !done; block++)
-					for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++)
-						if (!used[block][page]){
-							pAddr = (block * (BLOCK_SIZE/1024) + page * (PAGE_SIZE/1024)) * 1024;
-							used[block][page] = true;
-							done = true;
-						}
+			switch (currentTransaction.transactionType){
+				case DATA_READ:
+					if (addressMap.find(vAddr) == addressMap.end()){
+						controller->returnReadData(FlashTransaction(RETURN_DATA, 0, (void *)0xdeadbeef));
+					} else {
+						commandPacket = Ftl::translate(READ, addressMap[vAddr]);
+						controller->addPacket(commandPacket);
+					}
+					break;
+				case DATA_WRITE:
+					if (addressMap.find(vAddr) != addressMap.end()){
+					  if(DEVICE_TYPE != "NAND"){
+					    dirty[addressMap[vAddr] / (BLOCK_SIZE/1024)][(addressMap[vAddr] / (PAGE_SIZE/1024)) % PAGES_PER_BLOCK]
+					      [(addressMap[vAddr] / (WORD_SIZE)) % WORDS_PER_PAGE]= true;
+					  }else{
+					    dirty[addressMap[vAddr] / (BLOCK_SIZE/1024)][(addressMap[vAddr] / (PAGE_SIZE/1024)) % PAGES_PER_BLOCK] = true;
+					  }
+					}
 
-				//if we didn't find a free page after scanning til the end, check the beginning
-
-				if (!done)
-					for (block = 0 ; block < start / (BLOCK_SIZE/1024) && !done ; block++)
-						for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++)
-							if (!used[block][page]){
-								pAddr = (block * (BLOCK_SIZE/1024) + page * (PAGE_SIZE/1024)) * 1024;
-								used[block][page] = true;
+				        if(DEVICE_TYPE != "NAND"){
+					  //look for first free physical page starting at the write pointer
+					  start = ((WORD_SIZE*WORDS_PER_PAGE)/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * 
+						  (die + NUM_PACKAGES * channel));//yuck!
+					  
+					  for (block = start / (BLOCK_SIZE/1024) ; block < TOTAL_SIZE / (BLOCK_SIZE/1024) && !done; block++){
+					    for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
+					      for (word = 0; word < WORDS_PER_PAGE && !done; word++){
+							if (!used[block][page][word]){
+							        pAddr = (block * (BLOCK_SIZE) + page * (PAGE_SIZE) + word * (WORD_SIZE));
+								used[block][page][word] = true;
+								used_page_count++;
 								done = true;
 							}
+					      }
+					    }
+					  }
+					}else{					  
+					  //look for first free physical page starting at the write pointer
+					  start = (PAGE_SIZE/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * 
+							(die + NUM_PACKAGES * channel));//yuck!
 
-				if (!done){
-					ERROR("No free pages? GC needs some work.");
+					  for (block = start / (BLOCK_SIZE/1024) ; block < TOTAL_SIZE / (BLOCK_SIZE/1024) && !done; block++){
+					    for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
+							if (!used[block][page]){
+							        pAddr = (block * (BLOCK_SIZE) + page * (PAGE_SIZE));
+								used[block][page] = true;
+								used_page_count++;
+								done = true;
+							}
+					    }
+					  }
+					}
+
+
+					//if we didn't find a free page after scanning til the end, check the beginning
+					if(DEVICE_TYPE != "NAND"){
+					  if (!done){
+					    for (block = 0 ; block < start / (BLOCK_SIZE/1024) && !done ; block++){
+					      for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++){
+						for (word = 0; word < WORDS_PER_PAGE && !done; word++){
+								if (!used[block][page][word]){
+									pAddr = (block * BLOCK_SIZE + page * PAGE_SIZE + word * WORD_SIZE);
+									used[block][page][word] = true;
+									used_page_count++;
+									done = true;
+								}
+						}
+					      }
+					    }
+					  }
+					}else{
+					  if (!done){
+					    for (block = 0 ; block < start / (BLOCK_SIZE/1024) && !done ; block++){
+					      for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++){
+								if (!used[block][page]){
+									pAddr = (block * BLOCK_SIZE + page * PAGE_SIZE);
+									used[block][page] = true;
+									used_page_count++;
+									done = true;
+								} 
+					      }
+					    }
+					  }								
+					}
+
+					if (!done){
+						// TODO: Call GC
+						ERROR("No free pages? GC needs some work.");
+						exit(1);
+					} else {
+						addressMap[vAddr] = pAddr;
+					}
+					//send write to controller
+					dataPacket = Ftl::translate(DATA, pAddr);
+					commandPacket = Ftl::translate(WRITE, pAddr);
+					controller->addPacket(dataPacket);
+					controller->addPacket(commandPacket);
+					//update "write pointer"
+					channel = (channel + 1) % NUM_PACKAGES;
+					if (channel == 0){
+						die = (die + 1) % DIES_PER_PACKAGE;
+						if (die == 0)
+							plane = (plane + 1) % PLANES_PER_DIE;
+					}
+					break;
+
+				case BLOCK_ERASE:
+					// Note: For this command, vAddr refers to the block number to erase.
+					erase_counter[vAddr] = 1000000; // Initially hardcoded as 1.5 ms.
+					break;
+				default:
+					ERROR("Transaction in Ftl that isn't a read or write... What?");
 					exit(1);
-				} else {
-					addressMap[vAddr] = pAddr;
-				}
-				//send write to controller
-				dataPacket = Ftl::translate(DATA, pAddr);
-				commandPacket = Ftl::translate(WRITE, pAddr);
-				controller->addPacket(dataPacket);
-				controller->addPacket(commandPacket);
-				//update "write pointer"
-				channel = (channel + 1) % NUM_PACKAGES;
-				if (channel == 0){
-					die = (die + 1) % DIES_PER_PACKAGE;
-					if (die == 0)
-						plane = (plane + 1) % PLANES_PER_DIE;
-				}
-				break;
-			default:
-				ERROR("Transaction in Ftl that isn't a read or write... What?");
-				exit(1);
-				break;
+					break;
+			}
+			transactionQueue.pop_front();
+			busy = 0;
+			lookupCounter = -1;
+		} 
+		else
+			lookupCounter--;
+	} // if busy
+	else {
+		// Not currently busy.
+
+		if (!transactionQueue.empty()) {
+			busy = 1;
+			currentTransaction = transactionQueue.front();
+			lookupCounter = LOOKUP_TIME;
 		}
-		transactionQueue.pop_front();
-		busy = 0;
-		lookupCounter = -1;
-	} else
-		lookupCounter--;
+		else {
+			// Check to see if GC needs to run.
+			if (checkGC()) {
+				// Run the GC.
+				runGC();
+			}
+
+		}
+	
+	}
+
 }
+
+bool Ftl::checkGC(void){
+	//uint64_t block, page, count = 0;
+
+	// Count the number of blocks with used pages.
+	//for (block = 0; block < TOTAL_SIZE / (BLOCK_SIZE/1024); block++) {
+	//	for (page = 0; page < PAGES_PER_BLOCK; page++) {
+	//		if (used[block][page] == true) {
+	//			count++;
+	//			break;
+	//		}
+	//	}
+	//}
+	
+	// Return true if more than 70% of blocks are in use and false otherwise.
+	if (((float)used_page_count / TOTAL_SIZE) > 0.7)
+		return true;
+	else
+		return false;
+}
+
+
+void Ftl::runGC(void) {
+	uint64_t block, page, count, dirty_block=0, dirty_count=0, pAddr, vAddr, tmpAddr;
+	FlashTransaction trans;
+
+	// Get the dirtiest block (assumes the flash keeps track of this with an online algorithm).
+	for (block = 0; block < TOTAL_SIZE / (BLOCK_SIZE/1024); block++) {
+		count = 0;
+		for (page = 0; page < PAGES_PER_BLOCK; page++) {
+			if (dirty[block][page] == true) {
+				count++;
+			}
+		}
+		if (count > dirty_count) {
+			dirty_count = count;
+			dirty_block = block;
+		}
+	}
+
+	// All used pages in the dirty block, they must be moved elsewhere.
+	for (page = 0; page < PAGES_PER_BLOCK; page++) {
+		if (used[dirty_block][page] == true && dirty[dirty_block][page] == false) {
+			// Compute the physical address to move.
+			pAddr = (dirty_block * (BLOCK_SIZE/1024) + page * (PAGE_SIZE/1024)) * 1024;
+
+			// Do a reverse lookup for the virtual page address.
+			// This is slow, but the alternative is maintaining a full reverse lookup map.
+			// Another alternative may be to make new FlashTransaction commands for physical address read/write.
+			bool found = false;
+			for (std::unordered_map<uint64_t, uint64_t>::iterator it = addressMap.begin(); it != addressMap.end(); it++) {
+				tmpAddr = (*it).second;
+				if (tmpAddr == pAddr) {
+					vAddr = (*it).first;
+					found = true;
+					break;
+				}
+			}
+			assert(found);
+			
+
+			// Schedule a read and a write.
+			trans = FlashTransaction(DATA_READ, vAddr, NULL);
+			addTransaction(trans);
+			trans = FlashTransaction(DATA_WRITE, vAddr, NULL);
+			addTransaction(trans);
+		}
+	}
+
+	// Schedule the BLOCK_ERASE command.
+	// Note: The address field is just the block number, not an actual byte address.
+	trans = FlashTransaction(BLOCK_ERASE, dirty_block, NULL);
+	addTransaction(trans);
+
+}
+
+uint64_t Ftl::get_ptr(void) {
+	// Return a pointer to the current plane.
+	return (PAGE_SIZE/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
+			(plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
+}
+
