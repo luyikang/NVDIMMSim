@@ -53,20 +53,20 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 	        offset = log2(WORD_SIZE);
 		//cout<<"Word size is "<<WORD_SIZE<<endl;
 		//cout<<"offset is "<<offset<<endl;
-		cout<<"physical address before offset "<<physicalAddress<<endl;
+		//cout<<"physical address before offset "<<physicalAddress<<endl;
 		physicalAddress = physicalAddress >> offset;
 		//cout<<"physical address after offset "<<physicalAddress<<endl;
 	        tempA = physicalAddress;
-		cout<<"tempA we're oring with "<<tempA<<endl;
+		//cout<<"tempA we're oring with "<<tempA<<endl;
 		physicalAddress = physicalAddress >> wordBitWidth;
-		cout<<"the physical address after shifting was "<<physicalAddress<<endl;
+		//cout<<"the physical address after shifting was "<<physicalAddress<<endl;
 		//cout<<"wordBitWidth is "<<wordBitWidth<<endl;
 		tempB = physicalAddress << wordBitWidth;
-		cout<<"tempB we're oring with "<<tempB<<endl;
+		//cout<<"tempB we're oring with "<<tempB<<endl;
 		word = tempA ^ tempB;
 		
 		
-		cout<<"we're checking the word and its "<<word<<endl;
+		//cout<<"we're checking the word and its "<<word<<endl;
 	}else{
 	  word = 0;
 	  offset = log2(PAGE_SIZE);
@@ -74,11 +74,8 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 	}
 
 	tempA = physicalAddress;
-	cout<<"the page tempA we're oring with "<<tempA<<endl;
 	physicalAddress = physicalAddress >> pageBitWidth;
-	cout<<"the page physical address after shifting was "<<physicalAddress<<endl;
 	tempB = physicalAddress << pageBitWidth;
-	cout<<"the page thing we're oring with "<<tempB<<endl;
 	page = tempA ^ tempB;
 
 	tempA = physicalAddress;
@@ -101,7 +98,7 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 	tempB = physicalAddress << packageBitWidth;
 	package = tempA ^ tempB;
 
-        cout<<package<<" "<<die<<" "<<plane<<" "<<block<<" "<<" "<<page<<" "<<word<<endl;
+        //cout<<type<<" "<<package<<" "<<die<<" "<<plane<<" "<<block<<" "<<" "<<page<<" "<<word<<endl;
 
 	if(DEVICE_TYPE == "NAND"){
 	  if(type == READ){
@@ -235,8 +232,11 @@ void Ftl::update(void){
 					      for (word = 0; word < WORDS_PER_PAGE && !done; word++){
 							if (!used[block][page][word]){
 							        pAddr = (block * (BLOCK_SIZE) + page * (PAGE_SIZE) + word * (WORD_SIZE));
-								cout<<"pAddr was" <<pAddr<<endl;
-								used[block][page][word] = true;
+								//cout<<"pAddr was" <<pAddr<<endl;
+								for(uint i = word; i < (word+(WRITE_SIZE/WORD_SIZE)); i++){
+								  used[block][page][i] = true;
+								  cout<<"block "<<block<<" page "<<page<<" word "<<i<<" are being used"<<endl;
+								}
 								used_page_count++;
 								done = true;
 							}
@@ -269,7 +269,9 @@ void Ftl::update(void){
 						for (word = 0; word < WORDS_PER_PAGE && !done; word++){
 								if (!used[block][page][word]){
 									pAddr = (block * BLOCK_SIZE + page * PAGE_SIZE + word * WORD_SIZE);
-									used[block][page][word] = true;
+									for(uint i = word; i < (word+(WRITE_SIZE/WORD_SIZE)); i++){
+									  used[block][page][i] = true;
+									}
 									used_page_count++;
 									done = true;
 								}
