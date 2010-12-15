@@ -27,15 +27,10 @@ Ftl::Ftl(Controller *c){
 	busy = 0;
 
 	addressMap = std::unordered_map<uint64_t, uint64_t>();
-	if(DEVICE_TYPE != "NAND"){
-	  dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, vector<bool>(WORDS_PER_PAGE, false)));
-	  used = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, vector<bool>(WORDS_PER_PAGE, false)));
-	}else{
-	  // NAND Flash, don't need to keep track of dirty and used words
-	  dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
-	  used = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
-	}
-
+	// for NAND flash last vector will only ever contain one value
+	dirty = vector<vector<vector<bool>>>(numBlocks, vector<vector<bool>>(PAGES_PER_BLOCK, vector<bool>(WORDS_PER_PAGE, false)));
+        used = vector<vector<vector<bool>>>(numBlocks, vector<vector<bool>>(PAGES_PER_BLOCK, vector<bool>(WORDS_PER_PAGE, false)));
+	
 	transactionQueue = list<FlashTransaction>();
 
 	used_page_count = 0;
@@ -169,7 +164,7 @@ bool Ftl::addTransaction(FlashTransaction &t){
 }
 
 void Ftl::update(void){
-	uint64_t block, page, start;
+        uint64_t block, page, word, start;
 
 	// Decrement block erase counters
 	for (std::unordered_map<uint64_t,uint64_t>::iterator it = erase_counter.begin(); it != erase_counter.end(); it++) {
@@ -183,10 +178,20 @@ void Ftl::update(void){
 		if (cnt == 0) {
 			// Set all the bits in the page to be clean.
 			block = (*it).first;
-			for (page = 0; page < PAGES_PER_BLOCK; page++) {
-				used[block][page] = false;
+			if(DEVICE_TYPE != "NAND"){
+			  for (page = 0; page < PAGES_PER_BLOCK; page++) {
+			    for (word = 0; word < WORDS_PER_PAGE; word++){
+				used[block][page][word] = false;
 				used_page_count--;
-				dirty[block][page] = false;
+				dirty[block][page][word] = false;
+			    }
+			  }
+			}else{
+			  for (page = 0; page < PAGES_PER_BLOCK; page++) {
+				used[block][page][0] = false;
+				used_page_count--;
+				dirty[block][page][0] = false;
+			  }
 			}
 
 			// Remove from erase counter map.
@@ -215,7 +220,7 @@ void Ftl::update(void){
 					    dirty[addressMap[vAddr] / (BLOCK_SIZE/1024)][(addressMap[vAddr] / (PAGE_SIZE/1024)) % PAGES_PER_BLOCK]
 					      [(addressMap[vAddr] / (WORD_SIZE)) % WORDS_PER_PAGE]= true;
 					  }else{
-					    dirty[addressMap[vAddr] / (BLOCK_SIZE/1024)][(addressMap[vAddr] / (PAGE_SIZE/1024)) % PAGES_PER_BLOCK] = true;
+					    dirty[addressMap[vAddr] / (BLOCK_SIZE/1024)][(addressMap[vAddr] / (PAGE_SIZE/1024)) % PAGES_PER_BLOCK][0] = true;
 					  }
 					}
 
@@ -223,12 +228,14 @@ void Ftl::update(void){
 					  //look for first free physical page starting at the write pointer
 					  start = ((WORD_SIZE*WORDS_PER_PAGE)/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * 
 						  (die + NUM_PACKAGES * channel));//yuck!
+					  cout<<"start was "<<start<<endl;
 					  
 					  for (block = start / (BLOCK_SIZE/1024) ; block < TOTAL_SIZE / (BLOCK_SIZE/1024) && !done; block++){
 					    for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
 					      for (word = 0; word < WORDS_PER_PAGE && !done; word++){
 							if (!used[block][page][word]){
 							        pAddr = (block * (BLOCK_SIZE) + page * (PAGE_SIZE) + word * (WORD_SIZE));
+								cout<<"pAddr was" <<pAddr<<endl;
 								used[block][page][word] = true;
 								used_page_count++;
 								done = true;
@@ -243,9 +250,9 @@ void Ftl::update(void){
 
 					  for (block = start / (BLOCK_SIZE/1024) ; block < TOTAL_SIZE / (BLOCK_SIZE/1024) && !done; block++){
 					    for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
-							if (!used[block][page]){
+							if (!used[block][page][0]){
 							        pAddr = (block * (BLOCK_SIZE) + page * (PAGE_SIZE));
-								used[block][page] = true;
+								used[block][page][0] = true;
 								used_page_count++;
 								done = true;
 							}
@@ -274,9 +281,9 @@ void Ftl::update(void){
 					  if (!done){
 					    for (block = 0 ; block < start / (BLOCK_SIZE/1024) && !done ; block++){
 					      for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++){
-								if (!used[block][page]){
+								if (!used[block][page][0]){
 									pAddr = (block * BLOCK_SIZE + page * PAGE_SIZE);
-									used[block][page] = true;
+									used[block][page][0] = true;
 									used_page_count++;
 									done = true;
 								} 
@@ -356,7 +363,7 @@ bool Ftl::checkGC(void){
 	//	}
 	//}
 	
-	// Return true if more than 70% of blocks are in use and false otherwise.
+	// Return true if more than 70% of pagess are in use and false otherwise.
 	if (((float)used_page_count / TOTAL_SIZE) > 0.7)
 		return true;
 	else
@@ -365,14 +372,30 @@ bool Ftl::checkGC(void){
 
 
 void Ftl::runGC(void) {
-	uint64_t block, page, count, dirty_block=0, dirty_count=0, pAddr, vAddr, tmpAddr;
+  uint64_t block, page, word, count, dirty_block=0, dirty_count=0, pAddr, vAddr, tmpAddr;
 	FlashTransaction trans;
 
 	// Get the dirtiest block (assumes the flash keeps track of this with an online algorithm).
-	for (block = 0; block < TOTAL_SIZE / (BLOCK_SIZE/1024); block++) {
+	if(DEVICE_TYPE != "NAND"){
+	  for (block = 0; block < TOTAL_SIZE / (BLOCK_SIZE/1024); block++) {
 		count = 0;
 		for (page = 0; page < PAGES_PER_BLOCK; page++) {
-			if (dirty[block][page] == true) {
+		  for(word = 0; word < WORDS_PER_PAGE; word++) {
+			if (dirty[block][page][word] == true) {
+				count++;
+			}
+		  }
+		}
+		if (count > dirty_count) {
+			dirty_count = count;
+			dirty_block = block;
+		}
+	  }
+	}else{
+	  for (block = 0; block < TOTAL_SIZE / (BLOCK_SIZE/1024); block++) {
+		count = 0;
+		for (page = 0; page < PAGES_PER_BLOCK; page++) {
+			if (dirty[block][page][0] == true) {
 				count++;
 			}
 		}
@@ -380,11 +403,43 @@ void Ftl::runGC(void) {
 			dirty_count = count;
 			dirty_block = block;
 		}
+	  }
 	}
 
 	// All used pages in the dirty block, they must be moved elsewhere.
-	for (page = 0; page < PAGES_PER_BLOCK; page++) {
-		if (used[dirty_block][page] == true && dirty[dirty_block][page] == false) {
+	if(DEVICE_TYPE != "NAND"){
+	  for (page = 0; page < PAGES_PER_BLOCK; page++) {
+	    for (word = 0; word < WORDS_PER_PAGE; word++) {
+		if (used[dirty_block][page][word] == true && dirty[dirty_block][page][word] == false) {
+			// Compute the physical address to move.
+			pAddr = (dirty_block * BLOCK_SIZE + page * PAGE_SIZE + word * WORD_SIZE);
+
+			// Do a reverse lookup for the virtual page address.
+			// This is slow, but the alternative is maintaining a full reverse lookup map.
+			// Another alternative may be to make new FlashTransaction commands for physical address read/write.
+			bool found = false;
+			for (std::unordered_map<uint64_t, uint64_t>::iterator it = addressMap.begin(); it != addressMap.end(); it++) {
+				tmpAddr = (*it).second;
+				if (tmpAddr == pAddr) {
+					vAddr = (*it).first;
+					found = true;
+					break;
+				}
+			}
+			assert(found);
+			
+
+			// Schedule a read and a write.
+			trans = FlashTransaction(DATA_READ, vAddr, NULL);
+			addTransaction(trans);
+			trans = FlashTransaction(DATA_WRITE, vAddr, NULL);
+			addTransaction(trans);
+		}
+	    }
+	  }
+	}else{
+	  for (page = 0; page < PAGES_PER_BLOCK; page++) {
+		if (used[dirty_block][page][0] == true && dirty[dirty_block][page][0] == false) {
 			// Compute the physical address to move.
 			pAddr = (dirty_block * (BLOCK_SIZE/1024) + page * (PAGE_SIZE/1024)) * 1024;
 
@@ -409,6 +464,7 @@ void Ftl::runGC(void) {
 			trans = FlashTransaction(DATA_WRITE, vAddr, NULL);
 			addTransaction(trans);
 		}
+	  }
 	}
 
 	// Schedule the BLOCK_ERASE command.
@@ -420,7 +476,12 @@ void Ftl::runGC(void) {
 
 uint64_t Ftl::get_ptr(void) {
 	// Return a pointer to the current plane.
-	return (PAGE_SIZE/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
-			(plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
+  if( DEVICE_TYPE != "NAND"){
+    return (PAGE_SIZE/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
+	   (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
+  }else{
+    return (PAGE_SIZE/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
+	   (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
+  }
 }
 
