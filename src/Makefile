@@ -8,7 +8,7 @@ CXXFLAGS= -O3 -DNO_STORAGE -DNO_OUTPUT
 endif
 endif
 ifdef PROFILE
-CXXFLAGS += -p -g 
+CXXFLAGS = -pg
 endif 
 
 EXE_NAME=NVDSim
@@ -20,6 +20,8 @@ POBJ = $(addsuffix .po, $(basename $(SRC)))
 REBUILDABLES=$(OBJ) ${POBJ} $(EXE_NAME) $(LIB_NAME)
 
 all: ${EXE_NAME} 
+
+lib: ${LIB_NAME}
 
 #   $@ target name, $^ target deps, $< matched pattern
 $(EXE_NAME): $(OBJ)
