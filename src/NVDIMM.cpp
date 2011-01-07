@@ -131,4 +131,6 @@ void NVDIMM::update(void){
 	controller->step();
 
 	step();
+
+	cout << "NVDIMM successfully updated" << endl;
 }
