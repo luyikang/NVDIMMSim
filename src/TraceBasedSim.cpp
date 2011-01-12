@@ -59,8 +59,8 @@ void test_obj::write_cb(uint id, uint64_t address, uint64_t cycle){
 void test_obj::run_test(void){
 	clock_t start= clock(), end;
 	uint write, cycle;
-	//NVDIMM *NVDimm= new NVDIMM(1,"ini/samsung_K9XXG08UXM.ini","ini/def_system.ini","","");
-	NVDIMM *NVDimm= new NVDIMM(1,"ini/PCM_TEST.ini","ini/def_system.ini","","");
+	NVDIMM *NVDimm= new NVDIMM(1,"ini/samsung_K9XXG08UXM(mod).ini","ini/def_system.ini","","");
+	//NVDIMM *NVDimm= new NVDIMM(1,"ini/PCM_TEST.ini","ini/def_system.ini","","");
 	typedef CallbackBase<void,uint,uint64_t,uint64_t> Callback_t;
 	Callback_t *r = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::read_cb);
 	Callback_t *w = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::write_cb);

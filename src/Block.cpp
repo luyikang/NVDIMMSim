@@ -28,15 +28,15 @@ void *Block::read(uint size, uint word_num, uint page_num){
 	// taking care of the case where we start reading from the middle of a page	
 	if(word != 0){
 	  // figure out how many words are left in the page
-	  uint temp = (WORDS_PER_PAGE - word)*WORD_SIZE;
+	  uint temp = (WORDS_PER_PAGE - word)*NV_WORD_SIZE;
 	  // set the size to the lesser of the size of temp size or the size of the words left
 	  slice_size = ((temp > temp_size)?temp_size:temp);
 	}else{
-	  slice_size = PAGE_SIZE;
+	  slice_size = NV_PAGE_SIZE;
 	}	
 
         // we're reading multiple pages worth of data
-	while(temp_size > PAGE_SIZE || temp_size > slice_size){
+	while(temp_size > NV_PAGE_SIZE || temp_size > slice_size){
 	  if (pages.find(page) == pages.end()){
 		DEBUG("Request to read page "<<page<<" failed: nothing has been written to that address");
 		return (void *)0x0;
@@ -54,8 +54,8 @@ void *Block::read(uint size, uint word_num, uint page_num){
 	  // if we started from the specified word in this page, next page we should start from the beginning
 	  word = 0;
 
-	  // reset the slice size to PAGE_SIZE cause now if we get back here we should be reading whole pages
-	  slice_size = PAGE_SIZE;
+	  // reset the slice size to NV_PAGE_SIZE cause now if we get back here we should be reading whole pages
+	  slice_size = NV_PAGE_SIZE;
 	}
   
 	if (pages.find(page) == pages.end()){
@@ -83,15 +83,15 @@ void Block::write(uint size, uint word_num, uint page_num, void *data){
 	// taking care of the case where we start writing in the middle of a page	
 	if(word != 0){
 	  // figure out how many words are left in the page
-	  uint temp = (WORDS_PER_PAGE - word)*WORD_SIZE;
+	  uint temp = (WORDS_PER_PAGE - word)*NV_WORD_SIZE;
 	  // set the size to the lesser of the size of temp size or the size of the words left
 	  slice_size = ((temp > temp_size)?temp_size:temp);
 	}else{
-	  slice_size = PAGE_SIZE;
+	  slice_size = NV_PAGE_SIZE;
 	}	
 
 	// writing data across multiple pages
-	while(temp_size > PAGE_SIZE || temp_size > slice_size){
+	while(temp_size > NV_PAGE_SIZE || temp_size > slice_size){
        
 	  // if this page has not yet been accessed yet, create a new page object for it and add it to the pages map
 	  if (pages.find(page) == pages.end()){
@@ -114,8 +114,8 @@ void Block::write(uint size, uint word_num, uint page_num, void *data){
 	  // if we started from the specified word in this page, next page we should start from the beginning
 	  word = 0;
 
-	  // reset the slice size to PAGE_SIZE cause now if we get back here we should be writing whole pages
-	  slice_size = PAGE_SIZE;
+	  // reset the slice size to NV_PAGE_SIZE cause now if we get back here we should be writing whole pages
+	  slice_size = NV_PAGE_SIZE;
 	}
 
 	// if this page has not yet been accessed yet, create a new page object for it and add it to the pages map
