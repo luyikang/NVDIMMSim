@@ -29,7 +29,7 @@ bool Controller::addTransaction(FlashTransaction &trans){
 
 void Controller::returnReadData(const FlashTransaction  &trans){
 	if(parentNVDIMM->ReturnReadData!=NULL){
-		(*parentNVDIMM->ReturnReadData)(parentNVDIMM->systemID, trans.address, currentClockCycle);
+		(*parentNVDIMM->ReturnReadData)(66, trans.address, currentClockCycle);
 	}
 	parentNVDIMM->numReads++;
 }
