@@ -11,7 +11,7 @@ using namespace std;
 Ftl::Ftl(Controller *c){
 	int numBlocks = NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE;
 
-	offset = log2(PAGE_SIZE);
+	offset = log2(NV_PAGE_SIZE);
 	wordBitWidth = log2(WORDS_PER_PAGE);
 	pageBitWidth = log2(PAGES_PER_BLOCK);
 	blockBitWidth = log2(BLOCKS_PER_PLANE);
@@ -50,8 +50,8 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 
 	// if we're using a memory other than nand, we will have word granularity available
 	if(DEVICE_TYPE != "NAND" || (DEVICE_TYPE == "NOR" && type == WRITE)){
-	        offset = log2(WORD_SIZE);
-		//cout<<"Word size is "<<WORD_SIZE<<endl;
+	        offset = log2(NV_WORD_SIZE);
+		//cout<<"Word size is "<<NV_WORD_SIZE<<endl;
 		//cout<<"offset is "<<offset<<endl;
 		//cout<<"physical address before offset "<<physicalAddress<<endl;
 		physicalAddress = physicalAddress >> offset;
@@ -118,8 +118,8 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 	  }
 	}else if(DEVICE_TYPE == "NOR"){
 	  if(type == READ){
-	    size = WORD_SIZE;
-	    if(READ_SIZE != WORD_SIZE){
+	    size = NV_WORD_SIZE;
+	    if(READ_SIZE != NV_WORD_SIZE){
 	      ERROR("Invalid read size of "<<READ_SIZE<<" attempted for NOR Flash, using word read instead");
 	    }
 	  }else if(type == WRITE){
@@ -215,7 +215,7 @@ void Ftl::update(void){
 					if (addressMap.find(vAddr) != addressMap.end()){
 					  if(DEVICE_TYPE != "NAND"){
 					    dirty[addressMap[vAddr] / (BLOCK_SIZE/1024)][(addressMap[vAddr] / (NV_PAGE_SIZE/1024)) % PAGES_PER_BLOCK]
-					      [(addressMap[vAddr] / (WORD_SIZE)) % WORDS_PER_PAGE]= true;
+					      [(addressMap[vAddr] / (NV_WORD_SIZE)) % WORDS_PER_PAGE]= true;
 					  }else{
 					    dirty[addressMap[vAddr] / (BLOCK_SIZE/1024)][(addressMap[vAddr] / (NV_PAGE_SIZE/1024)) % PAGES_PER_BLOCK][0] = true;
 					  }
@@ -223,7 +223,7 @@ void Ftl::update(void){
 
 				        if(DEVICE_TYPE != "NAND"){
 					  //look for first free physical page starting at the write pointer
-					  start = ((WORD_SIZE*WORDS_PER_PAGE)/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * 
+					  start = ((NV_WORD_SIZE*WORDS_PER_PAGE)/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * 
 						  (die + NUM_PACKAGES * channel));//yuck!
 					  cout<<"start was "<<start<<endl;
 					  
@@ -231,9 +231,9 @@ void Ftl::update(void){
 					    for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
 					      for (word = 0; word < WORDS_PER_PAGE && !done; word++){
 							if (!used[block][page][word]){
-							        pAddr = (block * (BLOCK_SIZE) + page * (NV_PAGE_SIZE) + word * (WORD_SIZE));
+							        pAddr = (block * (BLOCK_SIZE) + page * (NV_PAGE_SIZE) + word * (NV_WORD_SIZE));
 								//cout<<"pAddr was" <<pAddr<<endl;
-								for(uint i = word; i < (word+(WRITE_SIZE/WORD_SIZE)); i++){
+								for(uint i = word; i < (word+(WRITE_SIZE/NV_WORD_SIZE)); i++){
 								  used[block][page][i] = true;
 								  cout<<"block "<<block<<" page "<<page<<" word "<<i<<" are being used"<<endl;
 								}
@@ -268,8 +268,8 @@ void Ftl::update(void){
 					      for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++){
 						for (word = 0; word < WORDS_PER_PAGE && !done; word++){
 								if (!used[block][page][word]){
-									pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE + word * WORD_SIZE);
-									for(uint i = word; i < (word+(WRITE_SIZE/WORD_SIZE)); i++){
+									pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE + word * NV_WORD_SIZE);
+									for(uint i = word; i < (word+(WRITE_SIZE/NV_WORD_SIZE)); i++){
 									  used[block][page][i] = true;
 									}
 									used_page_count++;
@@ -414,7 +414,7 @@ void Ftl::runGC(void) {
 	    for (word = 0; word < WORDS_PER_PAGE; word++) {
 		if (used[dirty_block][page][word] == true && dirty[dirty_block][page][word] == false) {
 			// Compute the physical address to move.
-			pAddr = (dirty_block * BLOCK_SIZE + page * NV_PAGE_SIZE + word * WORD_SIZE);
+			pAddr = (dirty_block * BLOCK_SIZE + page * NV_PAGE_SIZE + word * NV_WORD_SIZE);
 
 			// Do a reverse lookup for the virtual page address.
 			// This is slow, but the alternative is maintaining a full reverse lookup map.
