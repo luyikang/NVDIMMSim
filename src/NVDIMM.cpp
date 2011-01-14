@@ -98,7 +98,7 @@ bool NVDIMM::add(FlashTransaction &trans){
 bool NVDIMM::addTransaction(bool isWrite, uint64_t addr){
 	TransactionType type = isWrite ? DATA_WRITE : DATA_READ;
 	FlashTransaction trans = FlashTransaction(type, addr, NULL);
-	return controller->addTransaction(trans);
+	return ftl->addTransaction(trans);
 }
 
 string NVDIMM::SetOutputFileName(string tracefilename){
@@ -124,7 +124,7 @@ void NVDIMM::update(void){
 			package.dies[j]->step();
 		}
 	}
-		
+	
 	ftl->update();
 	ftl->step();
 	controller->update();

@@ -10,7 +10,6 @@
 #include "Controller.h"
 
 namespace NVDSim{
-	class Controller;
 	class Ftl : public SimObj{
 		public:
 			Ftl(Controller *c);

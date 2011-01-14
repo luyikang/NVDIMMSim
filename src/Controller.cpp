@@ -21,12 +21,6 @@ void Controller::attachPackages(vector<Package> *packages){
 	this->packages= packages;
 }
 
-bool Controller::addTransaction(FlashTransaction &trans){
-	trans.timeAdded= currentClockCycle;
-	transactionQueue.push_back(trans);
-	return true;
-}
-
 void Controller::returnReadData(const FlashTransaction  &trans){
 	if(parentNVDIMM->ReturnReadData!=NULL){
 		(*parentNVDIMM->ReturnReadData)(66, trans.address, currentClockCycle);
@@ -35,7 +29,7 @@ void Controller::returnReadData(const FlashTransaction  &trans){
 }
 
 void Controller::receiveFromChannel(ChannelPacket *busPacket){
-	returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->physicalAddress, busPacket->data));
+	returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->size, busPacket->data));
 	delete(busPacket);
 }
 
@@ -91,7 +85,7 @@ void Controller::update(void){
 			case DATA_WRITE:
 				{
 				ChannelPacket *dataPacket= ftl.translate(DATA, transactionQueue.front());
-				ChannelPacket *writePacket= new ChannelPacket(WRITE, dataPacket->physicalAddress, dataPacket->page, dataPacket->block, dataPacket->plane, dataPacket->die, dataPacket->package, dataPacket->data); 
+				ChannelPacket *writePacket= new ChannelPacket(WRITE, dataPacket->physicalAddress, dataPacket->size, dataPacket->word, dataPacket->page, dataPacket->block, dataPacket->plane, dataPacket->die, dataPacket->package, dataPacket->data); 
 				channelQueues[writePacket->package].push(dataPacket);
 				channelQueues[writePacket->package].push(writePacket);
 				}
