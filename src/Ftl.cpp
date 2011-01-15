@@ -205,7 +205,7 @@ void Ftl::update(void){
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
 					if (addressMap.find(vAddr) == addressMap.end()){
-						controller->returnReadData(FlashTransaction(RETURN_DATA, 0, (void *)0xdeadbeef));
+						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
 					} else {
 						commandPacket = Ftl::translate(READ, addressMap[vAddr]);
 						controller->addPacket(commandPacket);

@@ -29,6 +29,7 @@ namespace NVDSim
 		uint plane;
 		uint die;
 		uint package;
+		uint64_t virtualAddress;
 		uint64_t physicalAddress;
 		void *data;
 
