@@ -23,13 +23,13 @@ void Controller::attachPackages(vector<Package> *packages){
 
 void Controller::returnReadData(const FlashTransaction  &trans){
 	if(parentNVDIMM->ReturnReadData!=NULL){
-		(*parentNVDIMM->ReturnReadData)(66, trans.address, currentClockCycle);
+		(*parentNVDIMM->ReturnReadData)(parentNVDIMM->systemID, trans.address, currentClockCycle);
 	}
 	parentNVDIMM->numReads++;
 }
 
 void Controller::receiveFromChannel(ChannelPacket *busPacket){
-	returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->size, busPacket->data));
+	returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->physicalAddress, busPacket->data));
 	delete(busPacket);
 }
 
