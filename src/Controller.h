@@ -6,6 +6,7 @@
 #include "SimObj.h"
 #include "FlashConfiguration.h"
 #include "Die.h"
+#include "Ftl.h"
 #include "Channel.h"
 #include "FlashTransaction.h"
 
@@ -19,8 +20,6 @@ namespace NVDSim{
 	class Controller : public SimObj{
 		public:
 			Controller(NVDIMM* parent);
-
-			bool addTransaction(FlashTransaction &trans);
 			void attachPackages(vector<Package> *packages);
 			void returnReadData(const FlashTransaction &trans);
 			void attachChannel(Channel *channel);
@@ -28,18 +27,12 @@ namespace NVDSim{
 			bool addPacket(ChannelPacket *p);
 			void update(void);
 			NVDIMM *parentNVDIMM;
-			std::list<FlashTransaction> transactionQueue;
 		private:
-
 			std::list<FlashTransaction> returnTransaction;
-
-			//Ftl ftl;
 			std::vector<Package> *packages;
 			std::vector<std::queue <ChannelPacket *> > channelQueues;
 			std::vector<ChannelPacket *> outgoingPackets;
-			
 			std::vector<uint> channelXferCyclesLeft;
-
 	};
 }
 #endif

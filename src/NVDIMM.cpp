@@ -45,7 +45,7 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	PRINT("Package Size: "<<PACKAGE_SIZE);
 	PRINT("Total Size: "<<TOTAL_SIZE);
 	PRINT("Packages/Channels: "<<NUM_PACKAGES);
-	PRINT("Page size (KB): "<<PAGE_SIZE);
+	PRINT("Page size (KB): "<<NV_PAGE_SIZE);
 	PRINT("Read access size: "<<READ_SIZE);
 	PRINT("Write access size: "<<WRITE_SIZE);
 	PRINT("\nTiming Info:\n");
@@ -98,7 +98,7 @@ bool NVDIMM::add(FlashTransaction &trans){
 bool NVDIMM::addTransaction(bool isWrite, uint64_t addr){
 	TransactionType type = isWrite ? DATA_WRITE : DATA_READ;
 	FlashTransaction trans = FlashTransaction(type, addr, NULL);
-	return controller->addTransaction(trans);
+	return ftl->addTransaction(trans);
 }
 
 string NVDIMM::SetOutputFileName(string tracefilename){
@@ -124,7 +124,7 @@ void NVDIMM::update(void){
 			package.dies[j]->step();
 		}
 	}
-		
+	
 	ftl->update();
 	ftl->step();
 	controller->update();
@@ -132,5 +132,5 @@ void NVDIMM::update(void){
 
 	step();
 
-	cout << "NVDIMM successfully updated" << endl;
+	//cout << "NVDIMM successfully updated" << endl;
 }

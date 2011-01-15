@@ -1,6 +1,6 @@
 
-#ifndef FDSIMCALLBACK_H
-#define FDSIMCALLBACK_H
+#ifndef NVDSIMCALLBACK_H
+#define NVDSIMCALLBACK_H
 
 namespace NVDSim {
 
