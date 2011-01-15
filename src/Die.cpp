@@ -77,7 +77,7 @@ void Die::update(void){
 					 parentNVDIMM->numWrites++;
 					 //call write callback
 					 if (parentNVDIMM->WriteDataDone != NULL){
-						 (*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->physicalAddress, currentClockCycle);
+						 (*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->virtualAddress, currentClockCycle);
 
 					 }
 					 break;
