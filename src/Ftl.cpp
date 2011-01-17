@@ -11,7 +11,7 @@ using namespace std;
 Ftl::Ftl(Controller *c){
 	int numBlocks = NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE;
 
-	offset = log2(NV_PAGE_SIZE);
+	offset = log2(NV_PAGE_SIZE * 1024);
 	wordBitWidth = log2(WORDS_PER_PAGE);
 	pageBitWidth = log2(PAGES_PER_BLOCK);
 	blockBitWidth = log2(BLOCKS_PER_PLANE);
@@ -102,19 +102,19 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 
 	if(DEVICE_TYPE == "NAND"){
 	  if(type == READ){
-	    size = NV_PAGE_SIZE;
+	    size = NV_PAGE_SIZE*1024;
 	    if(READ_SIZE != NV_PAGE_SIZE){
 	      ERROR("Invalid read size of "<<READ_SIZE<<" attempted for NAND Flash, using page read instead");
 	    }
 	  }else if(type == WRITE){
-	    size = NV_PAGE_SIZE;
+	    size = NV_PAGE_SIZE*1024;
 	    if(WRITE_SIZE != NV_PAGE_SIZE){
 	      ERROR("Invalid write size of "<<WRITE_SIZE<<" attempted for NAND Flash, using page write instead");
 	    }
 	  }else if(type == ERASE){
 	    size = BLOCK_SIZE;
 	  }else{
-	    size = NV_PAGE_SIZE;
+	    size = NV_PAGE_SIZE*1024;
 	  }
 	}else if(DEVICE_TYPE == "NOR"){
 	  if(type == READ){
@@ -130,7 +130,7 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 	  }else if(type == ERASE){
 	    size = BLOCK_SIZE;
 	  }else{
-	    size = NV_PAGE_SIZE;
+	    size = NV_PAGE_SIZE*1024;
 	  }
 	}else if(DEVICE_TYPE == "PCM"){
 	  if(type == READ){
@@ -138,7 +138,7 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 	  }else if(type == WRITE){
 	    size = WRITE_SIZE;
 	  }else{
-	    size = NV_PAGE_SIZE;
+	    size = NV_PAGE_SIZE*1024;
 	  }
 	}else if(DEVICE_TYPE == "Memristor"){
 	  if(type == READ){
@@ -146,10 +146,10 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 	  }else if(type == WRITE){
 	     size = WRITE_SIZE;
 	  }else{
-	    size = NV_PAGE_SIZE;
+	    size = NV_PAGE_SIZE*1024;
 	  }
 	}else{
-	  size = NV_PAGE_SIZE;
+	  size = NV_PAGE_SIZE*1024;
 	}
 
 	return new ChannelPacket(type, addr, addressMap[addr], size, word, page, block, plane, die, package, NULL);
@@ -214,10 +214,10 @@ void Ftl::update(void){
 				case DATA_WRITE:
 					if (addressMap.find(vAddr) != addressMap.end()){
 					  if(DEVICE_TYPE != "NAND"){
-					    dirty[addressMap[vAddr] / (BLOCK_SIZE/1024)][(addressMap[vAddr] / (NV_PAGE_SIZE/1024)) % PAGES_PER_BLOCK]
+					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK]
 					      [(addressMap[vAddr] / (NV_WORD_SIZE)) % WORDS_PER_PAGE]= true;
 					  }else{
-					    dirty[addressMap[vAddr] / (BLOCK_SIZE/1024)][(addressMap[vAddr] / (NV_PAGE_SIZE/1024)) % PAGES_PER_BLOCK][0] = true;
+					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK][0] = true;
 					  }
 					}
 
@@ -227,11 +227,11 @@ void Ftl::update(void){
 						  (die + NUM_PACKAGES * channel));//yuck!
 					  cout<<"start was "<<start<<endl;
 					  
-					  for (block = start / (BLOCK_SIZE/1024) ; block < TOTAL_SIZE / (BLOCK_SIZE/1024) && !done; block++){
+					  for (block = start / BLOCK_SIZE ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++){
 					    for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
 					      for (word = 0; word < WORDS_PER_PAGE && !done; word++){
 							if (!used[block][page][word]){
-							        pAddr = (block * (BLOCK_SIZE) + page * (NV_PAGE_SIZE) + word * (NV_WORD_SIZE));
+							        pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE + word * (NV_WORD_SIZE));
 								//cout<<"pAddr was" <<pAddr<<endl;
 								for(uint i = word; i < (word+(WRITE_SIZE/NV_WORD_SIZE)); i++){
 								  used[block][page][i] = true;
@@ -245,13 +245,13 @@ void Ftl::update(void){
 					  }
 					}else{					  
 					  //look for first free physical page starting at the write pointer
-					  start = (NV_PAGE_SIZE/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * 
+					  start = NV_PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * 
 							(die + NUM_PACKAGES * channel));//yuck!
 
-					  for (block = start / (BLOCK_SIZE/1024) ; block < TOTAL_SIZE / (BLOCK_SIZE/1024) && !done; block++){
+					  for (block = start / BLOCK_SIZE ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++){
 					    for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
 							if (!used[block][page][0]){
-							        pAddr = (block * (BLOCK_SIZE) + page * (NV_PAGE_SIZE));
+							        pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
 								used[block][page][0] = true;
 								used_page_count++;
 								done = true;
@@ -264,11 +264,11 @@ void Ftl::update(void){
 					//if we didn't find a free page after scanning til the end, check the beginning
 					if(DEVICE_TYPE != "NAND"){
 					  if (!done){
-					    for (block = 0 ; block < start / (BLOCK_SIZE/1024) && !done ; block++){
+					    for (block = 0 ; block < start / BLOCK_SIZE && !done ; block++){
 					      for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++){
 						for (word = 0; word < WORDS_PER_PAGE && !done; word++){
 								if (!used[block][page][word]){
-									pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE + word * NV_WORD_SIZE);
+								  pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE + word * NV_WORD_SIZE);
 									for(uint i = word; i < (word+(WRITE_SIZE/NV_WORD_SIZE)); i++){
 									  used[block][page][i] = true;
 									}
@@ -281,10 +281,10 @@ void Ftl::update(void){
 					  }
 					}else{
 					  if (!done){
-					    for (block = 0 ; block < start / (BLOCK_SIZE/1024) && !done ; block++){
+					    for (block = 0 ; block < start / BLOCK_SIZE && !done ; block++){
 					      for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++){
 								if (!used[block][page][0]){
-									pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
+								  pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
 									used[block][page][0] = true;
 									used_page_count++;
 									done = true;
@@ -356,7 +356,7 @@ bool Ftl::checkGC(void){
 	//uint64_t block, page, count = 0;
 
 	// Count the number of blocks with used pages.
-	//for (block = 0; block < TOTAL_SIZE / (BLOCK_SIZE/1024); block++) {
+	//for (block = 0; block < TOTAL_SIZE / BLOCK_SIZE; block++) {
 	//	for (page = 0; page < PAGES_PER_BLOCK; page++) {
 	//		if (used[block][page] == true) {
 	//			count++;
@@ -379,7 +379,7 @@ void Ftl::runGC(void) {
 
 	// Get the dirtiest block (assumes the flash keeps track of this with an online algorithm).
 	if(DEVICE_TYPE != "NAND"){
-	  for (block = 0; block < TOTAL_SIZE / (BLOCK_SIZE/1024); block++) {
+	  for (block = 0; block < TOTAL_SIZE / BLOCK_SIZE; block++) {
 		count = 0;
 		for (page = 0; page < PAGES_PER_BLOCK; page++) {
 		  for(word = 0; word < WORDS_PER_PAGE; word++) {
@@ -394,7 +394,7 @@ void Ftl::runGC(void) {
 		}
 	  }
 	}else{
-	  for (block = 0; block < TOTAL_SIZE / (BLOCK_SIZE/1024); block++) {
+	  for (block = 0; block < TOTAL_SIZE / BLOCK_SIZE; block++) {
 		count = 0;
 		for (page = 0; page < PAGES_PER_BLOCK; page++) {
 			if (dirty[block][page][0] == true) {
@@ -443,7 +443,7 @@ void Ftl::runGC(void) {
 	  for (page = 0; page < PAGES_PER_BLOCK; page++) {
 		if (used[dirty_block][page][0] == true && dirty[dirty_block][page][0] == false) {
 			// Compute the physical address to move.
-			pAddr = (dirty_block * (BLOCK_SIZE/1024) + page * (NV_PAGE_SIZE/1024)) * 1024;
+			pAddr = (dirty_block * BLOCK_SIZE + page * NV_PAGE_SIZE) * 1024;
 
 			// Do a reverse lookup for the virtual page address.
 			// This is slow, but the alternative is maintaining a full reverse lookup map.
@@ -479,10 +479,10 @@ void Ftl::runGC(void) {
 uint64_t Ftl::get_ptr(void) {
 	// Return a pointer to the current plane.
   if( DEVICE_TYPE != "NAND"){
-    return (NV_PAGE_SIZE/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
+    return NV_PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
 	   (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
   }else{
-    return (NV_PAGE_SIZE/1024) * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
+    return NV_PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
 	   (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
   }
 }
