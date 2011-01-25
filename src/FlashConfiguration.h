@@ -3,6 +3,12 @@
 //SysemConfiguration.h
 //Configuration values, headers, and macros for the whole system
 //
+
+// Values for alternate modes (i.e. less than page accesses and such)
+#define SMALL_ACCESS 0
+#define PCM 0
+
+
 #include <iostream>
 #include <cstdlib>
 #include <string>

@@ -6,6 +6,8 @@
 using namespace NVDSim;
 using namespace std;
 
+#if SMALL_ACCESS
+
 ChannelPacket::ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr, uint siz, uint word_num, uint page_num, uint block_num, uint plane_num, uint die_num, uint package_num, void *dat)
 {
   virtualAddress = virtualAddr;
@@ -20,6 +22,23 @@ ChannelPacket::ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, u
 	die = die_num;
 	package = package_num;
 }
+
+#else
+
+ChannelPacket::ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr,  uint page_num, uint block_num, uint plane_num, uint die_num, uint package_num, void *dat)
+{
+  virtualAddress = virtualAddr;
+	physicalAddress = physicalAddr;
+	busPacketType = packtype;
+	data = dat;
+	page = page_num;
+	block = block_num;
+	plane = plane_num;
+	die = die_num;
+	package = package_num;
+}
+
+#endif
 
 ChannelPacket::ChannelPacket() {}
 

@@ -80,7 +80,12 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 		packages->push_back(pack);
 	}
 	controller->attachPackages(packages);
+
+#if SMALL_ACCESS
+	ftl = new SmallAccessFtl(controller);
+#else
 	ftl = new Ftl(controller);
+#endif
 	
 	ReturnReadData= NULL;
 	WriteDataDone= NULL;

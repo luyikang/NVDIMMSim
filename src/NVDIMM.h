@@ -6,7 +6,13 @@
 #include "SimObj.h"
 #include "FlashConfiguration.h"
 #include "Controller.h"
+
+#if SMALL_ACCESS
+#include "SmallAccessFtl.h"
+#else
 #include "Ftl.h"
+#endif
+
 #include "Die.h"
 #include "FlashTransaction.h"
 #include "Callbacks.h"
@@ -26,7 +32,12 @@ namespace NVDSim{
 			void RegisterCallbacks(Callback_t *readDone, Callback_t *writeDone);
 
 			Controller *controller;
+
+#if SMALL_ACCESS
+			SmallAccessFtl *ftl;
+#else
 			Ftl *ftl;
+#endif
 			vector<Package> *packages;
 
 			//std::ofsream visDataOut;

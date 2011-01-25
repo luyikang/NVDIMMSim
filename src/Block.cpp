@@ -14,6 +14,8 @@ Block::Block(){
 
 }
 
+#if SMALL_ACCESS
+
 void *Block::read(uint size, uint word_num, uint page_num){
 
         uint page = page_num;
@@ -98,11 +100,8 @@ void Block::write(uint size, uint word_num, uint page_num, void *data){
 	    pages[page] = Page(page);
 	    pages[page].write(slice_size, word, data);
 	  } else{
-	    /*ERROR("Request to write page "<<page_num<<" failed: page has been written to and not erased"); 
-	      exit(1);*/
-		
-	    //Until garbage collection is implemented, you can write to pages that have already been written to
-	    pages[page].write(slice_size, word, data);
+	    ERROR("Request to write page "<<page_num<<" failed: page has been written to and not erased"); 
+	    exit(1);
 	  }
 	  
 	  // we've written one pages worth of the stuff we were supposed to write
@@ -123,13 +122,33 @@ void Block::write(uint size, uint word_num, uint page_num, void *data){
 	    pages[page] = Page(page);
 	    pages[page].write(slice_size, word, data);
 	  } else{
-	    /*ERROR("Request to write page "<<page_num<<" failed: page has been written to and not erased"); 
-	      exit(1);*/
-		
-	    //Until garbage collection is implemented, you can write to pages that have already been written to
-	    pages[page].write(temp_size, word, data);
+	    ERROR("Request to write page "<<page_num<<" failed: page has been written to and not erased"); 
+	    exit(1);
 	  }
 }
+
+#else
+
+void *Block::read(uint page_num){
+	if (page_data.find(page_num) == page_data.end()){
+		DEBUG("Request to read page "<<page_num<<" failed: nothing has been written to that address");
+		return (void *)0x0;
+	} else{
+		return page_data[page_num];
+	}
+}
+
+void Block::write(uint page_num, void *data){
+	if (page_data.find(page_num) == page_data.end()){
+		page_data[page_num]= data;
+	} else{
+		ERROR("Request to write page "<<page_num<<" failed: page has been written to and not erased"); 
+		exit(1);
+	}
+}
+
+
+#endif
 
 void Block::erase(){
 	pages.clear();
