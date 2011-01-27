@@ -23,6 +23,8 @@ namespace NVDSim
 		//Fields
 		ChannelPacketType busPacketType;
 
+		uint size;
+		uint word;
 		uint page;
 		uint block;
 		uint plane;
@@ -33,8 +35,9 @@ namespace NVDSim
 		void *data;
 
 		//Functions
-		ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr,
+		ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr, uint size, uint word,
                               uint page, uint block, uint plane, uint die, uint package, void *dat);
+
 		ChannelPacket();
 
 		//void print();

@@ -14,7 +14,7 @@ Plane::Plane(void){
 
 void Plane::read(ChannelPacket *busPacket){
 	if (blocks.find(busPacket->block) != blocks.end()){
-	    busPacket->data= blocks[busPacket->block].read(busPacket->page);
+	    busPacket->data= blocks[busPacket->block].read(busPacket->size, busPacket->word, busPacket->page);
 	} else{
 		DEBUG("Invalid read: Block "<<busPacket->block<<" hasn't been written to");
 	}
@@ -28,7 +28,7 @@ void Plane::write(ChannelPacket *busPacket){
 	if (blocks.find(busPacket->block) == blocks.end())
 		blocks[busPacket->block] = Block(busPacket->block);
 
-	blocks[busPacket->block].write(busPacket->page, dataReg->data);
+        blocks[busPacket->block].write(busPacket->size, busPacket->word, busPacket->page, dataReg->data);
 }
 
 // should only ever erase blocks
