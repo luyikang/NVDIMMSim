@@ -1,3 +1,5 @@
+#ifdef SMALL_ACCESS
+
 //SmallAccessFtl.cpp
 //class file for ftl
 //
@@ -8,7 +10,7 @@
 using namespace NVDSim;
 using namespace std;
 
-Ftl::Ftl(Controller *c){
+SmallAccessFtl::SmallAccessFtl(Controller *c){
 	int numBlocks = NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE;
 
 	offset = log2(NV_PAGE_SIZE * 1024);
@@ -27,8 +29,13 @@ Ftl::Ftl(Controller *c){
 	busy = 0;
 
 	addressMap = std::unordered_map<uint64_t, uint64_t>();
+
 	// for NAND flash last vector will only ever contain one value
+#if PCM
+#else
 	dirty = vector<vector<vector<bool>>>(numBlocks, vector<vector<bool>>(PAGES_PER_BLOCK, vector<bool>(WORDS_PER_PAGE, false)));
+#endif
+
         used = vector<vector<vector<bool>>>(numBlocks, vector<vector<bool>>(PAGES_PER_BLOCK, vector<bool>(WORDS_PER_PAGE, false)));
 	
 	transactionQueue = list<FlashTransaction>();
@@ -38,7 +45,7 @@ Ftl::Ftl(Controller *c){
 	controller = c;
 }
 
-ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
+ChannelPacket *SmallAccessFtl::translate(ChannelPacketType type, uint64_t addr){
   uint package, die, plane, block, page, word, size;
   uint64_t tempA, tempB, physicalAddress = addressMap[addr];
 
@@ -155,12 +162,12 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t addr){
 	return new ChannelPacket(type, addr, addressMap[addr], size, word, page, block, plane, die, package, NULL);
 }
 
-bool Ftl::addTransaction(FlashTransaction &t){
+bool SmallAccessFtl::addTransaction(FlashTransaction &t){
 	transactionQueue.push_back(t);
 	return true;
 }
 
-void Ftl::update(void){
+void SmallAccessFtl::update(void){
         uint64_t block, page, word, start;
 
 	// Decrement block erase counters
@@ -180,7 +187,10 @@ void Ftl::update(void){
 			    for (word = 0; word < WORDS_PER_PAGE; word++){
 				used[block][page][word] = false;
 				used_page_count--;
+#if PCM
+#else
 				dirty[block][page][word] = false;
+#endif
 			    }
 			  }
 			}else{
@@ -214,8 +224,13 @@ void Ftl::update(void){
 				case DATA_WRITE:
 					if (addressMap.find(vAddr) != addressMap.end()){
 					  if(DEVICE_TYPE != "NAND"){
+#if PCM
+					     used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK]
+					      [(addressMap[vAddr] / (NV_WORD_SIZE)) % WORDS_PER_PAGE]= false;
+#else
 					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK]
 					      [(addressMap[vAddr] / (NV_WORD_SIZE)) % WORDS_PER_PAGE]= true;
+#endif
 					  }else{
 					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK][0] = true;
 					  }
@@ -316,9 +331,14 @@ void Ftl::update(void){
 					break;
 
 				case BLOCK_ERASE:
+#if PCM
+				        ERROR("Called Block erase on PCM memory which does not need this");
+					break;
+#else
 					// Note: For this command, vAddr refers to the block number to erase.
 					erase_counter[vAddr] = 1000000; // Initially hardcoded as 1.5 ms.
 					break;
+#endif
 				default:
 					ERROR("Transaction in Ftl that isn't a read or write... What?");
 					exit(1);
@@ -339,20 +359,21 @@ void Ftl::update(void){
 			currentTransaction = transactionQueue.front();
 			lookupCounter = LOOKUP_TIME;
 		}
+		// Should not need to do garbage collection for PCM
+#if PCM
+#else
 		else {
 			// Check to see if GC needs to run.
 			if (checkGC()) {
 				// Run the GC.
 				runGC();
 			}
-
 		}
-	
+#endif	
 	}
-
 }
 
-bool Ftl::checkGC(void){
+bool SmallAccessFtl::checkGC(void){
 	//uint64_t block, page, count = 0;
 
 	// Count the number of blocks with used pages.
@@ -373,7 +394,7 @@ bool Ftl::checkGC(void){
 }
 
 
-void Ftl::runGC(void) {
+void SmallAccessFtl::runGC(void) {
   uint64_t block, page, word, count, dirty_block=0, dirty_count=0, pAddr, vAddr, tmpAddr;
 	FlashTransaction trans;
 
@@ -476,14 +497,10 @@ void Ftl::runGC(void) {
 
 }
 
-uint64_t Ftl::get_ptr(void) {
-	// Return a pointer to the current plane.
-  if( DEVICE_TYPE != "NAND"){
+uint64_t SmallAccessFtl::get_ptr(void) {
+    // Return a pointer to the current plane.
     return NV_PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
 	   (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
-  }else{
-    return NV_PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
-	   (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
-  }
 }
 
+#endif

@@ -7,7 +7,6 @@
 #include <iostream>
 #include <cstdlib>
 #include <string>
-
 #include <vector>
 #include <unordered_map>
 #include <queue>
@@ -67,9 +66,14 @@ extern uint PLANES_PER_DIE;
 extern uint BLOCKS_PER_PLANE;
 extern uint PAGES_PER_BLOCK;
 extern uint NV_PAGE_SIZE;
-// does the device need garbage collection 
+extern uint WORDS_PER_PAGE;
+extern uint READ_SIZE;
+extern uint WRITE_SIZE;
+// does the device need garbage collection
 extern uint GC;
 
+// words are stored as bytes everything larger is stored as kilobytes
+#define NV_WORD_SIZE ((NV_PAGE_SIZE*1024) / WORDS_PER_PAGE)
 #define BLOCK_SIZE (NV_PAGE_SIZE * PAGES_PER_BLOCK)
 #define PLANE_SIZE (NV_PAGE_SIZE * BLOCKS_PER_PLANE * PAGES_PER_BLOCK)
 #define DIE_SIZE (NV_PAGE_SIZE * PLANES_PER_DIE * BLOCKS_PER_PLANE * PAGES_PER_BLOCK)

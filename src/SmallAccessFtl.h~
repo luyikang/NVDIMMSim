@@ -1,7 +1,9 @@
-#ifndef FTL_H
-#define FTL_H
-//Ftl.h
-//header file for the ftl
+#ifdef SMALL_ACCESS
+
+#ifndef SMALLACCESSFTL_H
+#define SMALLACCESSFTL_H
+//SmallAccessFtl.h
+//header file for the ftl used when small access is enabled
 
 #include "SimObj.h"
 #include "FlashConfiguration.h"
@@ -28,10 +30,16 @@ namespace NVDSim{
 			FlashTransaction currentTransaction;
 			uint busy;
 			std::unordered_map<uint64_t,uint64_t> addressMap;
+#if PCM
+#else
 			std::vector<vector<vector<bool>>> dirty;
+#endif
 			std::vector<vector<vector<bool>>> used;
 			std::list<FlashTransaction> transactionQueue;
 			std::unordered_map<uint64_t,uint64_t> erase_counter;
 	};
 }
+
+#endif
+
 #endif
