@@ -127,6 +127,10 @@ void Block::write(uint size, uint word_num, uint page_num, void *data){
 	  }
 }
 
+void Block::erase(){
+	pages.clear();
+}
+
 #else
 
 void *Block::read(uint page_num){
@@ -147,10 +151,10 @@ void Block::write(uint page_num, void *data){
 	}
 }
 
+void Block::erase(){
+	page_data.clear();
+}
 
 #endif
 
-void Block::erase(){
-	pages.clear();
-}
 

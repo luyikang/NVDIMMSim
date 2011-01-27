@@ -1,3 +1,5 @@
+#if !SMALL_ACCESS
+
 #ifndef FTL_H
 #define FTL_H
 //Ftl.h
@@ -36,4 +38,6 @@ namespace NVDSim{
 			std::unordered_map<uint64_t,uint64_t> erase_counter;
 	};
 }
+#endif
+
 #endif

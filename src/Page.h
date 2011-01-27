@@ -1,3 +1,5 @@
+#if SMALL_ACCESS
+
 #ifndef PAGE_H
 #define PAGE_H
 
@@ -30,3 +32,4 @@ namespace NVDSim{
 
 #endif
 
+#endif

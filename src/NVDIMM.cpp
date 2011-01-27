@@ -46,8 +46,10 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	PRINT("Total Size: "<<TOTAL_SIZE);
 	PRINT("Packages/Channels: "<<NUM_PACKAGES);
 	PRINT("Page size (KB): "<<NV_PAGE_SIZE);
+#if SMALL_ACESS
 	PRINT("Read access size: "<<READ_SIZE);
 	PRINT("Write access size: "<<WRITE_SIZE);
+#endif
 	PRINT("\nTiming Info:\n");
 	PRINT("Read time: "<<READ_TIME);
 	PRINT("Write Time: "<<WRITE_TIME);

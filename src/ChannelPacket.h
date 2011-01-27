@@ -41,7 +41,7 @@ namespace NVDSim
 		ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr, uint size, uint word,
                               uint page, uint block, uint plane, uint die, uint package, void *dat);
 #else
-		ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr, uint size, uint word,
+		ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr,
                               uint page, uint block, uint plane, uint die, uint package, void *dat);
 #endif
 		ChannelPacket();

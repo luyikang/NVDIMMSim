@@ -1,3 +1,5 @@
+#if SMALL_ACCESS
+
 #ifndef SMALLACCESSFTL_H
 #define SMALLACCESSFTL_H
 //SmallAccessFtl.h
@@ -5,7 +7,7 @@
 
 #include "SimObj.h"
 #include "FlashConfiguration.h"
-#include "SmallChannelPacket.h"
+#include "ChannelPacket.h"
 #include "FlashTransaction.h"
 #include "Controller.h"
 
@@ -13,7 +15,7 @@ namespace NVDSim{
 	class SmallAccessFtl : public SimObj{
 		public:
 			SmallAccessFtl(Controller *c);
-			SmallChannelPacket *translate(ChannelPacketType type, uint64_t addr);
+			ChannelPacket *translate(ChannelPacketType type, uint64_t addr);
 			bool addTransaction(FlashTransaction &t);
 			void update(void);
 			bool checkGC(void); 
@@ -36,4 +38,7 @@ namespace NVDSim{
 			std::unordered_map<uint64_t,uint64_t> erase_counter;
 	};
 }
+
+#endif
+
 #endif

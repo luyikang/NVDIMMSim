@@ -1,3 +1,5 @@
+#if SMALL_ACCESS
+
 //Page.cpp
 //.cpp file for the page class
 
@@ -101,3 +103,5 @@ void Page::write(uint size, uint word_num, void *data){
 void Page::write(){
   // doesn't do anything
 }
+
+#endif
