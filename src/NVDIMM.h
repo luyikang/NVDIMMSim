@@ -6,7 +6,7 @@
 #include "SimObj.h"
 #include "FlashConfiguration.h"
 #include "Controller.h"
-#include "SmallAccessFtl.h"
+#include "Ftl.h"
 #include "Die.h"
 #include "FlashTransaction.h"
 #include "Callbacks.h"
@@ -26,8 +26,7 @@ namespace NVDSim{
 			void RegisterCallbacks(Callback_t *readDone, Callback_t *writeDone);
 
 			Controller *controller;
-
-			SmallAccessFtl *ftl;
+			Ftl *ftl;
 
 			vector<Package> *packages;
 
