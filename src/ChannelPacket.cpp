@@ -6,12 +6,14 @@
 using namespace NVDSim;
 using namespace std;
 
-ChannelPacket::ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr,  uint page_num, uint block_num, uint plane_num, uint die_num, uint package_num, void *dat)
+ChannelPacket::ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr, uint siz, uint word_num, uint page_num, uint block_num, uint plane_num, uint die_num, uint package_num, void *dat)
 {
   virtualAddress = virtualAddr;
 	physicalAddress = physicalAddr;
 	busPacketType = packtype;
 	data = dat;
+	size = siz;
+	word = word_num;
 	page = page_num;
 	block = block_num;
 	plane = plane_num;

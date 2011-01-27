@@ -46,6 +46,8 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	PRINT("Total Size: "<<TOTAL_SIZE);
 	PRINT("Packages/Channels: "<<NUM_PACKAGES);
 	PRINT("Page size (KB): "<<NV_PAGE_SIZE);
+	PRINT("Read access size: "<<READ_SIZE);
+	PRINT("Write access size: "<<WRITE_SIZE);
 	if(GC == 1)
 	{
 	  PRINT("Device is using garbage collection");
@@ -93,7 +95,7 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	}
 	controller->attachPackages(packages);
 
-	ftl = new Ftl(controller);
+	ftl = new SmallAccessFtl(controller);
 	
 	ReturnReadData= NULL;
 	WriteDataDone= NULL;
