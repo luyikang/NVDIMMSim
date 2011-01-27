@@ -23,10 +23,6 @@ namespace NVDSim
 		//Fields
 		ChannelPacketType busPacketType;
 
-#if SMALL_ACCESS
-		uint size;
-		uint word;
-#endif
 		uint page;
 		uint block;
 		uint plane;
@@ -37,13 +33,8 @@ namespace NVDSim
 		void *data;
 
 		//Functions
-#if SMALL_ACCESS
-		ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr, uint size, uint word,
-                              uint page, uint block, uint plane, uint die, uint package, void *dat);
-#else
 		ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr,
                               uint page, uint block, uint plane, uint die, uint package, void *dat);
-#endif
 		ChannelPacket();
 
 		//void print();

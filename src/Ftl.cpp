@@ -1,5 +1,3 @@
-#if !SMALL_ACCESS
-
 //Ftl.cpp
 //class file for ftl
 //
@@ -29,7 +27,7 @@ Ftl::Ftl(Controller *c){
 
 	addressMap = std::unordered_map<uint64_t, uint64_t>();
 	
-#if !PCM
+#if GC
 	dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
 #endif
 
@@ -105,7 +103,7 @@ void Ftl::update(void){
 			for (page = 0; page < PAGES_PER_BLOCK; page++) {
 			  used[block][page] = false;
 			  used_page_count--;
-#if !PCM
+#if GC
 			  dirty[block][page] = false;
 #endif
 			}
@@ -132,12 +130,12 @@ void Ftl::update(void){
 					break;
 				case DATA_WRITE:
 				        if (addressMap.find(vAddr) != addressMap.end()){
-#if PCM
+#if GC
+					   dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
+#else
 					  // we're going to write this data somewhere else for wear-leveling purposes however we will probably 
 					  // want to reuse this block for something at some later time so mark it as unused because it is
 					   used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = false;
-#else
-					   dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
 #endif
 					}
 				          
@@ -194,13 +192,13 @@ void Ftl::update(void){
 					break;
 
 				case BLOCK_ERASE:
-#if PCM
-				        ERROR("Called Block erase on PCM memory which does not need this");
-					break;
-#else
-					// Note: For this command, vAddr refers to the block number to erase.
+#if GC
+				        // Note: For this command, vAddr refers to the block number to erase.
 					erase_counter[vAddr] = 1000000; // Initially hardcoded as 1.5 ms.
 					break;
+#else
+				        ERROR("Called Block erase on PCM memory which does not need this");
+					break;				
 #endif
 				default:
 					ERROR("Transaction in Ftl that isn't a read or write... What?");
@@ -223,7 +221,7 @@ void Ftl::update(void){
 			lookupCounter = LOOKUP_TIME;
 		}
 		// Should not need to do garbage collection for PCM
-#if !PCM
+#if GC
 		else {
 			// Check to see if GC needs to run.
 			if (checkGC()) {
@@ -236,6 +234,7 @@ void Ftl::update(void){
 
 }
 
+#if GC
 bool Ftl::checkGC(void){
 	//uint64_t block, page, count = 0;
 
@@ -310,11 +309,10 @@ void Ftl::runGC(void) {
 	addTransaction(trans);
 
 }
+#endif
 
 uint64_t Ftl::get_ptr(void) {
     // Return a pointer to the current plane.
     return NV_PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
 	   (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
 }
-
-#endif

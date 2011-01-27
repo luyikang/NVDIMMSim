@@ -46,10 +46,14 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	PRINT("Total Size: "<<TOTAL_SIZE);
 	PRINT("Packages/Channels: "<<NUM_PACKAGES);
 	PRINT("Page size (KB): "<<NV_PAGE_SIZE);
-#if SMALL_ACESS
-	PRINT("Read access size: "<<READ_SIZE);
-	PRINT("Write access size: "<<WRITE_SIZE);
-#endif
+	if(GC == 1)
+	{
+	  PRINT("Device is using garbage collection");
+	}
+	else
+	{
+	  PRINT("Device is not using garbage collection");
+	}
 	PRINT("\nTiming Info:\n");
 	PRINT("Read time: "<<READ_TIME);
 	PRINT("Write Time: "<<WRITE_TIME);
@@ -57,6 +61,12 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	PRINT("Channel latency for data: "<<DATA_TIME);
 	PRINT("Channel latency for a command: "<<COMMAND_TIME);
 	PRINT("");
+
+	if(GC == 0 && (DEVICE_TYPE == "NAND" || DEVICE_TYPE == "NOR"))
+	{
+	  ERROR("Device is Flash and must use garbage collection");
+	  exit(-1);
+	}
 
 	controller= new Controller(this);
 	packages= new vector<Package>();
@@ -83,11 +93,7 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	}
 	controller->attachPackages(packages);
 
-#if SMALL_ACCESS
-	ftl = new SmallAccessFtl(controller);
-#else
 	ftl = new Ftl(controller);
-#endif
 	
 	ReturnReadData= NULL;
 	WriteDataDone= NULL;

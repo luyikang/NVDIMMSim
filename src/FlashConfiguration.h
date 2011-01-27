@@ -4,11 +4,6 @@
 //Configuration values, headers, and macros for the whole system
 //
 
-// Values for alternate modes (i.e. less than page accesses and such)
-#define SMALL_ACCESS 1
-#define PCM 0
-
-
 #include <iostream>
 #include <cstdlib>
 #include <string>
@@ -72,17 +67,8 @@ extern uint PLANES_PER_DIE;
 extern uint BLOCKS_PER_PLANE;
 extern uint PAGES_PER_BLOCK;
 extern uint NV_PAGE_SIZE;
-
-#if SMALL_ACCESS
-extern uint WORDS_PER_PAGE;
-extern uint READ_SIZE;
-extern uint WRITE_SIZE;
-#endif
-
-// pages are stored as bytes everything larger is stored as kilobytes
-#if SMALL_ACCESS
-#define NV_WORD_SIZE ((NV_PAGE_SIZE*1024) / WORDS_PER_PAGE)
-#endif
+// does the device need garbage collection 
+extern uint GC;
 
 #define BLOCK_SIZE (NV_PAGE_SIZE * PAGES_PER_BLOCK)
 #define PLANE_SIZE (NV_PAGE_SIZE * BLOCKS_PER_PLANE * PAGES_PER_BLOCK)

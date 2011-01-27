@@ -1,5 +1,3 @@
-#if !SMALL_ACCESS
-
 #ifndef FTL_H
 #define FTL_H
 //Ftl.h
@@ -18,8 +16,12 @@ namespace NVDSim{
 			ChannelPacket *translate(ChannelPacketType type, uint64_t addr);
 			bool addTransaction(FlashTransaction &t);
 			void update(void);
+
+#if GC
 			bool checkGC(void); 
 			void runGC(void); 
+#endif
+
 			uint64_t get_ptr(void); 
 			void inc_ptr(void); 
 			Controller *controller;
@@ -30,14 +32,14 @@ namespace NVDSim{
 			FlashTransaction currentTransaction;
 			uint busy;
 			std::unordered_map<uint64_t,uint64_t> addressMap;
-#if !PCM
+			
+#if GC
 			std::vector<vector<bool>> dirty;
 #endif
+
 			std::vector<vector<bool>> used;
 			std::list<FlashTransaction> transactionQueue;
 			std::unordered_map<uint64_t,uint64_t> erase_counter;
 	};
 }
-#endif
-
 #endif
