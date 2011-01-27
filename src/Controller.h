@@ -6,7 +6,8 @@
 #include "SimObj.h"
 #include "FlashConfiguration.h"
 #include "Die.h"
-#include "SmallAccessFtl.h"
+#include "Ftl.h"
+
 #include "Channel.h"
 #include "FlashTransaction.h"
 
