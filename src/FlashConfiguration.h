@@ -76,12 +76,24 @@ extern uint GC;
 #define PACKAGE_SIZE (NV_PAGE_SIZE * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE * PAGES_PER_BLOCK)
 #define TOTAL_SIZE (NV_PAGE_SIZE * NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE * PAGES_PER_BLOCK)
 
+// TODO: Expand this to use the timing values from datasheets
 extern uint READ_TIME;
 extern uint WRITE_TIME;
 extern uint ERASE_TIME;
 extern uint DATA_TIME;
 extern uint COMMAND_TIME;
 extern uint LOOKUP_TIME;
+// in nanoseconds
+extern float CYCLE_TIME;
+
+// Power stuff
+extern uint ICC1;
+extern uint ICC2;
+extern uint ICC3;
+extern uint ISB2;
+extern uint ILI;
+extern uint ILO;
+extern uint VCC;
 
 extern uint OUTPUT;
 
