@@ -13,6 +13,7 @@ namespace NVDSim{
 	class Channel;
 	class Controller;
 	class NVDIMM;
+	class Ftl;
 	class Die : public SimObj{
 		public:
 			Die(NVDIMM *parent, uint id);

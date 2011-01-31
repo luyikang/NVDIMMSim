@@ -87,8 +87,6 @@ void test_obj::run_test(void){
 	end= clock();
 	cout<<"Simulation Results:\n";
 	cout<<"Cycles simulated: "<<cycle<<endl;
-	cout<<"Reads completed: "<<NVDimm->numReads<<endl;
-	cout<<"Writes completed: "<<NVDimm->numWrites<<endl;
-	cout<<"Erases completed: "<<NVDimm->numErases<<endl;
+	NVDimm->printStats();
 	cout<<"Execution time: "<<(end-start)<<" cycles. "<<(double)(end-start)/CLOCKS_PER_SEC<<" seconds.\n";
 }

@@ -93,7 +93,7 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	}
 	controller->attachPackages(packages);
 
-	ftl = new Ftl(controller);
+	ftl = new Ftl(controller, this);
 	
 	ReturnReadData= NULL;
 	WriteDataDone= NULL;
@@ -118,12 +118,71 @@ string NVDIMM::SetOutputFileName(string tracefilename){
 	return "";
 }
 
-void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB){
+#if GC
+
+void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback_t *idlePower, Callback_t *accessPower){
 	ReturnReadData = readCB;
 	WriteDataDone = writeCB;
+	ReturnIdlePower = idlePower;
+	ReturnAccessPower = accessPower;
 }
 
+#else
+
+void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback_t *idlePower, Callback_t *accessPower, Callback_t *erasePower){
+	ReturnReadData = readCB;
+	WriteDataDone = writeCB;
+	ReturnIdlePower = idlePower;
+	ReturnAccessPower = accessPower;
+	ReturnErasePower = erasePower;
+}
+
+#endif
+
 void NVDIMM::printStats(void){
+
+	cout<<"Reads completed: "<<NVDimm->numReads<<endl;
+	cout<<"Writes completed: "<<NVDimm->numWrites<<endl;
+	cout<<"Erases completed: "<<NVDimm->numErases<<endl;
+
+	// Power stuff
+	// Total power used
+	vector<uint64_t> total_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
+	
+	// Average power used
+	vector<uint64_t> ave_idle_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
+	vector<uint64_t> ave_access_power = vector<uint64_t>(NUM_PACKAGES, 0.0);	
+#if GC
+	vector<uint64_t> ave_erase_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
+#endif
+	vector<uint64_t> average_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
+
+	for(int i = 0; i < NUM_PACKAGES; i++)
+	{
+	  total_power[i] = (ftl->idle_energy[i] + ftl->access_energy[i] + ftl->erase_energy[i]) * VCC;
+	  ave_idle_power[i] = (ftl->idle_energy[i] * VCC) / currentClockCycle;
+	  ave_access_power[i] = (ftl->access_energy[i] * VCC) / currentClockCycle;
+#if GC
+	  ave_erase_power[i] = (ftl->erase_energy[i] * VCC) / currentClockCycle;
+#endif
+	  average_power[i] = ftl->total_power[i] / currentClockCycle;
+	}
+
+	cout<<"Power Data: "<<endl;
+	cout<<"========================"<<endl;
+
+	for(int i = 0; i < NUM_PACKAGES; i++)
+	{
+	    cout<<"Package: "<<i<<endl;
+	    cout<<"Total Power: "<<total_power[i]<<endl;
+	    cout<<"Average Idle Power: "<<ave_idle_power[i]<<endl;
+	    cout<<"Average Access Power: "<<ave_access_power[i]<<endl;
+#if GC
+	    cout<<"Average Erase Power: "<<ave_erase_power[i]<<endl;
+#endif
+	    cout<<"Average Power: "<<average_power[i]<<endl;
+	    cout<<endl;
+	}
 }
 
 void NVDIMM::update(void){
