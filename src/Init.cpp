@@ -23,13 +23,13 @@ uint COMMAND_TIME;
 uint LOOKUP_TIME;
 float CYCLE_TIME;
 
-uint ICC1;
-uint ICC2;
-uint ICC3;
-uint ISB2;
-uint ILI;
-uint ILO;
-uint VCC;
+double ICC1;
+double ICC2;
+double ICC3;
+double ISB2;
+double ILI;
+double ILO;
+double VCC;
 
 uint DEBUG_INIT= 0;
 
@@ -54,13 +54,13 @@ namespace NVDSim
 		DEFINE_UINT_PARAM(COMMAND_TIME,DEV_PARAM),
 		DEFINE_UINT_PARAM(LOOKUP_TIME,DEV_PARAM),
 		DEFINE_FLOAT_PARAM(CYCLE_TIME,DEV_PARAM),
-		DEFINE_UINT_PARAM(ICC1,DEV_PARAM),
-		DEFINE_UINT_PARAM(ICC2,DEV_PARAM),
-		DEFINE_UINT_PARAM(ICC3,DEV_PARAM),
-		DEFINE_UINT_PARAM(ISB2,DEV_PARAM),
-		DEFINE_UINT_PARAM(ILI,DEV_PARAM),
-		DEFINE_UINT_PARAM(ILO,DEV_PARAM),
-		DEFINE_UINT_PARAM(VCC,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(ICC1,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(ICC2,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(ICC3,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(ISB2,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(ILI,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(ILO,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(VCC,DEV_PARAM),
 
 		{"", NULL, UINT, SYS_PARAM, false} // tracer value to signify end of list; if you delete it, epic fail will result
 	};
@@ -77,19 +77,22 @@ namespace NVDSim
 				switch (configMap[i].variableType) 
 				{
 					//parse and set each type of variable
-				  case UINT:
+				        case UINT:
 						visDataOut << *((uint *)configMap[i].variablePtr);
 					break;
-					case UINT64:
+				        case UINT64:
 						visDataOut << *((uint64_t *)configMap[i].variablePtr);
 					break;
-				  case FLOAT:
+				        case FLOAT:
 						visDataOut << *((float *)configMap[i].variablePtr);
 					break;
-					case STRING:
+				        case DOUBLE:
+				                visDataOut << *((double *)configMap[i].variablePtr);
+					break;
+				        case STRING:
 						visDataOut << *((string *)configMap[i].variablePtr);
 					break;
-					case BOOL:
+				        case BOOL:
 						if (*((bool *)configMap[i].variablePtr)) {
 							visDataOut <<"true";
 						} else {
@@ -120,6 +123,9 @@ namespace NVDSim
 					case FLOAT:
 						visDataOut << *((float *)configMap[i].variablePtr);
 					break;
+				        case DOUBLE:
+					        visDataOut << *((double *)configMap[i].variablePtr);
+					break;
 					case STRING:
 						visDataOut << *((string *)configMap[i].variablePtr);
 					break;
@@ -144,6 +150,7 @@ namespace NVDSim
 		uint intValue;
 		uint64_t int64Value;
 		float floatValue;
+		double doubleValue;
 
 		for (i=0; configMap[i].variablePtr != NULL; i++) 
 		{	
@@ -185,6 +192,16 @@ namespace NVDSim
 							DEBUG("\t - SETTING "<<configMap[i].iniKey<<"="<<floatValue);
 						}
 					break;
+				        case DOUBLE:
+					        if ((iss >> dec >> doubleValue).fail()) 
+						{
+							ERROR("could not parse line "<<lineNumber<<" (non-numeric value '"<<valueString<<"')?");
+						}
+						*((double *)configMap[i].variablePtr) = doubleValue;
+						if (DEBUG_INIT)
+						{
+							DEBUG("\t - SETTING "<<configMap[i].iniKey<<"="<<doubleValue);
+						}
 					case STRING:
 						*((string *)configMap[i].variablePtr) = string(valueString);
 						if (DEBUG_INIT)
@@ -324,6 +341,10 @@ namespace NVDSim
 					case UINT64:
 					case FLOAT:
 						ERROR("Cannot continue without key '"<<configMap[i].iniKey<<"' set.");
+						return false;
+					break;
+				        case DOUBLE:
+				                ERROR("Cannot continue without key '"<<configMap[i].iniKey<<"' set.");
 						return false;
 					break;
 					case BOOL:

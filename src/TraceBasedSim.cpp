@@ -56,6 +56,29 @@ void test_obj::write_cb(uint id, uint64_t address, uint64_t cycle){
 	cout<<"[Callback] write complete: "<<id<<" "<<address<<" cycle="<<cycle<<endl;
 }
 
+void test_obj::idle_cb(uint id, vector<double> data, uint64_t cycle){
+        cout<<"[Callback] Idle Power Data for cycle: "<<cycle<<endl;
+	for(int i = 0; i < NUM_PACKAGES; i++){
+	  cout<<"    Package: "<<i<<" Idle Power: "<<data[i]<<endl;
+	}
+}
+
+void test_obj::access_cb(uint id, vector<double> data, uint64_t cycle){
+        cout<<"[Callback] Access Power Data for cycle: "<<cycle<<endl;
+	for(int i = 0; i < NUM_PACKAGES; i++){
+	  cout<<"    Package: "<<i<<" Access Power: "<<data[i]<<endl;
+	}
+}
+
+#if GC
+void test_obj::erase_cb(uint id, vector<double> data, uint64_t cycle){
+        cout<<"[Callback] Erase Power Data for cycle: "<<cycle<<endl;
+	for(int i = 0; i < NUM_PACKAGES; i++){
+	  cout<<"    Package: "<<i<<" Erase Power: "<<data[i]<<endl;
+	}
+}
+#endif
+
 void test_obj::run_test(void){
 	clock_t start= clock(), end;
 	uint write, cycle;
@@ -64,7 +87,15 @@ void test_obj::run_test(void){
 	typedef CallbackBase<void,uint,uint64_t,uint64_t> Callback_t;
 	Callback_t *r = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::read_cb);
 	Callback_t *w = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::write_cb);
-	NVDimm->RegisterCallbacks(r, w);
+	Callback_v *i = new Callback<test_obj, void, uint, vector<double>, uint64_t>(this, &test_obj::idle_cb);
+	Callback_v *a = new Callback<test_obj, void, uint, vector<double>, uint64_t>(this, &test_obj::access_cb);
+#if GC
+	Callback_v *e = new Callback<test_obj, void, uint, vector<double>, uint64_t>(this, &test_obj::erase_cb);
+	NVDimm->RegisterCallbacks(r, w, i, a, e);
+#else
+	NVDimm->RegisterCallbacks(r, w, i, a);
+#endif
+	
 	FlashTransaction t;
 
 	for (write= 0; write<NUM_WRITES*64; write+=64){

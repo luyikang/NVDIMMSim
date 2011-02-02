@@ -28,6 +28,41 @@ void Controller::returnReadData(const FlashTransaction  &trans){
 	parentNVDIMM->numReads++;
 }
 
+void Controller::returnIdlePower(vector<double> idle_energy) {
+  if(parentNVDIMM->ReturnIdlePower!=NULL){
+                vector<uint64_t> idle_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
+		for(uint i = 0; i < NUM_PACKAGES; i++)
+		  {
+		    idle_power[i] = idle_energy[i] * VCC;
+		  }
+                (*parentNVDIMM->ReturnIdlePower)(parentNVDIMM->systemID, idle_energy, currentClockCycle);
+  }
+}
+
+void Controller::returnAccessPower(vector<double> access_energy) {
+  if(parentNVDIMM->ReturnAccessPower!=NULL){
+                vector<uint64_t> access_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
+		for(uint i = 0; i < NUM_PACKAGES; i++)
+		  {
+		    access_power[i] = access_energy[i] * VCC;
+		  }
+		(*parentNVDIMM->ReturnAccessPower)(parentNVDIMM->systemID, access_energy, currentClockCycle);
+  }
+}
+
+#if GC
+void Controller::returnErasePower(vector<double> erase_energy) {
+  if(parentNVDIMM->ReturnErasePower!=NULL){
+                vector<uint64_t> erase_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
+		for(uint i = 0; i < NUM_PACKAGES; i++)
+		  {
+		    erase_power[i] = erase_energy[i] * VCC;
+		  }
+		(*parentNVDIMM->ReturnErasePower)(parentNVDIMM->systemID, erase_energy, currentClockCycle);
+  }
+}
+#endif
+
 void Controller::receiveFromChannel(ChannelPacket *busPacket){
 	returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->virtualAddress, busPacket->data));
 	delete(busPacket);

@@ -8,7 +8,7 @@
 using namespace NVDSim;
 using namespace std;
 
-Ftl::Ftl(Controller *c, NVDIMM *parent){
+Ftl::Ftl(Controller *c){
 	int numBlocks = NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE;
 
 	offset = log2(NV_PAGE_SIZE);
@@ -39,12 +39,10 @@ Ftl::Ftl(Controller *c, NVDIMM *parent){
 
 	controller = c;
 
-	parentNVDIMM = parent;
-
-	idle_energy = vector<uint64_t>(NUM_PACKAGES, 0.0); 
-	access_energy = vector<uint64_t>(NUM_PACKAGES, 0.0); 
+	idle_energy = vector<double>(NUM_PACKAGES, 0.0); 
+	access_energy = vector<double>(NUM_PACKAGES, 0.0); 
 #if GC
-	erase_energy = vector<uint64_t>(NUM_PACKAGES, 0.0); 
+	erase_energy = vector<double>(NUM_PACKAGES, 0.0); 
 #endif
 
 }
@@ -251,10 +249,18 @@ void Ftl::update(void){
 
 	//update idle energy
 	//since this is already subtracted from the access energies we just do it every time
-	for(int i = 0; i < (NUM_PACKAGES); i++)
+	for(uint i = 0; i < (NUM_PACKAGES); i++)
 	{
 	  idle_energy[i] += ISB2;
 	}
+
+	//place power callbacks to hybrid_system
+	controller->returnIdlePower(idle_energy);
+	controller->returnAccessPower(access_energy);
+
+#if GC
+	controller->returnErasePower(erase_energy);
+#endif
 
 }
 
@@ -335,43 +341,22 @@ void Ftl::runGC(void) {
 }
 #endif
 
-void Ftl::returnIdlePower(void) {
-  if(parentNVDIMM->ReturnIdlePower!=NULL){
-                vector<uint64_t> idle_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
-		for(int i = 0; i < NUM_PACKAGES; i++)
-		  {
-		    idle_power[i] = idle_energy[i] * VCC;
-		  }
-                (*parentNVDIMM->ReturnPowerData)(parentNVDIMM->systemID, idle_power, currentClockCycle);
-  }
-}
-
-void Ftl::returnAccessPower(void) {
-  if(parentNVDIMM->ReturnAccessPower!=NULL){
-                vector<uint64_t> access_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
-		for(int i = 0; i < NUM_PACKAGES; i++)
-		  {
-		    access_power[i] = access_energy[i] * VCC;
-		  }
-		(*parentNVDIMM->ReturnPowerData)(parentNVDIMM->systemID, access_power, currentClockCycle);
-  }
-}
-
-#if GC
-void Ftl::returnErasePower(void) {
-  if(parentNVDIMM->ReturnErasePower!=NULL){
-                vector<uint64_t> erase_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
-		for(int i = 0; i < NUM_PACKAGES; i++)
-		  {
-		    erase_power[i] = erase_energy[i] * VCC;
-		  }
-		(*parentNVDIMM->ReturnPowerData)(parentNVDIMM->systemID, erase_power, currentClockCycle);
-  }
-}
-#endif
-
 uint64_t Ftl::get_ptr(void) {
     // Return a pointer to the current plane.
     return NV_PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
 	   (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
 }
+
+vector<double> Ftl::getIdleEnergy(void) {
+  return idle_energy;
+}
+
+vector<double> Ftl::getAccessEnergy(void) {
+  return access_energy;
+}
+
+#if GC
+vector<double> Ftl::getEraseEnergy(void) {
+  return erase_energy;
+}
+#endif

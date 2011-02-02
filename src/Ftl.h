@@ -10,10 +10,9 @@
 #include "Controller.h"
 
 namespace NVDSim{
-        class NVDIMMl;
 	class Ftl : public SimObj{
 		public:
-                        Ftl(Controller *c, NVDIMM *parent);
+                        Ftl(Controller *c);
 			ChannelPacket *translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr);
 			bool addTransaction(FlashTransaction &t);
 			void update(void);
@@ -22,16 +21,18 @@ namespace NVDSim{
 			bool checkGC(void); 
 			void runGC(void); 
 #endif
-			void returnIdlePower(void);
-			void returnAccessPower(void);
-#if GC
-			void returnErasePower(void);
-#endif
-
 			uint64_t get_ptr(void); 
 			void inc_ptr(void); 
+
+			//Accessors for power data
+			//Writing correct object oriented code up in this piece, what now?
+			vector<double> getIdleEnergy(void);
+			vector<double> getAccessEnergy(void);
+#if GC
+			vector<double> getEraseEnergy(void);
+#endif
+
 			Controller *controller;
-			NVDIMM *parentNVDIMM;
 		private:
 			uint offset,  pageBitWidth, blockBitWidth, planeBitWidth, dieBitWidth, packageBitWidth;
 			uint channel, die, plane, lookupCounter;
@@ -50,10 +51,10 @@ namespace NVDSim{
 
 			// Power Stuff
 			// This is computed per package
-			std::vector<uint64_t> idle_energy;
-			std::vector<uint64_t> access_energy;
+			std::vector<double> idle_energy;
+			std::vector<double> access_energy;
 #if GC
-			std::vector<uint64_t> erase_energy;
+			std::vector<double> erase_energy;
 #endif
 			
 	};

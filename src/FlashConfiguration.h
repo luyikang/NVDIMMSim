@@ -60,6 +60,9 @@
 	#endif
 #endif
 
+// Power Callback Option
+#define Power_Callback 0;
+
 extern std::string DEVICE_TYPE;
 extern uint NUM_PACKAGES;
 extern uint DIES_PER_PACKAGE;
@@ -87,13 +90,13 @@ extern uint LOOKUP_TIME;
 extern float CYCLE_TIME;
 
 // Power stuff
-extern uint ICC1;
-extern uint ICC2;
-extern uint ICC3;
-extern uint ISB2;
-extern uint ILI;
-extern uint ILO;
-extern uint VCC;
+extern double ICC1;
+extern double ICC2;
+extern double ICC3;
+extern double ISB2;
+extern double ILI;
+extern double ILO;
+extern double VCC;
 
 extern uint OUTPUT;
 
