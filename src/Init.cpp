@@ -202,6 +202,7 @@ namespace NVDSim
 						{
 							DEBUG("\t - SETTING "<<configMap[i].iniKey<<"="<<doubleValue);
 						}
+					break;
 					case STRING:
 						*((string *)configMap[i].variablePtr) = string(valueString);
 						if (DEBUG_INIT)
