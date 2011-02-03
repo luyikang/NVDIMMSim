@@ -16,11 +16,8 @@ namespace NVDSim{
 			ChannelPacket *translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr);
 			bool addTransaction(FlashTransaction &t);
 			void update(void);
-
-#if GC
 			bool checkGC(void); 
 			void runGC(void); 
-#endif
 			uint64_t get_ptr(void); 
 			void inc_ptr(void); 
 
@@ -28,9 +25,7 @@ namespace NVDSim{
 			//Writing correct object oriented code up in this piece, what now?
 			vector<double> getIdleEnergy(void);
 			vector<double> getAccessEnergy(void);
-#if GC
 			vector<double> getEraseEnergy(void);
-#endif
 
 			Controller *controller;
 		private:
@@ -40,11 +35,7 @@ namespace NVDSim{
 			FlashTransaction currentTransaction;
 			uint busy;
 			std::unordered_map<uint64_t,uint64_t> addressMap;
-			
-#if GC
 			std::vector<vector<bool>> dirty;
-#endif
-
 			std::vector<vector<bool>> used;
 			std::list<FlashTransaction> transactionQueue;
 			std::unordered_map<uint64_t,uint64_t> erase_counter;
@@ -53,9 +44,7 @@ namespace NVDSim{
 			// This is computed per package
 			std::vector<double> idle_energy;
 			std::vector<double> access_energy;
-#if GC
 			std::vector<double> erase_energy;
-#endif
 			
 	};
 }

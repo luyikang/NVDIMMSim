@@ -24,14 +24,10 @@ namespace NVDSim{
 			bool addTransaction(bool isWrite, uint64_t addr);
 			void printStats(void);
 			string SetOutputFileName(string tracefilename);
-
-#if GC
 			void RegisterCallbacks(Callback_t *readDone, Callback_t *writeDone, Callback_v *idlePower,
 					       Callback_v *accessPower, Callback_v *erasePower);
-#else
 			void RegisterCallbacks(Callback_t *readDone, Callback_t *writeDone, Callback_v *idlePower,
 					       Callback_v *accessPower);
-#endif
 
 			Controller *controller;
 			Ftl *ftl;

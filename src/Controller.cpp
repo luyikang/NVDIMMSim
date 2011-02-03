@@ -50,7 +50,6 @@ void Controller::returnAccessPower(vector<double> access_energy) {
   }
 }
 
-#if GC
 void Controller::returnErasePower(vector<double> erase_energy) {
   if(parentNVDIMM->ReturnErasePower!=NULL){
                 vector<uint64_t> erase_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
@@ -61,7 +60,6 @@ void Controller::returnErasePower(vector<double> erase_energy) {
 		(*parentNVDIMM->ReturnErasePower)(parentNVDIMM->systemID, erase_energy, currentClockCycle);
   }
 }
-#endif
 
 void Controller::receiveFromChannel(ChannelPacket *busPacket){
 	returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->virtualAddress, busPacket->data));

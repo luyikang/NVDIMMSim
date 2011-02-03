@@ -25,9 +25,7 @@ namespace NVDSim{
 			void returnReadData(const FlashTransaction &trans);
 			void returnIdlePower(vector<double> idle_energy);
 			void returnAccessPower(vector<double> access_energy);
-#if GC
 			void returnErasePower(vector<double> erase_energy);
-#endif
 
 			void attachChannel(Channel *channel);
 			void receiveFromChannel(ChannelPacket *busPacket);

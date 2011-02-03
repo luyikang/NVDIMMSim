@@ -15,7 +15,7 @@
 #include "TraceBasedSim.h"
 
 #define NUM_WRITES 100
-#define SIM_CYCLES 10000000
+#define SIM_CYCLES 1000000
 
 /*temporary assignments for externed variables.
  * This should really be done with another class
@@ -70,14 +70,14 @@ void test_obj::access_cb(uint id, vector<double> data, uint64_t cycle){
 	}
 }
 
-#if GC
+
 void test_obj::erase_cb(uint id, vector<double> data, uint64_t cycle){
         cout<<"[Callback] Erase Power Data for cycle: "<<cycle<<endl;
 	for(int i = 0; i < NUM_PACKAGES; i++){
 	  cout<<"    Package: "<<i<<" Erase Power: "<<data[i]<<endl;
 	}
 }
-#endif
+
 
 void test_obj::run_test(void){
 	clock_t start= clock(), end;
@@ -89,12 +89,15 @@ void test_obj::run_test(void){
 	Callback_t *w = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::write_cb);
 	Callback_v *i = new Callback<test_obj, void, uint, vector<double>, uint64_t>(this, &test_obj::idle_cb);
 	Callback_v *a = new Callback<test_obj, void, uint, vector<double>, uint64_t>(this, &test_obj::access_cb);
-#if GC
-	Callback_v *e = new Callback<test_obj, void, uint, vector<double>, uint64_t>(this, &test_obj::erase_cb);
-	NVDimm->RegisterCallbacks(r, w, i, a, e);
-#else
-	NVDimm->RegisterCallbacks(r, w, i, a);
-#endif
+	if( GARBAGE_COLLECT == 1)
+	{
+	  Callback_v *e = new Callback<test_obj, void, uint, vector<double>, uint64_t>(this, &test_obj::erase_cb);
+	  NVDimm->RegisterCallbacks(r, w, i, a, e);
+	}
+	else
+	{
+	  NVDimm->RegisterCallbacks(r, w, i, a);
+	}
 	
 	FlashTransaction t;
 

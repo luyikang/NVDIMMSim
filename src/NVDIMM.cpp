@@ -46,7 +46,7 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	PRINT("Total Size: "<<TOTAL_SIZE);
 	PRINT("Packages/Channels: "<<NUM_PACKAGES);
 	PRINT("Page size (KB): "<<NV_PAGE_SIZE);
-	if(GC == 1)
+	if(GARBAGE_COLLECT == 1)
 	{
 	  PRINT("Device is using garbage collection");
 	}
@@ -62,7 +62,7 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	PRINT("Channel latency for a command: "<<COMMAND_TIME);
 	PRINT("");
 
-	if(GC == 0 && (DEVICE_TYPE == "NAND" || DEVICE_TYPE == "NOR"))
+	if(GARBAGE_COLLECT == 0 && (DEVICE_TYPE == "NAND" || DEVICE_TYPE == "NOR"))
 	{
 	  ERROR("Device is Flash and must use garbage collection");
 	  exit(-1);
@@ -118,8 +118,6 @@ string NVDIMM::SetOutputFileName(string tracefilename){
 	return "";
 }
 
-#if GC
-
 void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback_v *idlePower, Callback_v *accessPower, Callback_v *erasePower){
 	ReturnReadData = readCB;
 	WriteDataDone = writeCB;
@@ -128,16 +126,12 @@ void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback
 	ReturnErasePower = erasePower;
 }
 
-#else
-
 void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback_v *idlePower, Callback_v *accessPower){
 	ReturnReadData = readCB;
 	WriteDataDone = writeCB;
 	ReturnIdlePower = idlePower;
 	ReturnAccessPower = accessPower;
 }
-
-#endif
 
 void NVDIMM::printStats(void){
 
@@ -152,46 +146,52 @@ void NVDIMM::printStats(void){
 	// Energy values from the ftl
 	vector<double> idle_energy = ftl->getIdleEnergy();
 	vector<double> access_energy = ftl->getAccessEnergy();
-#if GC
 	vector<double> erase_energy = ftl->getEraseEnergy();
-#endif
 	
 	// Average power used
 	vector<double> ave_idle_power = vector<double>(NUM_PACKAGES, 0.0);
 	vector<double> ave_access_power = vector<double>(NUM_PACKAGES, 0.0);	
-#if GC
 	vector<double> ave_erase_power = vector<double>(NUM_PACKAGES, 0.0);
-#endif
 	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
 
 	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{
-#if GC
-	  total_power[i] = (idle_energy[i] + access_energy[i] + erase_energy[i]) * VCC;
-#else
-	  total_power[i] = (idle_energy[i] + access_energy[i]) * VCC;
-#endif
+	  if(GARBAGE_COLLECT == 1)
+	  {
+	    total_power[i] = (idle_energy[i] + access_energy[i] + erase_energy[i]) * VCC;
+	  }
+	  else
+	  {
+	    total_power[i] = (idle_energy[i] + access_energy[i]) * VCC;
+	  }
 	  ave_idle_power[i] = (idle_energy[i] * VCC) / currentClockCycle;
 	  ave_access_power[i] = (access_energy[i] * VCC) / currentClockCycle;
-#if GC
 	  ave_erase_power[i] = (erase_energy[i] * VCC) / currentClockCycle;
-#endif
 	  average_power[i] = total_power[i] / currentClockCycle;
 	}
 
+	cout<<endl;
 	cout<<"Power Data: "<<endl;
 	cout<<"========================"<<endl;
 
 	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{
 	    cout<<"Package: "<<i<<endl;
-	    cout<<"Total Power: "<<total_power[i]<<endl;
-	    cout<<"Average Idle Power: "<<ave_idle_power[i]<<endl;
-	    cout<<"Average Access Power: "<<ave_access_power[i]<<endl;
-#if GC
-	    cout<<"Average Erase Power: "<<ave_erase_power[i]<<endl;
-#endif
-	    cout<<"Average Power: "<<average_power[i]<<endl;
+	    cout<<"Accumulated Idle Power: "<<(idle_energy[i] * VCC)<<"mW"<<endl;
+	    cout<<"Accumulated Access Power: "<<(access_energy[i] * VCC)<<"mW"<<endl;
+	    if( GARBAGE_COLLECT == 1)
+	    {
+	      cout<<"Accumulated Erase Power: "<<(erase_energy[i] * VCC)<<"mW"<<endl;
+	    }
+	    cout<<"Total Power: "<<total_power[i]<<"mW"<<endl;
+	    cout<<endl;
+	    cout<<"Average Idle Power: "<<ave_idle_power[i]<<"mW"<<endl;
+	    cout<<"Average Access Power: "<<ave_access_power[i]<<"mW"<<endl;
+	    if( GARBAGE_COLLECT == 1)
+	    {
+	      cout<<"Average Erase Power: "<<ave_erase_power[i]<<"mW"<<endl;
+	    }
+	    cout<<"Average Power: "<<average_power[i]<<"mW"<<endl;
 	    cout<<endl;
 	}
 }

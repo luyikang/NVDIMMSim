@@ -61,7 +61,7 @@
 #endif
 
 // Power Callback Option
-#define Power_Callback 0;
+#define Power_Callback 0
 
 extern std::string DEVICE_TYPE;
 extern uint NUM_PACKAGES;
@@ -71,7 +71,10 @@ extern uint BLOCKS_PER_PLANE;
 extern uint PAGES_PER_BLOCK;
 extern uint NV_PAGE_SIZE;
 // does the device need garbage collection 
-extern uint GC;
+extern bool GARBAGE_COLLECT;
+
+#define GC GARBAGE_COLLECT
+
 
 #define BLOCK_SIZE (NV_PAGE_SIZE * PAGES_PER_BLOCK)
 #define PLANE_SIZE (NV_PAGE_SIZE * BLOCKS_PER_PLANE * PAGES_PER_BLOCK)

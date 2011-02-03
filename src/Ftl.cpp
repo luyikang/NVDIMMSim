@@ -1,5 +1,5 @@
 //Ftl.cpp
-//class file for ftl
+//class file for GCftl
 //
 #include "Ftl.h"
 #include "ChannelPacket.h"
@@ -27,9 +27,10 @@ Ftl::Ftl(Controller *c){
 
 	addressMap = std::unordered_map<uint64_t, uint64_t>();
 	
-#if GC
-	dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
-#endif
+	if(GARBAGE_COLLECT == 1)
+	{
+	  dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
+        }
 
         used = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
 	
@@ -41,9 +42,7 @@ Ftl::Ftl(Controller *c){
 
 	idle_energy = vector<double>(NUM_PACKAGES, 0.0); 
 	access_energy = vector<double>(NUM_PACKAGES, 0.0); 
-#if GC
 	erase_energy = vector<double>(NUM_PACKAGES, 0.0); 
-#endif
 
 }
 
@@ -110,9 +109,10 @@ void Ftl::update(void){
 			for (page = 0; page < PAGES_PER_BLOCK; page++) {
 			  used[block][page] = false;
 			  used_page_count--;
-#if GC
-			  dirty[block][page] = false;
-#endif
+			  if(GARBAGE_COLLECT == 1)
+			  {
+			    dirty[block][page] = false;
+			  }
 			}
 
 			// Remove from erase counter map.
@@ -139,13 +139,16 @@ void Ftl::update(void){
 					break;
 				case DATA_WRITE:
 				        if (addressMap.find(vAddr) != addressMap.end()){
-#if GC
-					   dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
-#else
+					  if (GARBAGE_COLLECT == 1)
+					  {
+					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
+					  }
+					  else
+					  {
 					  // we're going to write this data somewhere else for wear-leveling purposes however we will probably 
 					  // want to reuse this block for something at some later time so mark it as unused because it is
 					   used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = false;
-#endif
+					  }
 					}
 				          
 					//look for first free physical page starting at the write pointer
@@ -203,7 +206,8 @@ void Ftl::update(void){
 					break;
 
 				case BLOCK_ERASE:
-#if GC
+				  if( GARBAGE_COLLECT == 1)
+				  {
 				        // Note: For this command, vAddr refers to the block number to erase.
 					erase_counter[vAddr] = 1000000; // Initially hardcoded as 1.5 ms.
 					//update erase energy figures
@@ -211,10 +215,12 @@ void Ftl::update(void){
 					controller->addPacket(commandPacket);
 					erase_energy[commandPacket->package] += (ICC3 - ISB2) * ERASE_TIME/2;
 					break;
-#else
+				  }
+				  else
+				  {
 				        ERROR("Called Block erase on PCM memory which does not need this");
-					break;				
-#endif
+					break;	
+				  }			
 				default:
 					ERROR("Transaction in Ftl that isn't a read or write... What?");
 					exit(1);
@@ -236,15 +242,13 @@ void Ftl::update(void){
 			lookupCounter = LOOKUP_TIME;
 		}
 		// Should not need to do garbage collection for PCM
-#if GC
-		else {
+		else if(GARBAGE_COLLECT == 1){
 			// Check to see if GC needs to run.
 			if (checkGC()) {
 				// Run the GC.
 				runGC();
 			}
 		}
-#endif
 	}
 
 	//update idle energy
@@ -255,16 +259,17 @@ void Ftl::update(void){
 	}
 
 	//place power callbacks to hybrid_system
+#if Power_Callback
 	controller->returnIdlePower(idle_energy);
 	controller->returnAccessPower(access_energy);
-
-#if GC
-	controller->returnErasePower(erase_energy);
+	if( GARBAGE_COLLECT == 1)
+	{
+	  controller->returnErasePower(erase_energy);
+	}
 #endif
 
 }
 
-#if GC
 bool Ftl::checkGC(void){
 	//uint64_t block, page, count = 0;
 
@@ -339,7 +344,6 @@ void Ftl::runGC(void) {
 	addTransaction(trans);
 
 }
-#endif
 
 uint64_t Ftl::get_ptr(void) {
     // Return a pointer to the current plane.
@@ -355,8 +359,7 @@ vector<double> Ftl::getAccessEnergy(void) {
   return access_energy;
 }
 
-#if GC
 vector<double> Ftl::getEraseEnergy(void) {
   return erase_energy;
 }
-#endif
+
