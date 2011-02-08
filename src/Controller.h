@@ -20,7 +20,8 @@ namespace NVDSim{
 	class NVDIMM;
 	class Controller : public SimObj{
 		public:
-			Controller(NVDIMM* parent);
+	                Controller(NVDIMM* parent);
+
 			void attachPackages(vector<Package> *packages);
 			void returnReadData(const FlashTransaction &trans);
 			void returnIdlePower(vector<double> idle_energy);
@@ -31,7 +32,9 @@ namespace NVDSim{
 			void receiveFromChannel(ChannelPacket *busPacket);
 			bool addPacket(ChannelPacket *p);
 			void update(void);
+
 			NVDIMM *parentNVDIMM;
+
 		private:
 			std::list<FlashTransaction> returnTransaction;
 			std::vector<Package> *packages;

@@ -12,7 +12,7 @@
 namespace NVDSim{
 	class Ftl : public SimObj{
 		public:
-                        Ftl(Controller *c);
+			Ftl(Controller *c);
 			ChannelPacket *translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr);
 			bool addTransaction(FlashTransaction &t);
 			void update(void);
@@ -38,14 +38,12 @@ namespace NVDSim{
 			std::vector<vector<bool>> dirty;
 			std::vector<vector<bool>> used;
 			std::list<FlashTransaction> transactionQueue;
-			std::unordered_map<uint64_t,uint64_t> erase_counter;
 
 			// Power Stuff
 			// This is computed per package
 			std::vector<double> idle_energy;
 			std::vector<double> access_energy;
 			std::vector<double> erase_energy;
-			
 	};
 }
 #endif

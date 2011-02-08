@@ -28,13 +28,8 @@ namespace NVDSim{
 			uint dataCyclesLeft;
 			std::queue<ChannelPacket *> returnDataPackets;
 			std::vector<Plane> planes;
-			//ChannelPacket *currentCommand;
 			std::vector<ChannelPacket *> currentCommands;
 			std::vector<uint> controlCyclesLeft;
-
-			//for first implementation without contention
-			//std::queue<ChannelPacket *> commands;
-			//uint controlCyclesLeft;
 	};
 }
 #endif

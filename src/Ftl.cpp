@@ -47,10 +47,11 @@ Ftl::Ftl(Controller *c){
 }
 
 ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr){
-  uint package, die, plane, block, page;
-  uint64_t tempA, tempB, physicalAddress = pAddr;
 
-	if (physicalAddress > TOTAL_SIZE*1024 - 1 || physicalAddress < 0){
+	uint package, die, plane, block, page;
+	uint64_t tempA, tempB, physicalAddress = pAddr;
+
+	if (physicalAddress > TOTAL_SIZE - 1 || physicalAddress < 0){
 		ERROR("Inavlid address in Ftl: "<<physicalAddress);
 		exit(1);
 	}
@@ -93,45 +94,18 @@ bool Ftl::addTransaction(FlashTransaction &t){
 
 void Ftl::update(void){
         uint64_t block, page, start;
-
-	// Decrement block erase counters
-	for (std::unordered_map<uint64_t,uint64_t>::iterator it = erase_counter.begin(); it != erase_counter.end(); it++) {
-
-		// Decrement the counter.
-		uint64_t cnt = (*it).second;
-		cnt--;
-		(*it).second = cnt;
-
-		// Check to see if done.
-		if (cnt == 0) {
-			// Set all the bits in the page to be clean.
-			block = (*it).first;
-			for (page = 0; page < PAGES_PER_BLOCK; page++) {
-			  used[block][page] = false;
-			  used_page_count--;
-			  if(GARBAGE_COLLECT == 1)
-			  {
-			    dirty[block][page] = false;
-			  }
-			}
-
-			// Remove from erase counter map.
-			erase_counter.erase(it);
-		}
-	}
-
 	if (busy) {
 		if (lookupCounter == 0){
 			uint64_t vAddr = currentTransaction.address, pAddr;
 			bool done = false;
 			ChannelPacket *commandPacket, *dataPacket;
-
+			
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
 					if (addressMap.find(vAddr) == addressMap.end()){
 						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
 					} else {
-					        commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
+						commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
 						controller->addPacket(commandPacket);
 						//update access energy figures
 						access_energy[commandPacket->package] += (ICC1 - ISB2) * READ_TIME/2;
@@ -150,12 +124,12 @@ void Ftl::update(void){
 					   used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = false;
 					  }
 					}
+<<<<<<< HEAD
 				          
 					//look for first free physical page starting at the write pointer
-					start = NV_PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * 
-						(die + NUM_PACKAGES * channel));//yuck!
+	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
 
-					for (block = start / BLOCK_SIZE ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++){
+					for (block = start ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++){
 					  for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
 						if (!used[block][page]){
 						        pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
@@ -211,7 +185,7 @@ void Ftl::update(void){
 				        // Note: For this command, vAddr refers to the block number to erase.
 					erase_counter[vAddr] = 1000000; // Initially hardcoded as 1.5 ms.
 					//update erase energy figures
-					commandPacket = Ftl::translate(ERASE, vAddr, addressMap[vAddr]);
+					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
 					controller->addPacket(commandPacket);
 					erase_energy[commandPacket->package] += (ICC3 - ISB2) * ERASE_TIME/2;
 					break;
@@ -228,14 +202,12 @@ void Ftl::update(void){
 			}
 			transactionQueue.pop_front();
 			busy = 0;
-			lookupCounter = -1;
 		} 
 		else
 			lookupCounter--;
 	} // if busy
 	else {
 		// Not currently busy.
-
 		if (!transactionQueue.empty()) {
 			busy = 1;
 			currentTransaction = transactionQueue.front();
@@ -313,7 +285,7 @@ void Ftl::runGC(void) {
 	for (page = 0; page < PAGES_PER_BLOCK; page++) {
 	  if (used[dirty_block][page] == true && dirty[dirty_block][page] == false) {
 	    	// Compute the physical address to move.
-		pAddr = (dirty_block * BLOCK_SIZE + page * NV_PAGE_SIZE) * 1024;
+		pAddr = (dirty_block * BLOCK_SIZE + page * NV_PAGE_SIZE);
 
 		// Do a reverse lookup for the virtual page address.
 		// This is slow, but the alternative is maintaining a full reverse lookup map.

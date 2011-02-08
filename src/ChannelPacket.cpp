@@ -6,9 +6,9 @@
 using namespace NVDSim;
 using namespace std;
 
-ChannelPacket::ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr,  uint page_num, uint block_num, uint plane_num, uint die_num, uint package_num, void *dat)
+ChannelPacket::ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr, uint page_num, uint block_num, uint plane_num, uint die_num, uint package_num, void *dat)
 {
-  virtualAddress = virtualAddr;
+        virtualAddress = virtualAddr;
 	physicalAddress = physicalAddr;
 	busPacketType = packtype;
 	data = dat;
@@ -50,7 +50,7 @@ void ChannelPacket::print(uint64_t currentClockCycle){
 
 void ChannelPacket::printData(const void *data) 
 {
-	/*if (data == NULL) 
+	if (data == NULL) 
 	{
 		PRINTN("NO DATA");
 		return;
@@ -60,5 +60,5 @@ void ChannelPacket::printData(const void *data)
 	{
 		PRINTN(((uint64_t *)data)[i]);
 	}
-	PRINTN("'" << dec);*/
+	PRINTN("'" << dec);
 }
