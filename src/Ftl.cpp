@@ -123,9 +123,7 @@ void Ftl::update(void){
 					  // want to reuse this block for something at some later time so mark it as unused because it is
 					   used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = false;
 					  }
-					}
-<<<<<<< HEAD
-				          
+					}			          
 					//look for first free physical page starting at the write pointer
 	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
 
@@ -182,9 +180,7 @@ void Ftl::update(void){
 				case BLOCK_ERASE:
 				  if( GARBAGE_COLLECT == 1)
 				  {
-				        // Note: For this command, vAddr refers to the block number to erase.
-					erase_counter[vAddr] = 1000000; // Initially hardcoded as 1.5 ms.
-					//update erase energy figures
+				        //update erase energy figures
 					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
 					controller->addPacket(commandPacket);
 					erase_energy[commandPacket->package] += (ICC3 - ISB2) * ERASE_TIME/2;
