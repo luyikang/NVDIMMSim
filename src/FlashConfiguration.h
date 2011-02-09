@@ -60,8 +60,9 @@
 	#endif
 #endif
 
-// Power Callback Option
+// Power Callback Options
 #define Power_Callback 0
+#define Verbose_Power_Callback 0
 
 extern std::string DEVICE_TYPE;
 extern uint NUM_PACKAGES;

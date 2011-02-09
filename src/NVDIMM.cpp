@@ -217,3 +217,12 @@ void NVDIMM::update(void){
 
 	//cout << "NVDIMM successfully updated" << endl;
 }
+
+void NVDIMM::powerCallback(void){
+  controller->returnIdlePower(ftl->getIdleEnergy());
+  controller->returnAccessPower(ftl->getAccessEnergy());
+  if( GARBAGE_COLLECT == 1)
+  {
+    controller->returnErasePower(ftl->getEraseEnergy());
+  }
+}

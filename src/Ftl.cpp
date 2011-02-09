@@ -227,7 +227,7 @@ void Ftl::update(void){
 	}
 
 	//place power callbacks to hybrid_system
-#if Power_Callback
+#if Verbose_Power_Callback
 	controller->returnIdlePower(idle_energy);
 	controller->returnAccessPower(access_energy);
 	if( GARBAGE_COLLECT == 1)
@@ -330,4 +330,6 @@ vector<double> Ftl::getAccessEnergy(void) {
 vector<double> Ftl::getEraseEnergy(void) {
   return erase_energy;
 }
+
+
 

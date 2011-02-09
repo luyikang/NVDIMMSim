@@ -28,6 +28,7 @@ namespace NVDSim{
 					       Callback_v *accessPower, Callback_v *erasePower);
 			void RegisterCallbacks(Callback_t *readDone, Callback_t *writeDone, Callback_v *idlePower,
 					       Callback_v *accessPower);
+			void powerCallback(void);
 
 			Controller *controller;
 			Ftl *ftl;
