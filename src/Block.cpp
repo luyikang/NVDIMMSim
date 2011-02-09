@@ -27,12 +27,15 @@ void Block::write(uint page_num, void *data){
 	if (page_data.find(page_num) == page_data.end()){
 		page_data[page_num]= data;
 	} else{
-#ifdef GC
+	  if(GARBAGE_COLLECT == 1)
+	  {
 		ERROR("Request to write page "<<page_num<<" failed: page has been written to and not erased"); 
 		exit(1);
-#else
+	  }
+	  else
+          {
 		page_data[page_num]= data;
-#endif
+	  }
 	}
 }
 
