@@ -118,19 +118,10 @@ string NVDIMM::SetOutputFileName(string tracefilename){
 	return "";
 }
 
-void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback_v *idlePower, Callback_v *accessPower, Callback_v *erasePower){
+void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback_v *Power){
 	ReturnReadData = readCB;
 	WriteDataDone = writeCB;
-	ReturnIdlePower = idlePower;
-	ReturnAccessPower = accessPower;
-	ReturnErasePower = erasePower;
-}
-
-void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback_v *idlePower, Callback_v *accessPower){
-	ReturnReadData = readCB;
-	WriteDataDone = writeCB;
-	ReturnIdlePower = idlePower;
-	ReturnAccessPower = accessPower;
+	ReturnPowerData = Power;
 }
 
 void NVDIMM::printStats(void){
@@ -219,10 +210,9 @@ void NVDIMM::update(void){
 }
 
 void NVDIMM::powerCallback(void){
-  controller->returnIdlePower(ftl->getIdleEnergy());
-  controller->returnAccessPower(ftl->getAccessEnergy());
   if( GARBAGE_COLLECT == 1)
   {
-    controller->returnErasePower(ftl->getEraseEnergy());
+    controller->returnPowerData(ftl->getIdleEnergy(), ftl->getAccessEnergy(), ftl->getEraseEnergy());
   }
+  controller->returnPowerData(ftl->getIdleEnergy(), ftl->getAccessEnergy());
 }

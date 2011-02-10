@@ -14,7 +14,7 @@
 #include <time.h>
 #include "TraceBasedSim.h"
 
-#define NUM_WRITES 100
+#define NUM_WRITES 10
 #define SIM_CYCLES 1000000000
 
 /*temporary assignments for externed variables.
@@ -56,28 +56,14 @@ void test_obj::write_cb(uint id, uint64_t address, uint64_t cycle){
 	cout<<"[Callback] write complete: "<<id<<" "<<address<<" cycle="<<cycle<<endl;
 }
 
-void test_obj::idle_cb(uint id, vector<double> data, uint64_t cycle){
-        cout<<"[Callback] Idle Power Data for cycle: "<<cycle<<endl;
+void test_obj::power_cb(uint id, vector<vector<double>> data, uint64_t cycle){
+        cout<<"[Callback] Power Data for cycle: "<<cycle<<endl;
 	for(int i = 0; i < NUM_PACKAGES; i++){
-	  cout<<"    Package: "<<i<<" Idle Power: "<<data[i]<<endl;
+	  cout<<"    Package: "<<i<<" Idle Power: "<<data[0][i]<<endl;
+	  cout<<"    Package: "<<i<<" Access Power: "<<data[1][i]<<endl;
+	  cout<<"    Package: "<<i<<" Erase Power: "<<data[2][i]<<endl;
 	}
 }
-
-void test_obj::access_cb(uint id, vector<double> data, uint64_t cycle){
-        cout<<"[Callback] Access Power Data for cycle: "<<cycle<<endl;
-	for(int i = 0; i < NUM_PACKAGES; i++){
-	  cout<<"    Package: "<<i<<" Access Power: "<<data[i]<<endl;
-	}
-}
-
-
-void test_obj::erase_cb(uint id, vector<double> data, uint64_t cycle){
-        cout<<"[Callback] Erase Power Data for cycle: "<<cycle<<endl;
-	for(int i = 0; i < NUM_PACKAGES; i++){
-	  cout<<"    Package: "<<i<<" Erase Power: "<<data[i]<<endl;
-	}
-}
-
 
 void test_obj::run_test(void){
 	clock_t start= clock(), end;
@@ -87,17 +73,8 @@ void test_obj::run_test(void){
 	typedef CallbackBase<void,uint,uint64_t,uint64_t> Callback_t;
 	Callback_t *r = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::read_cb);
 	Callback_t *w = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::write_cb);
-	Callback_v *i = new Callback<test_obj, void, uint, vector<double>, uint64_t>(this, &test_obj::idle_cb);
-	Callback_v *a = new Callback<test_obj, void, uint, vector<double>, uint64_t>(this, &test_obj::access_cb);
-	if( GARBAGE_COLLECT == 1)
-	{
-	  Callback_v *e = new Callback<test_obj, void, uint, vector<double>, uint64_t>(this, &test_obj::erase_cb);
-	  NVDimm->RegisterCallbacks(r, w, i, a, e);
-	}
-	else
-	{
-	  NVDimm->RegisterCallbacks(r, w, i, a);
-	}
+	Callback_v *p = new Callback<test_obj, void, uint, vector<vector<double>>, uint64_t>(this, &test_obj::power_cb);
+	NVDimm->RegisterCallbacks(r, w, p);
 	
 	FlashTransaction t;
 
@@ -126,6 +103,6 @@ void test_obj::run_test(void){
 	NVDimm->printStats();
 	cout<<"Execution time: "<<(end-start)<<" cycles. "<<(double)(end-start)/CLOCKS_PER_SEC<<" seconds.\n";
 
-	//cout<<"Callback test: "<<endl;
-	//NVDimm->powerCallback();
+	cout<<"Callback test: "<<endl;
+	NVDimm->powerCallback();
 }

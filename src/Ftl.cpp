@@ -228,11 +228,13 @@ void Ftl::update(void){
 
 	//place power callbacks to hybrid_system
 #if Verbose_Power_Callback
-	controller->returnIdlePower(idle_energy);
-	controller->returnAccessPower(access_energy);
 	if( GARBAGE_COLLECT == 1)
 	{
-	  controller->returnErasePower(erase_energy);
+	  controller->returnPowerData(idle_energy, access_energy, erase_energy);
+	}
+	else
+	{
+	  controller->returnPowerData(idle_energy, access_energy);
 	}
 #endif
 

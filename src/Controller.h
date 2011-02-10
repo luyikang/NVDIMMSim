@@ -24,10 +24,11 @@ namespace NVDSim{
 
 			void attachPackages(vector<Package> *packages);
 			void returnReadData(const FlashTransaction &trans);
-			void returnIdlePower(vector<double> idle_energy);
-			void returnAccessPower(vector<double> access_energy);
-			void returnErasePower(vector<double> erase_energy);
-
+			void returnPowerData(vector<double> idle_energy,
+					 vector<double> access_energy,
+					 vector<double> erase_energy);
+			void returnPowerData(vector<double> idle_energy,
+					 vector<double> access_energy);
 			void attachChannel(Channel *channel);
 			void receiveFromChannel(ChannelPacket *busPacket);
 			bool addPacket(ChannelPacket *p);

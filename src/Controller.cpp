@@ -28,36 +28,29 @@ void Controller::returnReadData(const FlashTransaction  &trans){
 	parentNVDIMM->numReads++;
 }
 
-void Controller::returnIdlePower(vector<double> idle_energy) {
-  if(parentNVDIMM->ReturnIdlePower!=NULL){
-                vector<uint64_t> idle_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
+void Controller::returnPowerData(vector<double> idle_energy, vector<double> access_energy, vector<double> erase_energy) {
+  if(parentNVDIMM->ReturnPowerData!=NULL){
+                vector<vector<double>> power_data = vector<vector<double>>(3, vector<double>(NUM_PACKAGES, 0.0));
 		for(uint i = 0; i < NUM_PACKAGES; i++)
 		  {
-		    idle_power[i] = idle_energy[i] * VCC;
+		       power_data[0][i] = idle_energy[i] * VCC;
+		       power_data[1][i] = access_energy[i] * VCC;
+		       power_data[2][i] = erase_energy[i] * VCC;
 		  }
-                (*parentNVDIMM->ReturnIdlePower)(parentNVDIMM->systemID, idle_energy, currentClockCycle);
+		(*parentNVDIMM->ReturnPowerData)(parentNVDIMM->systemID, power_data, currentClockCycle);
   }
 }
 
-void Controller::returnAccessPower(vector<double> access_energy) {
-  if(parentNVDIMM->ReturnAccessPower!=NULL){
-                vector<uint64_t> access_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
+void Controller::returnPowerData(vector<double> idle_energy, vector<double> access_energy) {
+  if(parentNVDIMM->ReturnPowerData!=NULL){
+                vector<vector<double>> power_data = vector<vector<double>>(3, vector<double>(NUM_PACKAGES, 0.0));
 		for(uint i = 0; i < NUM_PACKAGES; i++)
 		  {
-		    access_power[i] = access_energy[i] * VCC;
+		       power_data[0][i] = idle_energy[i] * VCC;
+		       power_data[1][i] = access_energy[i] * VCC;
+		       power_data[2][i] = 0;
 		  }
-		(*parentNVDIMM->ReturnAccessPower)(parentNVDIMM->systemID, access_energy, currentClockCycle);
-  }
-}
-
-void Controller::returnErasePower(vector<double> erase_energy) {
-  if(parentNVDIMM->ReturnErasePower!=NULL){
-                vector<uint64_t> erase_power = vector<uint64_t>(NUM_PACKAGES, 0.0);
-		for(uint i = 0; i < NUM_PACKAGES; i++)
-		  {
-		    erase_power[i] = erase_energy[i] * VCC;
-		  }
-		(*parentNVDIMM->ReturnErasePower)(parentNVDIMM->systemID, erase_energy, currentClockCycle);
+		(*parentNVDIMM->ReturnPowerData)(parentNVDIMM->systemID, power_data, currentClockCycle);
   }
 }
 
