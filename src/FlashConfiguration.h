@@ -61,7 +61,7 @@
 #endif
 
 // Power Callback Options
-#define Power_Callback 0
+#define Power_Callback 1
 #define Verbose_Power_Callback 0
 
 extern std::string DEVICE_TYPE;
