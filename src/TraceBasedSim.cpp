@@ -59,9 +59,9 @@ void test_obj::write_cb(uint id, uint64_t address, uint64_t cycle){
 void test_obj::power_cb(uint id, vector<vector<double>> data, uint64_t cycle){
         cout<<"[Callback] Power Data for cycle: "<<cycle<<endl;
 	for(int i = 0; i < NUM_PACKAGES; i++){
-	  cout<<"    Package: "<<i<<" Idle Power: "<<data[0][i]<<endl;
-	  cout<<"    Package: "<<i<<" Access Power: "<<data[1][i]<<endl;
-	  cout<<"    Package: "<<i<<" Erase Power: "<<data[2][i]<<endl;
+	  cout<<"    Package: "<<i<<" Idle Energy: "<<data[0][i]<<"\n";
+	  cout<<"    Package: "<<i<<" Access Energy: "<<data[1][i]<<"\n";
+	  cout<<"    Package: "<<i<<" Erase Energy: "<<data[2][i]<<"\n";
 	}
 }
 
@@ -103,6 +103,6 @@ void test_obj::run_test(void){
 	NVDimm->printStats();
 	cout<<"Execution time: "<<(end-start)<<" cycles. "<<(double)(end-start)/CLOCKS_PER_SEC<<" seconds.\n";
 
-	cout<<"Callback test: "<<endl;
+	cout<<"Callback test: \n";
 	NVDimm->powerCallback();
 }
