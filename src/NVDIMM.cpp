@@ -126,9 +126,9 @@ void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback
 
 void NVDIMM::printStats(void){
 
-	cout<<"Reads completed: "<<numReads<<endl;
-	cout<<"Writes completed: "<<numWrites<<endl;
-	cout<<"Erases completed: "<<numErases<<endl;
+	cout<<"Reads completed: "<<numReads<<"\n";
+	cout<<"Writes completed: "<<numWrites<<"\n";
+	cout<<"Erases completed: "<<numErases<<"\n";
 
 	// Power stuff
 	// Total power used
@@ -160,7 +160,7 @@ void NVDIMM::printStats(void){
 	  ave_erase_power[i] = (erase_energy[i] * VCC) / currentClockCycle;
 	  average_power[i] = total_energy[i] / currentClockCycle;
 	}
-	
+
 	cout<<"\nPower Data: \n";
 	cout<<"========================\n";
 
