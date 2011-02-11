@@ -126,13 +126,13 @@ void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback
 
 void NVDIMM::printStats(void){
 
-	cout<<"Reads completed: "<<numReads<<endl;
-	cout<<"Writes completed: "<<numWrites<<endl;
-	cout<<"Erases completed: "<<numErases<<endl;
+	cout<<"Reads completed: "<<numReads<<"\n";
+	cout<<"Writes completed: "<<numWrites<<"\n";
+	cout<<"Erases completed: "<<numErases<<"\n";
 
 	// Power stuff
 	// Total power used
-	vector<double> total_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0);
 
 	// Energy values from the ftl
 	vector<double> idle_energy = ftl->getIdleEnergy();
@@ -149,41 +149,39 @@ void NVDIMM::printStats(void){
 	{
 	  if(GARBAGE_COLLECT == 1)
 	  {
-	    total_power[i] = (idle_energy[i] + access_energy[i] + erase_energy[i]) * VCC;
+	    total_energy[i] = (idle_energy[i] + access_energy[i] + erase_energy[i]) * VCC;
 	  }
 	  else
 	  {
-	    total_power[i] = (idle_energy[i] + access_energy[i]) * VCC;
+	    total_energy[i] = (idle_energy[i] + access_energy[i]) * VCC;
 	  }
 	  ave_idle_power[i] = (idle_energy[i] * VCC) / currentClockCycle;
 	  ave_access_power[i] = (access_energy[i] * VCC) / currentClockCycle;
 	  ave_erase_power[i] = (erase_energy[i] * VCC) / currentClockCycle;
-	  average_power[i] = total_power[i] / currentClockCycle;
+	  average_power[i] = total_energy[i] / currentClockCycle;
 	}
 
-	cout<<endl;
-	cout<<"Power Data: "<<endl;
-	cout<<"========================"<<endl;
+	cout<<"\nPower Data: \n";
+	cout<<"========================\n";
 
 	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{
-	    cout<<"Package: "<<i<<endl;
-	    cout<<"Accumulated Idle Power: "<<(idle_energy[i] * VCC)<<"mW"<<endl;
-	    cout<<"Accumulated Access Power: "<<(access_energy[i] * VCC)<<"mW"<<endl;
+	    cout<<"Package: "<<i<<"\n";
+	    cout<<"Accumulated Idle Power: "<<(idle_energy[i] * VCC * CYCLE_TIME * 0.000000001)<<"mJ\n";
+	    cout<<"Accumulated Access Power: "<<(access_energy[i] * VCC * CYCLE_TIME * 0.000000001)<<"mJ\n";
 	    if( GARBAGE_COLLECT == 1)
 	    {
-	      cout<<"Accumulated Erase Power: "<<(erase_energy[i] * VCC)<<"mW"<<endl;
+	      cout<<"Accumulated Erase Power: "<<(erase_energy[i] * VCC * CYCLE_TIME * 0.000000001)<<"mJ\n";
 	    }
-	    cout<<"Total Power: "<<total_power[i]<<"mW"<<endl;
+	    cout<<"Total Power: "<<(total_energy[i] * CYCLE_TIME * 0.000000001)<<"mJ\n";;
 	    cout<<endl;
-	    cout<<"Average Idle Power: "<<ave_idle_power[i]<<"mW"<<endl;
-	    cout<<"Average Access Power: "<<ave_access_power[i]<<"mW"<<endl;
+	    cout<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
+	    cout<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
 	    if( GARBAGE_COLLECT == 1)
 	    {
-	      cout<<"Average Erase Power: "<<ave_erase_power[i]<<"mW"<<endl;
+	      cout<<"Average Erase Power: "<<ave_erase_power[i]<<"mW\n";
 	    }
-	    cout<<"Average Power: "<<average_power[i]<<"mW"<<endl;
-	    cout<<endl;
+	    cout<<"Average Power: "<<average_power[i]<<"mW\n\n";
 	}
 }
 
