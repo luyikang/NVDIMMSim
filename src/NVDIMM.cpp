@@ -167,14 +167,14 @@ void NVDIMM::printStats(void){
 	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{
 	    cout<<"Package: "<<i<<"\n";
-	    cout<<"Accumulated Idle Power: "<<(idle_energy[i] * VCC * CYCLE_TIME * 0.000000001)<<"mJ\n";
-	    cout<<"Accumulated Access Power: "<<(access_energy[i] * VCC * CYCLE_TIME * 0.000000001)<<"mJ\n";
+	    cout<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    cout<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
 	    if( GARBAGE_COLLECT == 1)
 	    {
-	      cout<<"Accumulated Erase Power: "<<(erase_energy[i] * VCC * CYCLE_TIME * 0.000000001)<<"mJ\n";
+	      cout<<"Accumulated Erase Energy: "<<(erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
 	    }
-	    cout<<"Total Power: "<<(total_energy[i] * CYCLE_TIME * 0.000000001)<<"mJ\n";;
-	    cout<<endl;
+	    cout<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
+	 
 	    cout<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
 	    cout<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
 	    if( GARBAGE_COLLECT == 1)

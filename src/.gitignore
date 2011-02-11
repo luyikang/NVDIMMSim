@@ -2,5 +2,12 @@
 *.po
 *.dep
 *.swp
+*.sh~
+*.h~
+*.cpp~
+./#/*
+*#
 FDSim
+NVDSim
 libfdsim.so
+libnvdsim.so
