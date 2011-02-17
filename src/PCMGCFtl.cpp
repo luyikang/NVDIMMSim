@@ -35,21 +35,12 @@ void Ftl::update(void){
 						//update access energy figures
 						access_energy[commandPacket->package] += (READ_I - STANDBY_I) * READ_TIME/2;
 						//update access energy figure with PCM stuff (if applicable)
-						access_energy[commandPacket->package] += (VPP_READ_I - VPP_STANDBY_I) * READ_TIME/2;
+						vpp_access_energy[commandPacket->package] += (VPP_READ_I - VPP_STANDBY_I) * READ_TIME/2;
 					}
 					break;
 				case DATA_WRITE:
 				        if (addressMap.find(vAddr) != addressMap.end()){
-					  if (GARBAGE_COLLECT == 1)
-					  {
 					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
-					  }
-					  else
-					  {
-					  // we're going to write this data somewhere else for wear-leveling purposes however we will probably 
-					  // want to reuse this block for something at some later time so mark it as unused because it is
-					   used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = false;
-					  }
 					}			          
 					//look for first free physical page starting at the write pointer
 	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
@@ -103,25 +94,17 @@ void Ftl::update(void){
 					//update access energy figures
 					access_energy[commandPacket->package] += (WRITE_I - STANDBY_I) * WRITE_TIME/2;
 					//update access energy figure with PCM stuff (if applicable)
-					access_energy[commandPacket->package] += (VPP_WRITE_I - VPP_STANDBY_I) * WRITE_TIME/2;
+					vpp_access_energy[commandPacket->package] += (VPP_WRITE_I - VPP_STANDBY_I) * WRITE_TIME/2;
 					break;
 
 				case BLOCK_ERASE:
-				  if( GARBAGE_COLLECT == 1)
-				  {
 				        //update erase energy figures
 					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
 					controller->addPacket(commandPacket);
 					erase_energy[commandPacket->package] += (ERASE_I - STANDBY_I) * ERASE_TIME/2;
 					//update access energy figure with PCM stuff (if applicable)
-					access_energy[commandPacket->package] += (VPP_ERASE_I - VPP_STANDBY_I) * ERASE_TIME/2;
-					break;
-				  }
-				  else
-				  {
-				        ERROR("Called Block erase on PCM memory which does not need this");
-					break;	
-				  }			
+					vpp_erase_energy[commandPacket->package] += (VPP_ERASE_I - VPP_STANDBY_I) * ERASE_TIME/2;
+					break;		
 				default:
 					ERROR("Transaction in Ftl that isn't a read or write... What?");
 					exit(1);
