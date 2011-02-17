@@ -23,13 +23,19 @@ uint COMMAND_TIME;
 uint LOOKUP_TIME;
 float CYCLE_TIME;
 
-double ICC1;
-double ICC2;
-double ICC3;
-double ISB2;
-double ILI;
-double ILO;
+double READ_I;
+double WRITE_I;
+double ERASE_I;
+double STANDBY_I;
+double IN_LEAK_I;
+double OUT_LEAK_I;
 double VCC;
+double ASYNC_READ_I;
+double VPP_STANDBY_I;
+double VPP_READ_I;
+double VPP_WRITE_I;
+double VPP_ERASE_I;
+double VPP;
 
 uint DEBUG_INIT= 0;
 
@@ -54,13 +60,19 @@ namespace NVDSim
 		DEFINE_UINT_PARAM(COMMAND_TIME,DEV_PARAM),
 		DEFINE_UINT_PARAM(LOOKUP_TIME,DEV_PARAM),
 		DEFINE_FLOAT_PARAM(CYCLE_TIME,DEV_PARAM),
-		DEFINE_DOUBLE_PARAM(ICC1,DEV_PARAM),
-		DEFINE_DOUBLE_PARAM(ICC2,DEV_PARAM),
-		DEFINE_DOUBLE_PARAM(ICC3,DEV_PARAM),
-		DEFINE_DOUBLE_PARAM(ISB2,DEV_PARAM),
-		DEFINE_DOUBLE_PARAM(ILI,DEV_PARAM),
-		DEFINE_DOUBLE_PARAM(ILO,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(READ_I,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(WRITE_I,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(ERASE_I,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(STANDBY_I,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(IN_LEAK_I,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(OUT_LEAK_I,DEV_PARAM),
 		DEFINE_DOUBLE_PARAM(VCC,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(ASYNC_READ_I,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(VPP_STANDBY_I,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(VPP_READ_I,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(VPP_WRITE_I,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(VPP_ERASE_I,DEV_PARAM),
+		DEFINE_DOUBLE_PARAM(VPP,DEV_PARAM),
 
 		{"", NULL, UINT, SYS_PARAM, false} // tracer value to signify end of list; if you delete it, epic fail will result
 	};
@@ -345,8 +357,21 @@ namespace NVDSim
 						return false;
 					break;
 				        case DOUBLE:
+					  if (configMap[i].iniKey.compare((std::string)"ASYNC_READ_I") == 0 ||
+					      configMap[i].iniKey.compare((std::string)"VPP_STANDBY_I") == 0 ||
+					      configMap[i].iniKey.compare((std::string)"VPP_READ_I") == 0 ||
+					      configMap[i].iniKey.compare((std::string)"VPP_WRITE_I") == 0 ||
+					      configMap[i].iniKey.compare((std::string)"VPP_ERASE_I") == 0 ||
+					      configMap[i].iniKey.compare((std::string)"VPP") == 0)
+					    {
+					      *((double *)configMap[i].variablePtr) = 0.0;
+					      DEBUG("\tSetting Default: "<<configMap[i].iniKey<<"=0.0");
+					    }		  
+					  else
+					    {
 				                ERROR("Cannot continue without key '"<<configMap[i].iniKey<<"' set.");
 						return false;
+					    }
 					break;
 					case BOOL:
 						*((bool *)configMap[i].variablePtr) = false;

@@ -93,13 +93,21 @@ extern uint LOOKUP_TIME;
 extern float CYCLE_TIME;
 
 // Power stuff
-extern double ICC1;
-extern double ICC2;
-extern double ICC3;
-extern double ISB2;
-extern double ILI;
-extern double ILO;
+extern double READ_I;
+extern double WRITE_I;
+extern double ERASE_I;
+extern double STANDBY_I;
+extern double IN_LEAK_I;
+extern double OUT_LEAK_I;
 extern double VCC;
+
+// PCM specific power stuff
+extern double ASYNC_READ_I;
+extern double VPP_STANDBY_I;
+extern double VPP_READ_I;
+extern double VPP_WRITE_I;
+extern double VPP_ERASE_I;
+extern double VPP;
 
 extern uint OUTPUT;
 

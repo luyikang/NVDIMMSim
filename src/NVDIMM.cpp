@@ -62,11 +62,39 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	PRINT("Channel latency for a command: "<<COMMAND_TIME);
 	PRINT("");
 
-	if(GARBAGE_COLLECT == 0 && (DEVICE_TYPE == "NAND" || DEVICE_TYPE == "NOR"))
+	if(GARBAGE_COLLECT == 0 && (DEVICE_TYPE.compare("NAND") == 0 || DEVICE_TYPE.compare("NOR") == 0))
 	{
 	  ERROR("Device is Flash and must use garbage collection");
 	  exit(-1);
 	}
+
+	if(DEVICE_TYPE.compare("PCM") == 0)
+	  {
+	    if(ASYNC_READ_I == 0.0)
+	      {
+		WARNING("No asynchronous read current supplied, using 0.0");
+	      }
+	    else if(VPP_STANDBY_I == 0.0)
+	       {
+		PRINT("VPP standby current data missing for PCM, using 0.0");
+	      }
+	    else if(VPP_READ_I == 0.0)
+	      {
+		PRINT("VPP read current data missing for PCM, using 0.0");
+	      }
+	    else if(VPP_WRITE_I == 0.0)
+	       {
+		PRINT("VPP write current data missing for PCM, using 0.0");
+	      }
+	    else if(VPP_ERASE_I == 0.0)
+	       {
+		PRINT("VPP erase current data missing for PCM, using 0.0");
+	      }
+	    else if(VPP == 0.0)
+	      {
+		PRINT("VPP power data missing for PCM, using 0.0");
+	      }
+	  }
 
 	controller= new Controller(this);
 	packages= new vector<Package>();
