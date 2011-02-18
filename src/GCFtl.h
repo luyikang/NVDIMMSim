@@ -16,7 +16,10 @@ namespace NVDSim{
 			GCFtl(Controller *c);
 			void update(void);
 			bool checkGC(void); 
-			void runGC(void); 
+			void runGC(void);
+
+			void printStats(uint64_t cycle);
+			void powerCallback(void);
 
 			//Accessors for power data
 			//Writing correct object oriented code up in this piece, what now?

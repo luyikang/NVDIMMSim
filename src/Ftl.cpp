@@ -208,6 +208,44 @@ uint64_t Ftl::get_ptr(void) {
 	   (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
 }
 
+void Ftl::printStats(uint64_t cycle) {
+        // Power stuff
+	// Total power used
+	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0);
+	
+        // Average power used
+	vector<double> ave_idle_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_access_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
+
+	for(uint i = 0; i < NUM_PACKAGES; i++)
+	{
+	  total_energy[i] = (idle_energy[i] + access_energy[i]) * VCC;
+	  ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
+	  ave_access_power[i] = (access_energy[i] * VCC) / cycle;
+	  average_power[i] = total_energy[i] / cycle;
+	}
+
+	cout<<"\nPower Data: \n";
+	cout<<"========================\n";
+
+	for(uint i = 0; i < NUM_PACKAGES; i++)
+	{
+	    cout<<"Package: "<<i<<"\n";
+	    cout<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    cout<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    cout<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
+	 
+	    cout<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
+	    cout<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
+	    cout<<"Average Power: "<<average_power[i]<<"mW\n\n";
+	}
+}
+
+void Ftl::powerCallback(void) {
+  controller->returnPowerData(idle_energy, access_energy);
+}
+
 vector<double> Ftl::getIdleEnergy(void) {
   return idle_energy;
 }

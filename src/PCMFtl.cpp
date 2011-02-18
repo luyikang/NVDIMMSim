@@ -1,7 +1,7 @@
 //PCMFtl.cpp
 //class file for PCMftl
 //
-#include "GCFtl.h"
+#include "PCMFtl.h"
 #include "ChannelPacket.h"
 #include <cmath>
 
@@ -11,7 +11,6 @@ using namespace std;
 PCMFtl::PCMFtl(Controller *c)
   : Ftl(c)
 {
-
 	vpp_idle_energy = vector<double>(NUM_PACKAGES, 0.0); 
 	vpp_access_energy = vector<double>(NUM_PACKAGES, 0.0); 
 
@@ -127,7 +126,7 @@ void PCMFtl::update(void){
 	for(uint i = 0; i < (NUM_PACKAGES); i++)
 	{
 	  idle_energy[i] += STANDBY_I;
-	  vpp_idle_energy{i} += VPP_STANDBY_I;
+	  vpp_idle_energy[i] += VPP_STANDBY_I;
 	}
 
 	//place power callbacks to hybrid_system
@@ -137,12 +136,61 @@ void PCMFtl::update(void){
 
 }
 
+void PCMFtl::printStats(uint64_t cycle) {
+	// Power stuff
+	// Total power used
+	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0);
+
+        // Average power used
+	vector<double> ave_idle_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_access_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_vpp_idle_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_vpp_access_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
+
+	for(uint i = 0; i < NUM_PACKAGES; i++)
+	{
+	  total_energy[i] = ((idle_energy[i] + access_energy[i]) * VCC)
+	                    + ((vpp_idle_energy[i] + vpp_access_energy[i]) * VPP);
+	  ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
+	  ave_access_power[i] = (access_energy[i] * VCC) / cycle;
+	  ave_vpp_idle_power[i] = (vpp_idle_energy[i] * VPP) / cycle;
+	  ave_vpp_access_power[i] = (vpp_access_energy[i] * VPP) / cycle;
+	  average_power[i] = total_energy[i] / cycle;
+	}
+
+	cout<<"\nPower Data: \n";
+	cout<<"========================\n";
+
+	for(uint i = 0; i < NUM_PACKAGES; i++)
+	{
+	    cout<<"Package: "<<i<<"\n";
+	    cout<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    cout<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    cout<<"Accumulated VPP Idle Energy: "<<(vpp_idle_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    cout<<"Accumulated VPP Access Energy: "<<(vpp_access_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+		 
+	    cout<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
+	 
+	    cout<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
+	    cout<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
+	    cout<<"Average VPP Idle Power: "<<ave_vpp_idle_power[i]<<"mW\n";
+	    cout<<"Average VPP Access Power: "<<ave_vpp_access_power[i]<<"mW\n";
+		  
+	    cout<<"Average Power: "<<average_power[i]<<"mW\n\n";
+	}
+}
+
+void PCMFtl::powerCallback(void) {
+  controller->returnPowerData(idle_energy, access_energy, vpp_idle_energy, vpp_access_energy);
+}
+
 vector<double> PCMFtl::getVppIdleEnergy(void) {
-  return idle_energy;
+  return vpp_idle_energy;
 }
 
 vector<double> PCMFtl::getVppAccessEnergy(void) {
-  return access_energy;
+  return vpp_access_energy;
 }
 
 

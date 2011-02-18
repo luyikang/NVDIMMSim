@@ -11,9 +11,13 @@
 #include "GCFtl.h"
 
 namespace NVDSim{
-	class PCMFtl : public GCFtl{
+	class PCMGCFtl : public GCFtl{
 		public:
 			PCMGCFtl(Controller *c);
+			void update(void);
+
+			void printStats(uint64_t cycle);
+			void powerCallback(void);
 
 			//Accessors for power data
 			//Writing correct object oriented code up in this piece, what now?

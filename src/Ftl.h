@@ -15,9 +15,12 @@ namespace NVDSim{
 			Ftl(Controller *c);
 			ChannelPacket *translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr);
 			bool addTransaction(FlashTransaction &t);
-			void update(void);
+			virtual void update(void);
 			uint64_t get_ptr(void); 
 			void inc_ptr(void); 
+
+			virtual void printStats(uint64_t cycle);
+			virtual void powerCallback(void);
 
 			//Accessors for power data
 			//Writing correct object oriented code up in this piece, what now?

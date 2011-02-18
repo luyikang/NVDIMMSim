@@ -11,6 +11,7 @@ using namespace std;
 GCFtl::GCFtl(Controller *c) 
   : Ftl(c)
 {	
+        int numBlocks = NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE;
 	dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
 
 	erase_energy = vector<double>(NUM_PACKAGES, 0.0); 
@@ -212,6 +213,50 @@ void GCFtl::runGC(void) {
 	trans = FlashTransaction(BLOCK_ERASE, dirty_block, NULL);
 	Ftl::addTransaction(trans);
 
+}
+
+void GCFtl::printStats(uint64_t cycle) {
+	// Power stuff
+	// Total power used
+	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0); 
+	
+        // Average power used
+	vector<double> ave_idle_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_access_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_erase_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
+
+	for(uint i = 0; i < NUM_PACKAGES; i++)
+	{
+	  total_energy[i] = (idle_energy[i] + access_energy[i] + erase_energy[i]) * VCC;
+	  ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
+	  ave_access_power[i] = (access_energy[i] * VCC) / cycle;
+	  ave_erase_power[i] = (erase_energy[i] * VCC) / cycle;	  
+	  average_power[i] = total_energy[i] / cycle;
+	}
+
+	cout<<"\nPower Data: \n";
+	cout<<"========================\n";
+
+	for(uint i = 0; i < NUM_PACKAGES; i++)
+	{
+	    cout<<"Package: "<<i<<"\n";
+	    cout<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    cout<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    cout<<"Accumulated Erase Energy: "<<(erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    
+	    cout<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
+	 
+	    cout<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
+	    cout<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
+	    cout<<"Average Erase Power: "<<ave_erase_power[i]<<"mW\n";
+
+	    cout<<"Average Power: "<<average_power[i]<<"mW\n\n";
+	}
+}
+
+void GCFtl::powerCallback(void) {
+  controller->returnPowerData(idle_energy, access_energy, erase_energy);
 }
 
 vector<double> GCFtl::getEraseEnergy(void) {

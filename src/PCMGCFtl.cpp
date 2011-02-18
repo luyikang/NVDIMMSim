@@ -1,23 +1,22 @@
 //PCMFtl.cpp
 //class file for PCMftl
 //
-#include "GCFtl.h"
+#include "PCMGCFtl.h"
 #include "ChannelPacket.h"
 #include <cmath>
 
 using namespace NVDSim;
 using namespace std;
 
-PCMFtl::PCMFtl(Controller *c)
-  : Ftl(c)
+PCMGCFtl::PCMGCFtl(Controller *c)
+  : GCFtl(c)
 {
-
 	vpp_idle_energy = vector<double>(NUM_PACKAGES, 0.0); 
 	vpp_access_energy = vector<double>(NUM_PACKAGES, 0.0); 
-
+	vpp_erase_energy = vector<double>(NUM_PACKAGES, 0.0);
 }
 
-void Ftl::update(void){
+void PCMGCFtl::update(void){
         uint64_t block, page, start;
 	if (busy) {
 		if (lookupCounter == 0){
@@ -124,11 +123,11 @@ void Ftl::update(void){
 			lookupCounter = LOOKUP_TIME;
 		}
 		// Should not need to do garbage collection for PCM
-		else if(GARBAGE_COLLECT == 1){
+		else {
 			// Check to see if GC needs to run.
-			if (checkGC()) {
+		        if (GCFtl::checkGC()) {
 				// Run the GC.
-				runGC();
+		                GCFtl::runGC();
 			}
 		}
 	}
@@ -138,114 +137,84 @@ void Ftl::update(void){
 	for(uint i = 0; i < (NUM_PACKAGES); i++)
 	{
 	  idle_energy[i] += STANDBY_I;
-	  idle_energy{i} += VPP_STANDBY_I;
+	  vpp_idle_energy[i] += VPP_STANDBY_I;
 	}
 
 	//place power callbacks to hybrid_system
 #if Verbose_Power_Callback
-	if( GARBAGE_COLLECT == 1)
-	{
 	  controller->returnPowerData(idle_energy, access_energy, erase_energy);
-	}
-	else
-	{
-	  controller->returnPowerData(idle_energy, access_energy);
-	}
 #endif
 
 }
 
-bool Ftl::checkGC(void){
-	//uint64_t block, page, count = 0;
-
-	// Count the number of blocks with used pages.
-	//for (block = 0; block < TOTAL_SIZE / BLOCK_SIZE; block++) {
-	//	for (page = 0; page < PAGES_PER_BLOCK; page++) {
-	//		if (used[block][page] == true) {
-	//			count++;
-	//			break;
-	//		}
-	//	}
-	//}
+void PCMGCFtl::printStats(uint64_t cycle) {
+	// Power stuff
+	// Total power used
+	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0);    
 	
-	// Return true if more than 70% of pagess are in use and false otherwise.
-	if (((float)used_page_count / TOTAL_SIZE) > 0.7)
-		return true;
-	else
-		return false;
-}
+        // Average power used
+	vector<double> ave_idle_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_access_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_erase_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_vpp_idle_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_vpp_access_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_vpp_erase_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
 
-
-void Ftl::runGC(void) {
-  uint64_t block, page, count, dirty_block=0, dirty_count=0, pAddr, vAddr, tmpAddr;
-	FlashTransaction trans;
-
-	// Get the dirtiest block (assumes the flash keeps track of this with an online algorithm).
-	for (block = 0; block < TOTAL_SIZE / BLOCK_SIZE; block++) {
-	  count = 0;
-	  for (page = 0; page < PAGES_PER_BLOCK; page++) {
-		if (dirty[block][page] == true) {
-			count++;
-		}
-	  }
-	  if (count > dirty_count) {
-	      	dirty_count = count;
-	       	dirty_block = block;
-	  }
+	for(uint i = 0; i < NUM_PACKAGES; i++)
+	{
+	  total_energy[i] = ((idle_energy[i] + access_energy[i] + erase_energy[i]) * VCC)
+	                        + ((vpp_idle_energy[i] + vpp_access_energy[i] + vpp_erase_energy[i]) * VPP);
+	  ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
+	  ave_access_power[i] = (access_energy[i] * VCC) / cycle;
+	  ave_erase_power[i] = (erase_energy[i] * VCC) / cycle;
+	  ave_vpp_idle_power[i] = (vpp_idle_energy[i] * VPP) / cycle;
+	  ave_vpp_access_power[i] = (vpp_access_energy[i] * VPP) / cycle;
+	  ave_vpp_erase_power[i] = (vpp_erase_energy[i] * VPP) / cycle;
+	  average_power[i] = total_energy[i] / cycle;
 	}
 
-	// All used pages in the dirty block, they must be moved elsewhere.
-	for (page = 0; page < PAGES_PER_BLOCK; page++) {
-	  if (used[dirty_block][page] == true && dirty[dirty_block][page] == false) {
-	    	// Compute the physical address to move.
-		pAddr = (dirty_block * BLOCK_SIZE + page * NV_PAGE_SIZE);
+	
+	cout<<"\nPower Data: \n";
+	cout<<"========================\n";
 
-		// Do a reverse lookup for the virtual page address.
-		// This is slow, but the alternative is maintaining a full reverse lookup map.
-		// Another alternative may be to make new FlashTransaction commands for physical address read/write.
-		bool found = false;
-		for (std::unordered_map<uint64_t, uint64_t>::iterator it = addressMap.begin(); it != addressMap.end(); it++) {
-			tmpAddr = (*it).second;
-			if (tmpAddr == pAddr) {
-				vAddr = (*it).first;
-				found = true;
-				break;
-			}
-		}
-		assert(found);
-			
+	for(uint i = 0; i < NUM_PACKAGES; i++)
+	{
+	    cout<<"Package: "<<i<<"\n";
+	    cout<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    cout<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    cout<<"Accumulated Erase Energy: "<<(erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    cout<<"Accumulated VPP Idle Energy: "<<(vpp_idle_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    cout<<"Accumulated VPP Access Energy: "<<(vpp_access_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";		 
+	    cout<<"Accumulated VPP Erase Energy: "<<(vpp_erase_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";
 
-		// Schedule a read and a write.
-		trans = FlashTransaction(DATA_READ, vAddr, NULL);
-		addTransaction(trans);
-		trans = FlashTransaction(DATA_WRITE, vAddr, NULL);
-		addTransaction(trans);
-	  }
-	}
+	    cout<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
+	 
+	    cout<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
+	    cout<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
+            cout<<"Average Erase Power: "<<ave_erase_power[i]<<"mW\n";
+	    cout<<"Average VPP Idle Power: "<<ave_vpp_idle_power[i]<<"mW\n";
+	    cout<<"Average VPP Access Power: "<<ave_vpp_access_power[i]<<"mW\n";
+	    cout<<"Average VPP Erase Power: "<<ave_vpp_erase_power[i]<<"mW\n";
 
-	// Schedule the BLOCK_ERASE command.
-	// Note: The address field is just the block number, not an actual byte address.
-	trans = FlashTransaction(BLOCK_ERASE, dirty_block, NULL);
-	addTransaction(trans);
-
+	    cout<<"Average Power: "<<average_power[i]<<"mW\n\n";
+	 }
 }
 
-uint64_t Ftl::get_ptr(void) {
-    // Return a pointer to the current plane.
-    return NV_PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
-	   (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
+void PCMGCFtl::powerCallback(void) {
+  controller->returnPowerData(idle_energy, access_energy, erase_energy, vpp_idle_energy, vpp_access_energy, vpp_erase_energy);
 }
 
-vector<double> Ftl::getIdleEnergy(void) {
-  return idle_energy;
+vector<double> PCMGCFtl::getVppIdleEnergy(void) {
+  return vpp_idle_energy;
 }
 
-vector<double> Ftl::getAccessEnergy(void) {
-  return access_energy;
+vector<double> PCMGCFtl::getVppAccessEnergy(void) {
+  return vpp_access_energy;
 }
 
-vector<double> Ftl::getEraseEnergy(void) {
-  return erase_energy;
+vector<double> PCMGCFtl::getVppEraseEnergy(void) {
+  return vpp_erase_energy;
 }
 
 
