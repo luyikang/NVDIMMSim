@@ -59,9 +59,40 @@ void test_obj::write_cb(uint id, uint64_t address, uint64_t cycle){
 void test_obj::power_cb(uint id, vector<vector<double>> data, uint64_t cycle){
         cout<<"[Callback] Power Data for cycle: "<<cycle<<endl;
 	for(int i = 0; i < NUM_PACKAGES; i++){
-	  cout<<"    Package: "<<i<<" Idle Energy: "<<data[0][i]<<"\n";
-	  cout<<"    Package: "<<i<<" Access Energy: "<<data[1][i]<<"\n";
-	  cout<<"    Package: "<<i<<" Erase Energy: "<<data[2][i]<<"\n";
+	  for(int j = 0; j < data.size(); j++){
+	    if(DEVICE_TYPE.compare("PCM") == 0){
+	      if(j == 0){
+		cout<<"    Package: "<<i<<" Idle Energy: "<<data[0][i]<<"\n";
+	      }else if(j == 1){
+		cout<<"    Package: "<<i<<" Access Energy: "<<data[1][i]<<"\n";
+	      }
+	      if(GARBAGE_COLLECT == 1){
+		if(j == 2){
+		  cout<<"    Package: "<<i<<" Erase Energy: "<<data[2][i]<<"\n";
+		}else if(j == 3){
+		  cout<<"    Package: "<<i<<" VPP Idle Energy: "<<data[3][i]<<"\n";
+		}else if(j == 4){
+		  cout<<"    Package: "<<i<<" VPP Access Energy: "<<data[4][i]<<"\n";
+		}else if(j == 5){
+		  cout<<"    Package: "<<i<<" VPP Erase Energy: "<<data[5][i]<<"\n";
+		}
+	      }else{
+		if(j == 2){
+		  cout<<"    Package: "<<i<<" VPP Idle Energy: "<<data[2][i]<<"\n";
+		}else if(j == 3){
+		  cout<<"    Package: "<<i<<" VPP Access Energy: "<<data[3][i]<<"\n";
+		}
+	      }
+	    }else{
+	      if(j == 0){
+		cout<<"    Package: "<<i<<" Idle Energy: "<<data[0][i]<<"\n";
+	      }else if(j == 1){
+		cout<<"    Package: "<<i<<" Access Energy: "<<data[1][i]<<"\n";
+	      }else if(j == 2){
+		cout<<"    Package: "<<i<<" Erase Energy: "<<data[2][i]<<"\n";
+	      }
+	    }
+	  }
 	}
 }
 

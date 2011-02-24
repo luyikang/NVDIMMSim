@@ -93,9 +93,11 @@ void PCMFtl::update(void){
 							plane = (plane + 1) % PLANES_PER_DIE;
 					}
 					//update access energy figures
-					access_energy[commandPacket->package] += (WRITE_I - STANDBY_I) * WRITE_TIME/2;
+					//without garbage collection PCM write and erase are the same
+					//this is due to the time it takes to set a bit
+					access_energy[commandPacket->package] += (ERASE_I - STANDBY_I) * ERASE_TIME/2;
 					//update access energy figure with PCM stuff (if applicable)
-					vpp_access_energy[commandPacket->package] += (VPP_WRITE_I - VPP_STANDBY_I) * WRITE_TIME/2;
+					vpp_access_energy[commandPacket->package] += (VPP_ERASE_I - VPP_STANDBY_I) * ERASE_TIME/2;
 					break;
 
 				case BLOCK_ERASE:
@@ -131,7 +133,7 @@ void PCMFtl::update(void){
 
 	//place power callbacks to hybrid_system
 #if Verbose_Power_Callback
-	  controller->returnPowerData(idle_energy, access_energy);
+	controller->returnPowerData(idle_energy, access_energy, vpp_idle_energy, vpp_access_energy);
 #endif
 
 }
