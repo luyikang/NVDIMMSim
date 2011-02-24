@@ -38,7 +38,14 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 				 controlCyclesLeft[busPacket->plane]= READ_TIME;
 				 break;
 			 case WRITE:
+			   if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
+			     {
+			         controlCyclesLeft[busPacket->plane]= ERASE_TIME;
+			     }
+			   else
+			     {
 				 controlCyclesLeft[busPacket->plane]= WRITE_TIME;
+			     }
 				 break;
 			 case ERASE:
 				 controlCyclesLeft[busPacket->plane]= ERASE_TIME;

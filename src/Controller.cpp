@@ -28,6 +28,38 @@ void Controller::returnReadData(const FlashTransaction  &trans){
 	parentNVDIMM->numReads++;
 }
 
+void Controller::returnPowerData(vector<double> idle_energy, vector<double> access_energy, vector<double> erase_energy,
+				 vector<double> vpp_idle_energy, vector<double> vpp_access_energy, vector<double> vpp_erase_energy) {
+  if(parentNVDIMM->ReturnPowerData!=NULL){
+                vector<vector<double>> power_data = vector<vector<double>>(6, vector<double>(NUM_PACKAGES, 0.0));
+		for(uint i = 0; i < NUM_PACKAGES; i++)
+		  {
+		       power_data[0][i] = idle_energy[i] * VCC;
+		       power_data[1][i] = access_energy[i] * VCC;
+		       power_data[2][i] = erase_energy[i] * VCC;
+		       power_data[3][i] = vpp_idle_energy[i] * VPP;
+		       power_data[4][i] = vpp_access_energy[i] * VPP;
+		       power_data[5][i] = vpp_erase_energy[i] * VPP;
+		  }
+		(*parentNVDIMM->ReturnPowerData)(parentNVDIMM->systemID, power_data, currentClockCycle);
+  }
+}
+
+void Controller::returnPowerData(vector<double> idle_energy, vector<double> access_energy, vector<double> vpp_idle_energy,
+				 vector<double> vpp_access_energy) {
+  if(parentNVDIMM->ReturnPowerData!=NULL){
+                vector<vector<double>> power_data = vector<vector<double>>(4, vector<double>(NUM_PACKAGES, 0.0));
+		for(uint i = 0; i < NUM_PACKAGES; i++)
+		  {
+		       power_data[0][i] = idle_energy[i] * VCC;
+		       power_data[1][i] = access_energy[i] * VCC;
+		       power_data[2][i] = vpp_idle_energy[i] * VPP;
+		       power_data[3][i] = vpp_access_energy[i] * VPP;
+		  }
+		(*parentNVDIMM->ReturnPowerData)(parentNVDIMM->systemID, power_data, currentClockCycle);
+  }
+}
+
 void Controller::returnPowerData(vector<double> idle_energy, vector<double> access_energy, vector<double> erase_energy) {
   if(parentNVDIMM->ReturnPowerData!=NULL){
                 vector<vector<double>> power_data = vector<vector<double>>(3, vector<double>(NUM_PACKAGES, 0.0));
@@ -43,12 +75,11 @@ void Controller::returnPowerData(vector<double> idle_energy, vector<double> acce
 
 void Controller::returnPowerData(vector<double> idle_energy, vector<double> access_energy) {
   if(parentNVDIMM->ReturnPowerData!=NULL){
-                vector<vector<double>> power_data = vector<vector<double>>(3, vector<double>(NUM_PACKAGES, 0.0));
+                vector<vector<double>> power_data = vector<vector<double>>(2, vector<double>(NUM_PACKAGES, 0.0));
 		for(uint i = 0; i < NUM_PACKAGES; i++)
 		  {
 		       power_data[0][i] = idle_energy[i] * VCC;
 		       power_data[1][i] = access_energy[i] * VCC;
-		       power_data[2][i] = 0;
 		  }
 		(*parentNVDIMM->ReturnPowerData)(parentNVDIMM->systemID, power_data, currentClockCycle);
   }

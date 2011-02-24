@@ -62,11 +62,39 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	PRINT("Channel latency for a command: "<<COMMAND_TIME);
 	PRINT("");
 
-	if(GARBAGE_COLLECT == 0 && (DEVICE_TYPE == "NAND" || DEVICE_TYPE == "NOR"))
+	if(GARBAGE_COLLECT == 0 && (DEVICE_TYPE.compare("NAND") == 0 || DEVICE_TYPE.compare("NOR") == 0))
 	{
 	  ERROR("Device is Flash and must use garbage collection");
 	  exit(-1);
 	}
+
+	if(DEVICE_TYPE.compare("PCM") == 0)
+	  {
+	    if(ASYNC_READ_I == 0.0)
+	      {
+		WARNING("No asynchronous read current supplied, using 0.0");
+	      }
+	    else if(VPP_STANDBY_I == 0.0)
+	       {
+		PRINT("VPP standby current data missing for PCM, using 0.0");
+	      }
+	    else if(VPP_READ_I == 0.0)
+	      {
+		PRINT("VPP read current data missing for PCM, using 0.0");
+	      }
+	    else if(VPP_WRITE_I == 0.0)
+	       {
+		PRINT("VPP write current data missing for PCM, using 0.0");
+	      }
+	    else if(VPP_ERASE_I == 0.0)
+	       {
+		PRINT("VPP erase current data missing for PCM, using 0.0");
+	      }
+	    else if(VPP == 0.0)
+	      {
+		PRINT("VPP power data missing for PCM, using 0.0");
+	      }
+	  }
 
 	controller= new Controller(this);
 	packages= new vector<Package>();
@@ -93,7 +121,22 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	}
 	controller->attachPackages(packages);
 
-	ftl = new Ftl(controller);
+	if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 1)
+	{
+	  ftl = new PCMGCFtl(controller);
+	}
+	else if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
+	{
+	  ftl = new PCMFtl(controller);
+	}
+	else if(GARBAGE_COLLECT == 1)
+	{
+	  ftl = new GCFtl(controller);
+	}
+	else
+	{
+	  ftl = new Ftl(controller);
+	}
 	
 	ReturnReadData= NULL;
 	WriteDataDone= NULL;
@@ -130,59 +173,7 @@ void NVDIMM::printStats(void){
 	cout<<"Writes completed: "<<numWrites<<"\n";
 	cout<<"Erases completed: "<<numErases<<"\n";
 
-	// Power stuff
-	// Total power used
-	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0);
-
-	// Energy values from the ftl
-	vector<double> idle_energy = ftl->getIdleEnergy();
-	vector<double> access_energy = ftl->getAccessEnergy();
-	vector<double> erase_energy = ftl->getEraseEnergy();
-	
-	// Average power used
-	vector<double> ave_idle_power = vector<double>(NUM_PACKAGES, 0.0);
-	vector<double> ave_access_power = vector<double>(NUM_PACKAGES, 0.0);	
-	vector<double> ave_erase_power = vector<double>(NUM_PACKAGES, 0.0);
-	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
-
-	for(uint i = 0; i < NUM_PACKAGES; i++)
-	{
-	  if(GARBAGE_COLLECT == 1)
-	  {
-	    total_energy[i] = (idle_energy[i] + access_energy[i] + erase_energy[i]) * VCC;
-	  }
-	  else
-	  {
-	    total_energy[i] = (idle_energy[i] + access_energy[i]) * VCC;
-	  }
-	  ave_idle_power[i] = (idle_energy[i] * VCC) / currentClockCycle;
-	  ave_access_power[i] = (access_energy[i] * VCC) / currentClockCycle;
-	  ave_erase_power[i] = (erase_energy[i] * VCC) / currentClockCycle;
-	  average_power[i] = total_energy[i] / currentClockCycle;
-	}
-
-	cout<<"\nPower Data: \n";
-	cout<<"========================\n";
-
-	for(uint i = 0; i < NUM_PACKAGES; i++)
-	{
-	    cout<<"Package: "<<i<<"\n";
-	    cout<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    cout<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    if( GARBAGE_COLLECT == 1)
-	    {
-	      cout<<"Accumulated Erase Energy: "<<(erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    }
-	    cout<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
-	 
-	    cout<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
-	    cout<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
-	    if( GARBAGE_COLLECT == 1)
-	    {
-	      cout<<"Average Erase Power: "<<ave_erase_power[i]<<"mW\n";
-	    }
-	    cout<<"Average Power: "<<average_power[i]<<"mW\n\n";
-	}
+	ftl->printStats(currentClockCycle);
 }
 
 void NVDIMM::update(void){
@@ -208,9 +199,5 @@ void NVDIMM::update(void){
 }
 
 void NVDIMM::powerCallback(void){
-  if( GARBAGE_COLLECT == 1)
-  {
-    controller->returnPowerData(ftl->getIdleEnergy(), ftl->getAccessEnergy(), ftl->getEraseEnergy());
-  }
-  controller->returnPowerData(ftl->getIdleEnergy(), ftl->getAccessEnergy());
+  ftl->powerCallback();
 }
