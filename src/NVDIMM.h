@@ -26,6 +26,7 @@ namespace NVDSim{
 			bool add(FlashTransaction &trans);
 			bool addTransaction(bool isWrite, uint64_t addr);
 			void printStats(void);
+			void saveStats(void);
 			string SetOutputFileName(string tracefilename);
 			void RegisterCallbacks(Callback_t *readDone, Callback_t *writeDone, Callback_v *Power);
 			void powerCallback(void);

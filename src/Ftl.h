@@ -3,6 +3,8 @@
 //Ftl.h
 //header file for the ftl
 
+#include <iostream>
+#include <fstream>
 #include "SimObj.h"
 #include "FlashConfiguration.h"
 #include "ChannelPacket.h"
@@ -19,8 +21,8 @@ namespace NVDSim{
 			uint64_t get_ptr(void); 
 			void inc_ptr(void); 
 
-			virtual void saveStats(uint64_t cycle);
-			virtual void printStats(uint64_t cycle);
+			virtual void saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases);
+			virtual void printStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases);
 			virtual void powerCallback(void);
 
 			//Accessors for power data

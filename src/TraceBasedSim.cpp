@@ -132,6 +132,7 @@ void test_obj::run_test(void){
 	cout<<"Simulation Results:\n";
 	cout<<"Cycles simulated: "<<cycle<<endl;
 	NVDimm->printStats();
+	NVDimm->saveStats();
 	cout<<"Execution time: "<<(end-start)<<" cycles. "<<(double)(end-start)/CLOCKS_PER_SEC<<" seconds.\n";
 
 	cout<<"Callback test: \n";

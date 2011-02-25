@@ -3,6 +3,8 @@
 //GCFtl.h
 //header file for the ftl with garbage collection
 
+#include <iostream>
+#include <fstream>
 #include "SimObj.h"
 #include "FlashConfiguration.h"
 #include "ChannelPacket.h"
@@ -18,8 +20,8 @@ namespace NVDSim{
 			bool checkGC(void); 
 			void runGC(void);
 
-			void saveStats(uint64_t cycle);
-			void printStats(uint64_t cycle);
+			void saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases);
+			void printStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases);
 			void powerCallback(void);
 
 			//Accessors for power data

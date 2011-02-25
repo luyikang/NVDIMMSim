@@ -169,7 +169,11 @@ void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback
 
 void NVDIMM::printStats(void){
 
-	ftl->printStats(currentClockCycle);
+       ftl->printStats(currentClockCycle, numReads, numWrites, numErases);
+}
+
+void NVDIMM::saveStats(void){
+        ftl->saveStats(currentClockCycle, numReads, numWrites, numErases);
 }
 
 void NVDIMM::update(void){

@@ -215,7 +215,7 @@ void GCFtl::runGC(void) {
 
 }
 
-void GCFtl::saveStats(uint64_t cycle) {
+void GCFtl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases) {
         // Power stuff
 	// Total power used
 	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0); 
@@ -238,9 +238,9 @@ void GCFtl::saveStats(uint64_t cycle) {
 	ofstream savefile;
         savefile.open("Results/PowerStats.txt");
 
-	savefile<<"Reads completed: "<<numReads<<"\n";
-	savefile<<"Writes completed: "<<numWrites<<"\n";
-	savefile<<"Erases completed: "<<numErases<<"\n";
+	savefile<<"Reads completed: "<<reads<<"\n";
+	savefile<<"Writes completed: "<<writes<<"\n";
+	savefile<<"Erases completed: "<<erases<<"\n";
 
 	savefile<<"\nPower Data: \n";
 	savefile<<"========================\n";
@@ -264,7 +264,7 @@ void GCFtl::saveStats(uint64_t cycle) {
 	savefile.close();
 }
 
-void GCFtl::printStats(uint64_t cycle) {
+void GCFtl::printStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases) {
 	// Power stuff
 	// Total power used
 	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0); 
@@ -284,9 +284,9 @@ void GCFtl::printStats(uint64_t cycle) {
 	  average_power[i] = total_energy[i] / cycle;
 	}
 
-	cout<<"Reads completed: "<<numReads<<"\n";
-	cout<<"Writes completed: "<<numWrites<<"\n";
-	cout<<"Erases completed: "<<numErases<<"\n";
+	cout<<"Reads completed: "<<reads<<"\n";
+	cout<<"Writes completed: "<<writes<<"\n";
+	cout<<"Erases completed: "<<erases<<"\n";
 
 	cout<<"\nPower Data: \n";
 	cout<<"========================\n";
