@@ -5,6 +5,7 @@
 *.sh~
 *.h~
 *.cpp~
+src/Results/*.txt
 *~
 \.#*
 *#
