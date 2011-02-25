@@ -166,8 +166,12 @@ void Ftl::update(void){
 					break;
 
 				case BLOCK_ERASE:
-				        ERROR("Called Block erase on PCM memory which does not need this");
-					break;				
+				         //update erase energy figures
+				        used_page_count -= PAGES_PER_BLOCK;
+					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
+					controller->addPacket(commandPacket);
+					erase_energy[commandPacket->package] += (ERASE_I - STANDBY_I) * ERASE_TIME/2;
+					break;					
 				default:
 					ERROR("Transaction in Ftl that isn't a read or write... What?");
 					exit(1);

@@ -98,6 +98,7 @@ void PCMGCFtl::update(void){
 
 				case BLOCK_ERASE:
 				        //update erase energy figures
+				        used_page_count -= PAGES_PER_BLOCK;
 					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
 					controller->addPacket(commandPacket);
 					erase_energy[commandPacket->package] += (ERASE_I - STANDBY_I) * ERASE_TIME/2;

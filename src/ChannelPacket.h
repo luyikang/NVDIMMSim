@@ -12,7 +12,9 @@ namespace NVDSim
 	enum ChannelPacketType
 	{
 		READ,
+		GC_READ,
 		WRITE,
+		GC_WRITE,
 		ERASE,
 		DATA
 	};
