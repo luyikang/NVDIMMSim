@@ -5,7 +5,8 @@
 *.sh~
 *.h~
 *.cpp~
-./#/*
+*~
+\.#*
 *#
 FDSim
 NVDSim

@@ -19,6 +19,7 @@ namespace NVDSim{
 			uint64_t get_ptr(void); 
 			void inc_ptr(void); 
 
+			virtual void saveStats(uint64_t cycle);
 			virtual void printStats(uint64_t cycle);
 			virtual void powerCallback(void);
 

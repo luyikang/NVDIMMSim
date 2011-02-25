@@ -18,6 +18,7 @@ namespace NVDSim{
 			bool checkGC(void); 
 			void runGC(void);
 
+			void saveStats(uint64_t cycle);
 			void printStats(uint64_t cycle);
 			void powerCallback(void);
 

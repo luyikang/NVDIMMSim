@@ -138,6 +138,60 @@ void PCMFtl::update(void){
 
 }
 
+void PCMFtl::saveStats(uint64_t cycle) {
+	// Power stuff
+	// Total power used
+	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0);
+
+        // Average power used
+	vector<double> ave_idle_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_access_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_vpp_idle_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> ave_vpp_access_power = vector<double>(NUM_PACKAGES, 0.0);
+	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
+
+	for(uint i = 0; i < NUM_PACKAGES; i++)
+	{
+	  total_energy[i] = ((idle_energy[i] + access_energy[i]) * VCC)
+	                    + ((vpp_idle_energy[i] + vpp_access_energy[i]) * VPP);
+	  ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
+	  ave_access_power[i] = (access_energy[i] * VCC) / cycle;
+	  ave_vpp_idle_power[i] = (vpp_idle_energy[i] * VPP) / cycle;
+	  ave_vpp_access_power[i] = (vpp_access_energy[i] * VPP) / cycle;
+	  average_power[i] = total_energy[i] / cycle;
+	}
+
+	ofstream savefile;
+        savefile.open("Results/PowerStats.txt");
+
+	savefile<<"Reads completed: "<<numReads<<"\n";
+	savefile<<"Writes completed: "<<numWrites<<"\n";
+	savefile<<"Erases completed: "<<numErases<<"\n";
+
+	savefile<<"\nPower Data: \n";
+	savefile<<"========================\n";
+
+	for(uint i = 0; i < NUM_PACKAGES; i++)
+	{
+	    savefile<<"Package: "<<i<<"\n";
+	    savefile<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    savefile<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    savefile<<"Accumulated VPP Idle Energy: "<<(vpp_idle_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    savefile<<"Accumulated VPP Access Energy: "<<(vpp_access_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+		 
+	    savefile<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
+	 
+	    savefile<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
+	    savefile<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
+	    savefile<<"Average VPP Idle Power: "<<ave_vpp_idle_power[i]<<"mW\n";
+	    savefile<<"Average VPP Access Power: "<<ave_vpp_access_power[i]<<"mW\n";
+		  
+	    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
+	}
+
+	savefile.close();
+}
+
 void PCMFtl::printStats(uint64_t cycle) {
 	// Power stuff
 	// Total power used
@@ -160,6 +214,10 @@ void PCMFtl::printStats(uint64_t cycle) {
 	  ave_vpp_access_power[i] = (vpp_access_energy[i] * VPP) / cycle;
 	  average_power[i] = total_energy[i] / cycle;
 	}
+
+	cout<<"Reads completed: "<<numReads<<"\n";
+	cout<<"Writes completed: "<<numWrites<<"\n";
+	cout<<"Erases completed: "<<numErases<<"\n";
 
 	cout<<"\nPower Data: \n";
 	cout<<"========================\n";

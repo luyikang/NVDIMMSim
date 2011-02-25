@@ -169,10 +169,6 @@ void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback
 
 void NVDIMM::printStats(void){
 
-	cout<<"Reads completed: "<<numReads<<"\n";
-	cout<<"Writes completed: "<<numWrites<<"\n";
-	cout<<"Erases completed: "<<numErases<<"\n";
-
 	ftl->printStats(currentClockCycle);
 }
 
