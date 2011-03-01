@@ -22,13 +22,8 @@ void Controller::attachPackages(vector<Package> *packages){
 }
 
 void Controller::returnReadData(const FlashTransaction  &trans){
-<<<<<<< HEAD
 	if(parentNVDIMM->ReturnReadData!=NULL){
 		(*parentNVDIMM->ReturnReadData)(parentNVDIMM->systemID, trans.address, currentClockCycle);
-=======
-	if(parentFlashDIMM->ReturnReadData!=NULL && trans.transactionType){
-		(*parentFlashDIMM->ReturnReadData)(parentFlashDIMM->systemID, trans.address, currentClockCycle);
->>>>>>> ccbabcd06c44766708a075ac4a725eaea9eab838
 	}
 	parentNVDIMM->numReads++;
 }

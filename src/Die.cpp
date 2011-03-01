@@ -39,19 +39,18 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 				 controlCyclesLeft[busPacket->plane]= READ_TIME;
 				 break;
 			 case WRITE:
-<<<<<<< HEAD
 			   if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
 			     {
 			         controlCyclesLeft[busPacket->plane]= ERASE_TIME;
 			     }
 			   else
 			     {
-=======
-			 case GC_WRITE:
->>>>>>> ccbabcd06c44766708a075ac4a725eaea9eab838
 				 controlCyclesLeft[busPacket->plane]= WRITE_TIME;
 			     }
 				 break;
+	                 case GC_WRITE:
+	                         controlCyclesLeft[busPacket->plane]= WRITE_TIME;
+	                         break;
 			 case ERASE:
 				 controlCyclesLeft[busPacket->plane]= ERASE_TIME;
 				 break;
@@ -96,7 +95,7 @@ void Die::update(void){
 					 break;
 				 case GC_WRITE:
 					 planes[currentCommand->plane].write(currentCommand);
-					 parentFlashDIMM->numWrites++;
+					 parentNVDIMM->numWrites++;
 
 				 case ERASE:
 					 planes[currentCommand->plane].erase(currentCommand);
