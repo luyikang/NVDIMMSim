@@ -96,6 +96,9 @@ void Ftl::update(void){
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
 					if (addressMap.find(vAddr) == addressMap.end()){
+						//update access energy figures
+						//just a place holder, need a better way to handle this
+						access_energy[0] += (READ_I - STANDBY_I) * READ_TIME/2;
 						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
 					} else {
 						commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);

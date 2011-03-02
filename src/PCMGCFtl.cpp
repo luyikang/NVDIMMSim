@@ -27,6 +27,10 @@ void PCMGCFtl::update(void){
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
 					if (addressMap.find(vAddr) == addressMap.end()){
+						//update access energy figures
+						access_energy[0] += (READ_I - STANDBY_I) * READ_TIME/2;
+						//update access energy figure with PCM stuff (if applicable)
+						vpp_access_energy[0] += (VPP_READ_I - VPP_STANDBY_I) * READ_TIME/2;
 						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
 					} else {
 						commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
