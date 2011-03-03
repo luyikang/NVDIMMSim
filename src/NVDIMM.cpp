@@ -7,6 +7,8 @@
 using namespace NVDSim;
 using namespace std;
 
+uint BLOCKS_PER_PLANE;
+
 NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string trc) :
 	dev(deviceFile),
 	sys(sysFile),
@@ -36,6 +38,7 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 		 exit(-1);
 	 }
 	
+	BLOCKS_PER_PLANE = (uint) VIRTUAL_BLOCKS_PER_PLANE * PBLOCKS_PER_VBLOCK;
 	PRINT("\nDevice Information:\n");
 	PRINT("Device Type: "<<DEVICE_TYPE);
 	PRINT("Size (GB): "<<TOTAL_SIZE/(1024*1024));

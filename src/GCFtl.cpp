@@ -17,8 +17,17 @@ GCFtl::GCFtl(Controller *c)
 	erase_energy = vector<double>(NUM_PACKAGES, 0.0); 
 }
 
+bool GCFtl::addTransaction(FlashTransaction &t){
+	if (!gc_flag){
+		transactionQueue.push_back(t);
+		return true;
+	}
+	return false;
+}
+
 void GCFtl::update(void){
         uint64_t block, page, start;
+	uint i;
 	if (busy) {
 		if (lookupCounter == 0){
 			uint64_t vAddr = currentTransaction.address, pAddr;
@@ -122,12 +131,29 @@ void GCFtl::update(void){
 		}
 		// Check to see if GC needs to run.
 		else {
-		  if (checkGC()) {
-		    // Run the GC.
-		    runGC();
-		  }
+		  	// Check to see if GC needs to run.
+			if (checkGC() && !gc_status) {
+				// Run the GC.
+				gc_counter = ERASE_TIME;
+				gc_status = 1;
+				runGC();
+			}
 		}
 	}
+
+	if (gc_counter % ERASE_TIME == 1 && gc_status)
+		gc_status = 0;
+	if (gc_counter > 0)
+		gc_counter--;
+
+	if (used_page_count > FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE) && !gc_status){
+		gc_status = 1;
+		gc_counter = ERASE_TIME;
+		gc_flag = true;
+		for (i = 0 ; i < NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE ; i++)
+			runGC();
+	} else if (used_page_count <= (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE))//this is a little iffy
+		gc_flag = false;
 
 	//update idle energy
 	//since this is already subtracted from the access energies we just do it every time
@@ -144,23 +170,10 @@ void GCFtl::update(void){
 }
 
 bool GCFtl::checkGC(void){
-	//uint64_t block, page, count = 0;
-
-	// Count the number of blocks with used pages.
-	//for (block = 0; block < TOTAL_SIZE / BLOCK_SIZE; block++) {
-	//	for (page = 0; page < PAGES_PER_BLOCK; page++) {
-	//		if (used[block][page] == true) {
-	//			count++;
-	//			break;
-	//		}
-	//	}
-	//}
-	
-	// Return true if more than 70% of pagess are in use and false otherwise.
-	if (((float)used_page_count / TOTAL_SIZE) > 0.7)
+	// Return true if more than 70% of blocks are in use and false otherwise.
+	if (used_page_count > (IDLE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE)))
 		return true;
-	else
-		return false;
+	return false;
 }
 
 
@@ -205,16 +218,22 @@ void GCFtl::runGC(void) {
 
 		// Schedule a read and a write.
 		trans = FlashTransaction(DATA_READ, vAddr, NULL);
-		Ftl::addTransaction(trans);
+		addTransaction(trans);
 		trans = FlashTransaction(DATA_WRITE, vAddr, NULL);
-		Ftl::addTransaction(trans);
-	  }
-	}
+		addTransaction(trans);
+	    } else if (dirty[dirty_block][page] == true){
+		dirty[dirty_block][page] = false;
+	    }	
+	    if (used[dirty_block][page] == true){
+		used_page_count--;
+		used[dirty_block][page] = false;
+	    }
+   }
 
-	// Schedule the BLOCK_ERASE command.
-	// Note: The address field is just the block number, not an actual byte address.
-	trans = FlashTransaction(BLOCK_ERASE, dirty_block * BLOCK_SIZE, NULL);
-	Ftl::addTransaction(trans);
+   // Schedule the BLOCK_ERASE command.
+   // Note: The address field is just the block number, not an actual byte address.
+   trans = FlashTransaction(BLOCK_ERASE, dirty_block * BLOCK_SIZE, NULL); 
+   addTransaction(trans);
 
 }
 

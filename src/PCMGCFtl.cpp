@@ -18,6 +18,7 @@ PCMGCFtl::PCMGCFtl(Controller *c)
 
 void PCMGCFtl::update(void){
         uint64_t block, page, start;
+	uint i;
 	if (busy) {
 		if (lookupCounter == 0){
 			uint64_t vAddr = currentTransaction.address, pAddr;
@@ -127,15 +128,30 @@ void PCMGCFtl::update(void){
 			currentTransaction = transactionQueue.front();
 			lookupCounter = LOOKUP_TIME;
 		}
-		// Should not need to do garbage collection for PCM
 		else {
 			// Check to see if GC needs to run.
-		        if (GCFtl::checkGC()) {
+		        if (checkGC() && !gc_status) {
 				// Run the GC.
-		                GCFtl::runGC();
+				gc_counter = ERASE_TIME;
+				gc_status = 1;
+				runGC();
 			}
 		}
 	}
+
+	if (gc_counter % ERASE_TIME == 1 && gc_status)
+		gc_status = 0;
+	if (gc_counter > 0)
+		gc_counter--;
+
+	if (used_page_count > FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE) && !gc_status){
+		gc_status = 1;
+		gc_counter = ERASE_TIME;
+		gc_flag = true;
+		for (i = 0 ; i < NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE ; i++)
+			runGC();
+	} else if (used_page_count <= (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE))//this is a little iffy
+		gc_flag = false;
 
 	//update idle energy
 	//since this is already subtracted from the access energies we just do it every time

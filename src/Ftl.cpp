@@ -32,6 +32,7 @@ Ftl::Ftl(Controller *c){
 	transactionQueue = list<FlashTransaction>();
 
 	used_page_count = 0;
+	gc_flag = false;
 
 	controller = c;
 
@@ -86,7 +87,7 @@ bool Ftl::addTransaction(FlashTransaction &t){
 }
 
 void Ftl::update(void){
-        uint64_t block, page, start;
+	uint64_t block, page, start;
 	if (busy) {
 		if (lookupCounter == 0){
 			uint64_t vAddr = currentTransaction.address, pAddr;
@@ -144,9 +145,9 @@ void Ftl::update(void){
 					}
 
 					if (!done){
-						// TODO: Call GC
-						ERROR("No free pages? GC needs some work.");
-						exit(1);
+						//bad news
+						ERROR("FLASH DIMM IS COMPLETELY FULL - If you see this, something has gone horribly wrong.");
+						exit(9001);
 					} else {
 						addressMap[vAddr] = pAddr;
 					}
@@ -178,7 +179,7 @@ void Ftl::update(void){
 			}
 			transactionQueue.pop_front();
 			busy = 0;
-		} 
+		} //if lookupCounter is not 0
 		else
 			lookupCounter--;
 	} // if busy
@@ -202,7 +203,6 @@ void Ftl::update(void){
 #if Verbose_Power_Callback
 	controller->returnPowerData(idle_energy, access_energy);
 #endif
-
 }
 
 uint64_t Ftl::get_ptr(void) {

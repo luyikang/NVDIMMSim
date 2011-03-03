@@ -36,9 +36,17 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 		 switch (busPacket->busPacketType){
 			 case READ:
 			 case GC_READ:
+			   if(DEVICE_TYPE.compare("PCM") == 0)
+			     {
+				 controlCyclesLeft[busPacket->plane]= READ_TIME * (NV_PAGE_SIZE / 8);
+			     }
+			   else
+			     {
 				 controlCyclesLeft[busPacket->plane]= READ_TIME;
+			     }
 				 break;
 			 case WRITE:
+			 case GC_WRITE:
 			   if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
 			     {
 			         controlCyclesLeft[busPacket->plane]= ERASE_TIME;
@@ -48,11 +56,15 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 				 controlCyclesLeft[busPacket->plane]= WRITE_TIME;
 			     }
 				 break;
-	                 case GC_WRITE:
-	                         controlCyclesLeft[busPacket->plane]= WRITE_TIME;
-	                         break;
 			 case ERASE:
+			   if(DEVICE_TYPE.compare("PCM") == 0)
+			     {
+				 controlCyclesLeft[busPacket->plane]= ERASE_TIME * (BLOCK_SIZE / NV_PAGE_SIZE);
+			     }
+			   else
+			     {
 				 controlCyclesLeft[busPacket->plane]= ERASE_TIME;
+			     }
 				 break;
 			 default:
 				 break;

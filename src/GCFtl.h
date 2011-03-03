@@ -16,6 +16,7 @@ namespace NVDSim{
 	class GCFtl : public Ftl{
 		public:
 			GCFtl(Controller *c);
+			bool addTransaction(FlashTransaction &t);
 			void update(void);
 			bool checkGC(void); 
 			void runGC(void);
