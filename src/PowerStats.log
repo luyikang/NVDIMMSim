@@ -1,0 +1,24 @@
+Cycles Simulated: 14676647043
+Reads completed: 100000
+Writes completed: 100000
+Erases completed: 0
+
+Power Data: 
+========================
+Package: 0
+Accumulated Idle Energy: 5.8507mJ
+Accumulated Access Energy: 409.424mJ
+Accumulated Erase Energy: 0mJ
+Accumulated VPP Idle Energy: 0.0146267mJ
+Accumulated VPP Access Energy: 0.583449mJ
+Accumulated VPP Erase Energy: 0mJ
+Total Energy: 415.872mJ
+
+Average Idle Power: 0.264mW
+Average Access Power: 18.4743mW
+Average Erase Power: 0mW
+Average VPP Idle Power: 0.00066mW
+Average VPP Access Power: 0.0263269mW
+Average VPP Erase Power: 0mW
+Average Power: 18.7653mW
+

@@ -230,8 +230,15 @@ void Ftl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t er
 	}
 
 	ofstream savefile;
-        savefile.open("Results/PowerStats.txt");
+        savefile.open("PowerStats.log", ios_base::out | ios_base::trunc);
 
+	 if (!savefile) 
+	   {
+	     ERROR("Cannot open PowerStats.log");
+	     exit(-1); 
+	   }
+
+	savefile<<"Cycles Simulated: "<<cycle<<"\n";
         savefile<<"Reads completed: "<<reads<<"\n";
 	savefile<<"Writes completed: "<<writes<<"\n";
 	savefile<<"Erases completed: "<<erases<<"\n";

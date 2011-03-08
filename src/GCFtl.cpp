@@ -83,8 +83,10 @@ void GCFtl::update(void){
 
 					if (!done){
 						// TODO: Call GC
-						ERROR("No free pages? GC needs some work.");
-						exit(1);
+						//ERROR("No free pages? GC needs some work.");
+						//exit(1);
+						// Trust that the GC is running and wait
+					        break;
 					} else {
 						addressMap[vAddr] = pAddr;
 					}
@@ -141,18 +143,18 @@ void GCFtl::update(void){
 		}
 	}
 
-	if (gc_counter % ERASE_TIME == 1 && gc_status)
+	if (gc_counter == 0 && gc_status)
 		gc_status = 0;
 	if (gc_counter > 0)
 		gc_counter--;
 
-	if (used_page_count > FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE) && !gc_status){
+	if ((float)used_page_count > (float)FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE) && !gc_status){
 		gc_status = 1;
 		gc_counter = ERASE_TIME;
 		gc_flag = true;
 		for (i = 0 ; i < NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE ; i++)
 			runGC();
-	} else if (used_page_count <= (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE))//this is a little iffy
+	} else if ((float)used_page_count <= ((float)VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE))//this is a little iffy
 		gc_flag = false;
 
 	//update idle energy
@@ -171,7 +173,7 @@ void GCFtl::update(void){
 
 bool GCFtl::checkGC(void){
 	// Return true if more than 70% of blocks are in use and false otherwise.
-	if (used_page_count > (IDLE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE)))
+  if ((float)used_page_count > ((float)IDLE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE)))
 		return true;
 	return false;
 }
@@ -258,8 +260,15 @@ void GCFtl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t 
 	}
 
 	ofstream savefile;
-        savefile.open("Results/PowerStats.txt");
+        savefile.open("PowerStats.log", ios_base::out | ios_base::trunc);
 
+	 if (!savefile) 
+	   {
+	     ERROR("Cannot open PowerStats.log");
+	     exit(-1); 
+	   }
+
+	savefile<<"Cycles Simulated: "<<cycle<<"\n";
 	savefile<<"Reads completed: "<<reads<<"\n";
 	savefile<<"Writes completed: "<<writes<<"\n";
 	savefile<<"Erases completed: "<<erases<<"\n";
