@@ -223,20 +223,20 @@ void Ftl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t er
 
 	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{
-	  total_energy[i] = (idle_energy[i] + access_energy[i]) * VCC;
-	  ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
-	  ave_access_power[i] = (access_energy[i] * VCC) / cycle;
-	  average_power[i] = total_energy[i] / cycle;
+	    total_energy[i] = (idle_energy[i] + access_energy[i]) * VCC;
+	    ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
+	    ave_access_power[i] = (access_energy[i] * VCC) / cycle;
+	    average_power[i] = total_energy[i] / cycle;
 	}
 
 	ofstream savefile;
         savefile.open("PowerStats.log", ios_base::out | ios_base::trunc);
 
-	 if (!savefile) 
-	   {
-	     ERROR("Cannot open PowerStats.log");
-	     exit(-1); 
-	   }
+	if (!savefile) 
+	{
+	    ERROR("Cannot open PowerStats.log");
+	    exit(-1); 
+	}
 
 	savefile<<"Cycles Simulated: "<<cycle<<"\n";
         savefile<<"Reads completed: "<<reads<<"\n";
@@ -273,10 +273,10 @@ void Ftl::printStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t e
 
 	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{
-	  total_energy[i] = (idle_energy[i] + access_energy[i]) * VCC;
-	  ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
-	  ave_access_power[i] = (access_energy[i] * VCC) / cycle;
-	  average_power[i] = total_energy[i] / cycle;
+	    total_energy[i] = (idle_energy[i] + access_energy[i]) * VCC;
+	    ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
+	    ave_access_power[i] = (access_energy[i] * VCC) / cycle;
+	    average_power[i] = total_energy[i] / cycle;
 	}
 
 	cout<<"Reads completed: "<<reads<<"\n";

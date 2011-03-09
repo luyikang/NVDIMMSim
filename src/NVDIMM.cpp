@@ -202,5 +202,5 @@ void NVDIMM::update(void){
 }
 
 void NVDIMM::powerCallback(void){
-  ftl->powerCallback();
+  ftl->saveStats();
 }
