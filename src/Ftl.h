@@ -21,7 +21,7 @@ namespace NVDSim{
 			uint64_t get_ptr(void); 
 			void inc_ptr(void); 
 
-			virtual void saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases);
+			virtual void saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases, uint epochs);
 			virtual void printStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases);
 			virtual void powerCallback(void);
 
@@ -31,6 +31,8 @@ namespace NVDSim{
 			vector<double> getAccessEnergy(void);
 		       
 			Controller *controller;
+
+			std::ofstream savefile;
 
 		protected:
 			bool gc_flag;

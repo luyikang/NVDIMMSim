@@ -18,7 +18,7 @@ namespace NVDSim{
 			PCMGCFtl(Controller *c);
 			void update(void);
 
-			void saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases);
+			void saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases, uint epochs);
 			void printStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases);
 			void powerCallback(void);
 

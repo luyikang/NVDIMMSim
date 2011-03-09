@@ -63,6 +63,11 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	PRINT("Erase time: "<<ERASE_TIME);
 	PRINT("Channel latency for data: "<<DATA_TIME);
 	PRINT("Channel latency for a command: "<<COMMAND_TIME);
+	if(USE_EPOCHS == 1)
+	{
+	    PRINT("Device is using epoch data logging");
+	}
+	PRINT("Epoch Time: "<<EPOCH_TIME);
 	PRINT("");
 
 	if(GARBAGE_COLLECT == 0 && (DEVICE_TYPE.compare("NAND") == 0 || DEVICE_TYPE.compare("NOR") == 0))
@@ -144,6 +149,9 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	ReturnReadData= NULL;
 	WriteDataDone= NULL;
 
+	epoch_count = 0;
+	epoch_cycles = 0;
+
 	numReads= 0;
 	numWrites= 0;
 	numErases= 0;
@@ -176,7 +184,7 @@ void NVDIMM::printStats(void){
 }
 
 void NVDIMM::saveStats(void){
-        ftl->saveStats(currentClockCycle, numReads, numWrites, numErases);
+    ftl->saveStats(currentClockCycle, numReads, numWrites, numErases, epoch_count);
 }
 
 void NVDIMM::update(void){
@@ -198,9 +206,24 @@ void NVDIMM::update(void){
 
 	step();
 
+	//saving stats at the end of each epoch
+	if(USE_EPOCHS)
+	{
+	    if(epoch_cycles >= EPOCH_TIME)
+	    {
+		ftl->saveStats(currentClockCycle, numReads, numWrites, numErases, epoch_count);
+		epoch_count++;
+		epoch_cycles = 0;		
+	    }
+	    else
+	    {
+		epoch_cycles++;
+	    }
+	}
+
 	//cout << "NVDIMM successfully updated" << endl;
 }
 
 void NVDIMM::powerCallback(void){
-  ftl->saveStats();
+    ftl->powerCallback();
 }

@@ -142,7 +142,7 @@ void PCMFtl::update(void){
 
 }
 
-void PCMFtl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases) {
+void PCMFtl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases, uint epochs) {
 	// Power stuff
 	// Total power used
 	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0);
@@ -165,14 +165,36 @@ void PCMFtl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t
 	  average_power[i] = total_energy[i] / cycle;
 	}
 
-	ofstream savefile;
-        savefile.open("PowerStats.log", ios_base::out | ios_base::trunc);
+	if(USE_EPOCHS && epochs > 0)
+	{
+	    savefile.open("NVDIMM.log", ios_base::out | ios_base::app);
+	    savefile<<"\nData for Epoch "<<epochs<<"\n";
+	    savefile<<"========================\n";
+	    savefile<<"\nSimulation Data: \n";
+	    savefile<<"========================\n";
+	}
+	else if(USE_EPOCHS)
+	{
+	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
+	    savefile<<"NVDIMM Log \n";
+	    savefile<<"\nData for Epoch "<<epochs<<"\n";
+	    savefile<<"========================\n";
+	    savefile<<"\nSimulation Data: \n";
+	    savefile<<"========================\n";
+	}
+	else
+	{
+	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
+	    savefile<<"NVDIMM Log \n";
+	    savefile<<"\nSimulation Data: \n";
+	    savefile<<"========================\n";
+	}
 
-	 if (!savefile) 
-	   {
-	     ERROR("Cannot open PowerStats.log");
-	     exit(-1); 
-	   }
+	if (!savefile) 
+	{
+	    ERROR("Cannot open PowerStats.log");
+	    exit(-1); 
+	}
 
 	savefile<<"Cycles Simulated: "<<cycle<<"\n";
 	savefile<<"Reads completed: "<<reads<<"\n";

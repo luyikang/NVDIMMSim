@@ -102,6 +102,9 @@ extern uint LOOKUP_TIME;
 // in nanoseconds
 extern float CYCLE_TIME;
 
+extern uint EPOCH_TIME;
+#define USE_EPOCHS (EPOCH_TIME > 0)
+
 // Power stuff
 extern double READ_I;
 extern double WRITE_I;

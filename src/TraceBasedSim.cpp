@@ -14,7 +14,7 @@
 #include <time.h>
 #include "TraceBasedSim.h"
 
-#define NUM_WRITES 2000000
+#define NUM_WRITES 10
 #define SIM_CYCLES 1000000000000
 
 /*temporary assignments for externed variables.
@@ -149,6 +149,6 @@ void test_obj::run_test(void){
 	NVDimm->saveStats();
 	cout<<"Execution time: "<<(end-start)<<" cycles. "<<(double)(end-start)/CLOCKS_PER_SEC<<" seconds.\n";
 
-	cout<<"Callback test: \n";
-	NVDimm->powerCallback();
+	//cout<<"Callback test: \n";
+	//NVDimm->powerCallback();
 }

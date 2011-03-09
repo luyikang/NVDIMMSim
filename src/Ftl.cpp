@@ -211,7 +211,7 @@ uint64_t Ftl::get_ptr(void) {
 	   (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
 }
 
-void Ftl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases) {
+void Ftl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases, uint epochs) {
         // Power stuff
 	// Total power used
 	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0);
@@ -229,8 +229,30 @@ void Ftl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t er
 	    average_power[i] = total_energy[i] / cycle;
 	}
 
-	ofstream savefile;
-        savefile.open("PowerStats.log", ios_base::out | ios_base::trunc);
+	if(USE_EPOCHS && epochs > 0)
+	{
+	    savefile.open("NVDIMM.log", ios_base::out | ios_base::app);
+	    savefile<<"\nData for Epoch "<<epochs<<"\n";
+	    savefile<<"========================\n";
+	    savefile<<"\nSimulation Data: \n";
+	    savefile<<"========================\n";
+	}
+	else if(USE_EPOCHS)
+	{
+	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
+	    savefile<<"NVDIMM Log \n";
+	    savefile<<"\nData for Epoch "<<epochs<<"\n";
+	    savefile<<"========================\n";
+	    savefile<<"\nSimulation Data: \n";
+	    savefile<<"========================\n";
+	}
+	else
+	{
+	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
+	    savefile<<"NVDIMM Log \n";
+	    savefile<<"\nSimulation Data: \n";
+	    savefile<<"========================\n";
+	}
 
 	if (!savefile) 
 	{

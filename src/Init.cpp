@@ -22,6 +22,7 @@ uint ERASE_TIME;
 uint DATA_TIME;
 uint COMMAND_TIME;
 uint LOOKUP_TIME;
+uint EPOCH_TIME;
 float CYCLE_TIME;
 
 double READ_I;
@@ -65,6 +66,7 @@ namespace NVDSim
 		DEFINE_UINT_PARAM(DATA_TIME,DEV_PARAM),
 		DEFINE_UINT_PARAM(COMMAND_TIME,DEV_PARAM),
 		DEFINE_UINT_PARAM(LOOKUP_TIME,DEV_PARAM),
+		DEFINE_UINT_PARAM(EPOCH_TIME,DEV_PARAM),
 		DEFINE_FLOAT_PARAM(CYCLE_TIME,DEV_PARAM),
 		DEFINE_DOUBLE_PARAM(READ_I,DEV_PARAM),
 		DEFINE_DOUBLE_PARAM(WRITE_I,DEV_PARAM),
@@ -360,21 +362,27 @@ namespace NVDSim
 				{
 					//the string and bool values can be defaulted, but generally we need all the numeric values to be set to continue
 					case UINT: 
+					    if (configMap[i].iniKey.compare((std::string)"EPOCH_TIME") == 0)
+					    {
+						*((uint *)configMap[i].variablePtr) = 0;
+						DEBUG("\tSetting Default: "<<configMap[i].iniKey<<"=0");
+						break;
+					    }
 					case UINT64:
 					case FLOAT:
 						ERROR("Cannot continue without key '"<<configMap[i].iniKey<<"' set.");
 						return false;
 					break;
 				        case DOUBLE:
-					  if (configMap[i].iniKey.compare((std::string)"ASYNC_READ_I") == 0 ||
-					      configMap[i].iniKey.compare((std::string)"VPP_STANDBY_I") == 0 ||
-					      configMap[i].iniKey.compare((std::string)"VPP_READ_I") == 0 ||
-					      configMap[i].iniKey.compare((std::string)"VPP_WRITE_I") == 0 ||
-					      configMap[i].iniKey.compare((std::string)"VPP_ERASE_I") == 0 ||
-					      configMap[i].iniKey.compare((std::string)"VPP") == 0)
+					    if (configMap[i].iniKey.compare((std::string)"ASYNC_READ_I") == 0 ||
+						configMap[i].iniKey.compare((std::string)"VPP_STANDBY_I") == 0 ||
+						configMap[i].iniKey.compare((std::string)"VPP_READ_I") == 0 ||
+						configMap[i].iniKey.compare((std::string)"VPP_WRITE_I") == 0 ||
+						configMap[i].iniKey.compare((std::string)"VPP_ERASE_I") == 0 ||
+						configMap[i].iniKey.compare((std::string)"VPP") == 0)
 					    {
-					      *((double *)configMap[i].variablePtr) = 0.0;
-					      DEBUG("\tSetting Default: "<<configMap[i].iniKey<<"=0.0");
+						*((double *)configMap[i].variablePtr) = 0.0;
+						DEBUG("\tSetting Default: "<<configMap[i].iniKey<<"=0.0");
 					    }		  
 					  else
 					    {

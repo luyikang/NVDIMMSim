@@ -1,0 +1,241 @@
+NVDIMM Log 
+
+Data for Epoch 0
+========================
+
+Simulation Data: 
+========================
+Cycles Simulated: 200001
+Reads completed: 0
+Writes completed: 1
+Erases completed: 0
+
+Power Data: 
+========================
+Package: 0
+Accumulated Idle Energy: 7.97284e-05mJ
+Accumulated Access Energy: 0.0409424mJ
+Accumulated Erase Energy: 0mJ
+Accumulated VPP Idle Energy: 1.99321e-07mJ
+Accumulated VPP Access Energy: 5.83449e-05mJ
+Accumulated VPP Erase Energy: 0mJ
+Total Energy: 0.0410806mJ
+
+Average Idle Power: 0.264mW
+Average Access Power: 135.57mW
+Average Erase Power: 0mW
+Average VPP Idle Power: 0.00066mW
+Average VPP Access Power: 0.193194mW
+Average VPP Erase Power: 0mW
+Average Power: 136.028mW
+
+
+Data for Epoch 1
+========================
+
+Simulation Data: 
+========================
+Cycles Simulated: 400002
+Reads completed: 1
+Writes completed: 3
+Erases completed: 0
+
+Power Data: 
+========================
+Package: 0
+Accumulated Idle Energy: 0.000159457mJ
+Accumulated Access Energy: 0.0409424mJ
+Accumulated Erase Energy: 0mJ
+Accumulated VPP Idle Energy: 3.98642e-07mJ
+Accumulated VPP Access Energy: 5.83449e-05mJ
+Accumulated VPP Erase Energy: 0mJ
+Total Energy: 0.0411606mJ
+
+Average Idle Power: 0.264mW
+Average Access Power: 67.785mW
+Average Erase Power: 0mW
+Average VPP Idle Power: 0.00066mW
+Average VPP Access Power: 0.096597mW
+Average VPP Erase Power: 0mW
+Average Power: 68.1463mW
+
+
+Data for Epoch 2
+========================
+
+Simulation Data: 
+========================
+Cycles Simulated: 600003
+Reads completed: 3
+Writes completed: 4
+Erases completed: 0
+
+Power Data: 
+========================
+Package: 0
+Accumulated Idle Energy: 0.000239185mJ
+Accumulated Access Energy: 0.0409424mJ
+Accumulated Erase Energy: 0mJ
+Accumulated VPP Idle Energy: 5.97963e-07mJ
+Accumulated VPP Access Energy: 5.83449e-05mJ
+Accumulated VPP Erase Energy: 0mJ
+Total Energy: 0.0412405mJ
+
+Average Idle Power: 0.264mW
+Average Access Power: 45.19mW
+Average Erase Power: 0mW
+Average VPP Idle Power: 0.00066mW
+Average VPP Access Power: 0.064398mW
+Average VPP Erase Power: 0mW
+Average Power: 45.5191mW
+
+
+Data for Epoch 3
+========================
+
+Simulation Data: 
+========================
+Cycles Simulated: 800004
+Reads completed: 4
+Writes completed: 5
+Erases completed: 0
+
+Power Data: 
+========================
+Package: 0
+Accumulated Idle Energy: 0.000318914mJ
+Accumulated Access Energy: 0.0409424mJ
+Accumulated Erase Energy: 0mJ
+Accumulated VPP Idle Energy: 7.97284e-07mJ
+Accumulated VPP Access Energy: 5.83449e-05mJ
+Accumulated VPP Erase Energy: 0mJ
+Total Energy: 0.0413204mJ
+
+Average Idle Power: 0.264mW
+Average Access Power: 33.8925mW
+Average Erase Power: 0mW
+Average VPP Idle Power: 0.00066mW
+Average VPP Access Power: 0.0482985mW
+Average VPP Erase Power: 0mW
+Average Power: 34.2055mW
+
+
+Data for Epoch 4
+========================
+
+Simulation Data: 
+========================
+Cycles Simulated: 1000005
+Reads completed: 5
+Writes completed: 7
+Erases completed: 0
+
+Power Data: 
+========================
+Package: 0
+Accumulated Idle Energy: 0.000398642mJ
+Accumulated Access Energy: 0.0409424mJ
+Accumulated Erase Energy: 0mJ
+Accumulated VPP Idle Energy: 9.96605e-07mJ
+Accumulated VPP Access Energy: 5.83449e-05mJ
+Accumulated VPP Erase Energy: 0mJ
+Total Energy: 0.0414003mJ
+
+Average Idle Power: 0.264mW
+Average Access Power: 27.114mW
+Average Erase Power: 0mW
+Average VPP Idle Power: 0.00066mW
+Average VPP Access Power: 0.0386388mW
+Average VPP Erase Power: 0mW
+Average Power: 27.4173mW
+
+
+Data for Epoch 5
+========================
+
+Simulation Data: 
+========================
+Cycles Simulated: 1200006
+Reads completed: 7
+Writes completed: 8
+Erases completed: 0
+
+Power Data: 
+========================
+Package: 0
+Accumulated Idle Energy: 0.00047837mJ
+Accumulated Access Energy: 0.0409424mJ
+Accumulated Erase Energy: 0mJ
+Accumulated VPP Idle Energy: 1.19593e-06mJ
+Accumulated VPP Access Energy: 5.83449e-05mJ
+Accumulated VPP Erase Energy: 0mJ
+Total Energy: 0.0414803mJ
+
+Average Idle Power: 0.264mW
+Average Access Power: 22.595mW
+Average Erase Power: 0mW
+Average VPP Idle Power: 0.00066mW
+Average VPP Access Power: 0.032199mW
+Average VPP Erase Power: 0mW
+Average Power: 22.8919mW
+
+
+Data for Epoch 6
+========================
+
+Simulation Data: 
+========================
+Cycles Simulated: 1400007
+Reads completed: 8
+Writes completed: 9
+Erases completed: 0
+
+Power Data: 
+========================
+Package: 0
+Accumulated Idle Energy: 0.000558099mJ
+Accumulated Access Energy: 0.0409424mJ
+Accumulated Erase Energy: 0mJ
+Accumulated VPP Idle Energy: 1.39525e-06mJ
+Accumulated VPP Access Energy: 5.83449e-05mJ
+Accumulated VPP Erase Energy: 0mJ
+Total Energy: 0.0415602mJ
+
+Average Idle Power: 0.264mW
+Average Access Power: 19.3671mW
+Average Erase Power: 0mW
+Average VPP Idle Power: 0.00066mW
+Average VPP Access Power: 0.0275992mW
+Average VPP Erase Power: 0mW
+Average Power: 19.6594mW
+
+
+Data for Epoch 7
+========================
+
+Simulation Data: 
+========================
+Cycles Simulated: 1514703
+Reads completed: 10
+Writes completed: 10
+Erases completed: 0
+
+Power Data: 
+========================
+Package: 0
+Accumulated Idle Energy: 0.000603821mJ
+Accumulated Access Energy: 0.0409424mJ
+Accumulated Erase Energy: 0mJ
+Accumulated VPP Idle Energy: 1.50955e-06mJ
+Accumulated VPP Access Energy: 5.83449e-05mJ
+Accumulated VPP Erase Energy: 0mJ
+Total Energy: 0.041606mJ
+
+Average Idle Power: 0.264mW
+Average Access Power: 17.9006mW
+Average Erase Power: 0mW
+Average VPP Idle Power: 0.00066mW
+Average VPP Access Power: 0.0255093mW
+Average VPP Erase Power: 0mW
+Average Power: 18.1908mW
+

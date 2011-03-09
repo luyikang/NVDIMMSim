@@ -29,6 +29,7 @@ namespace NVDSim{
 			void saveStats(void);
 			string SetOutputFileName(string tracefilename);
 			void RegisterCallbacks(Callback_t *readDone, Callback_t *writeDone, Callback_v *Power);
+
 			void powerCallback(void);
 
 			Controller *controller;
@@ -36,13 +37,12 @@ namespace NVDSim{
 
 			vector<Package> *packages;
 
-			//std::ofsream visDataOut;
-			//
 			Callback_t* ReturnReadData;
 			Callback_t* WriteDataDone;
 			Callback_v* ReturnPowerData;
 
 			uint systemID, numReads, numWrites, numErases;
+			uint epoch_count, epoch_cycles;
 		private:
 			string dev, sys, cDirectory;
 	};
