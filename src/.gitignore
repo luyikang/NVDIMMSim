@@ -2,6 +2,7 @@
 *.po
 *.dep
 *.swp
+*.log
 *.sh~
 *.h~
 *.cpp~

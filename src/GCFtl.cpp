@@ -114,7 +114,77 @@ void GCFtl::update(void){
 					//update the logger
 					log->access_process(vAddr, commandPacket->package, WRITE, addressMap.find(vAddr) != addressMap.end());
 					break;
+			        case GC_DATA_READ:
+				    	if (addressMap.find(vAddr) == addressMap.end()){
+					        ERROR("GC tried to move data that wasn't there.");
+						exit(1);
+					} else {
+						//update the logger
+					        log->access_process(vAddr, commandPacket->package, GC_READ, true);
+						
+						//send the read to the controller
+					        commandPacket = Ftl::translate(GC_READ, vAddr, addressMap[vAddr]);
+						controller->addPacket(commandPacket);
+					}
+					break;
+			        case GC_DATA_WRITE:
+				        if (addressMap.find(vAddr) != addressMap.end()){
+					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
+					}			          
+					//look for first free physical page starting at the write pointer
+	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
 
+					for (block = start ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++){
+					  for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
+						if (!used[block][page]){
+						        pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
+							used[block][page] = true;
+							used_page_count++;
+							done = true;
+						}
+					  }
+					}
+					
+
+
+					//if we didn't find a free page after scanning til the end, check the beginning
+				        if (!done){
+					  for (block = 0 ; block < start / BLOCK_SIZE && !done ; block++){
+					      for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++){
+						if (!used[block][page]){
+							pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
+					  		used[block][page] = true;
+							used_page_count++;
+							done = true;		 
+					        }
+					      }
+					  }								
+					}
+
+					if (!done){
+						// TODO: Call GC
+						//ERROR("No free pages? GC needs some work.");
+						//exit(1);
+						// Trust that the GC is running and wait
+					        break;
+					} else {
+						addressMap[vAddr] = pAddr;
+					}
+					//send write to controller
+					dataPacket = Ftl::translate(DATA, vAddr, pAddr);
+					commandPacket = Ftl::translate(WRITE, vAddr, pAddr);
+					controller->addPacket(dataPacket);
+					controller->addPacket(commandPacket);
+					//update "write pointer"
+					channel = (channel + 1) % NUM_PACKAGES;
+					if (channel == 0){
+						die = (die + 1) % DIES_PER_PACKAGE;
+						if (die == 0)
+							plane = (plane + 1) % PLANES_PER_DIE;
+					}
+					//update the logger
+					log->access_process(vAddr, commandPacket->package, GC_WRITE, addressMap.find(vAddr) != addressMap.end());
+					break;
 				case BLOCK_ERASE:
 				        used_page_count -= PAGES_PER_BLOCK;
 					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
@@ -221,9 +291,9 @@ void GCFtl::runGC(void) {
 			
 
 		// Schedule a read and a write.
-		trans = FlashTransaction(DATA_READ, vAddr, NULL);
+		trans = FlashTransaction(GC_DATA_READ, vAddr, NULL);
 		addTransaction(trans);
-		trans = FlashTransaction(DATA_WRITE, vAddr, NULL);
+		trans = FlashTransaction(GC_DATA_WRITE, vAddr, NULL);
 		addTransaction(trans);
 	    } else if (dirty[dirty_block][page] == true){
 		dirty[dirty_block][page] = false;

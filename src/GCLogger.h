@@ -24,6 +24,8 @@ namespace NVDSim
 
 	void powerCallback();
 
+	void update();
+
 	void access_process(uint64_t addr, uint package, ChannelPacketType op, bool hit);
 	void access_stop(uint64_t addr);
 
