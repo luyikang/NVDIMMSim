@@ -9,9 +9,10 @@
 using namespace NVDSim;
 using namespace std;
 
-Die::Die(NVDIMM *parent, uint idNum){
+Die::Die(NVDIMM *parent, Logger *l, uint idNum){
 	id = idNum;
-	parentNVDIMM= parent;
+	parentNVDIMM = parent;
+	log = l;
 
 	planes= vector<Plane>(PLANES_PER_DIE, Plane());
 
@@ -21,7 +22,6 @@ Die::Die(NVDIMM *parent, uint idNum){
 	controlCyclesLeft= vector<uint>(PLANES_PER_DIE, 0);
 
 	currentClockCycle= 0;
-
 }
 
 void Die::attachToChannel(Channel *chan){
@@ -91,8 +91,9 @@ void Die::update(void){
 	 if (currentCommand != NULL){
 		 if (controlCyclesLeft[i] == 0){
 			 switch (currentCommand->busPacketType){
+			         case GC_READ:
+				         log->access_stop(currentCommand->virtualAddress);
 				 case READ:
-				 case GC_READ:
 					 planes[currentCommand->plane].read(currentCommand);
 					 returnDataPackets.push(planes[currentCommand->plane].readFromData());
 					 break;
@@ -102,16 +103,18 @@ void Die::update(void){
 					 //call write callback
 					 if (parentNVDIMM->WriteDataDone != NULL){
 						 (*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->virtualAddress, currentClockCycle);
-
 					 }
+					 log->access_stop(currentCommand->virtualAddress);
 					 break;
 				 case GC_WRITE:
 					 planes[currentCommand->plane].write(currentCommand);
 					 parentNVDIMM->numWrites++;
-
+					 log->access_stop(currentCommand->virtualAddress);
+					 break;
 				 case ERASE:
 					 planes[currentCommand->plane].erase(currentCommand);
 					 parentNVDIMM->numErases++;
+					 log->access_stop(currentCommand->virtualAddress);
 					 break;
 				 default:
 					 break;

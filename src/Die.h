@@ -7,6 +7,7 @@
 #include "FlashConfiguration.h"
 #include "ChannelPacket.h"
 #include "Plane.h"
+#include "Logger.h"
 
 namespace NVDSim{
 
@@ -16,7 +17,7 @@ namespace NVDSim{
 	class Ftl;
 	class Die : public SimObj{
 		public:
-			Die(NVDIMM *parent, uint id);
+	                Die(NVDIMM *parent, Logger *l, uint id);
 			void attachToChannel(Channel *chan);
 			void receiveFromChannel(ChannelPacket *busPacket);
 			int isDieBusy(uint plane);
@@ -25,6 +26,7 @@ namespace NVDSim{
 			uint id;
 			NVDIMM *parentNVDIMM;
 			Channel *channel;
+			Logger *log;
 			uint dataCyclesLeft;
 			std::queue<ChannelPacket *> returnDataPackets;
 			std::vector<Plane> planes;

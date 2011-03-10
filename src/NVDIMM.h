@@ -13,6 +13,7 @@
 #include "Die.h"
 #include "FlashTransaction.h"
 #include "Callbacks.h"
+#include "Logger.h"
 
 using std::string;
 
@@ -34,6 +35,7 @@ namespace NVDSim{
 
 			Controller *controller;
 			Ftl *ftl;
+			Logger *log;
 
 			vector<Package> *packages;
 

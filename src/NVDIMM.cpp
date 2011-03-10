@@ -129,21 +129,35 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	}
 	controller->attachPackages(packages);
 
-	if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 1)
+	if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 1 && FULL_LOGGING == 1)
 	{
 	  ftl = new PCMGCFtl(controller);
+	  log = new PCMFullGCLogger(controller);
+	}
+	else if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 1)
+	{
+	  ftl = new PCMGCFtl(controller);
+	  log = new PCMGCLogger(controller);
 	}
 	else if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
 	{
 	  ftl = new PCMFtl(controller);
+	  log = new PCMLogger(controller);
+	}
+	else if(GARBAGE_COLLECT == 1 && FULL_LOGGING == 1)
+	{
+	  ftl = new GCFtl(controller);
+	  log = new FullGCLogger(controller);
 	}
 	else if(GARBAGE_COLLECT == 1)
 	{
 	  ftl = new GCFtl(controller);
+	  log = new GCLogger(controller);
 	}
 	else
 	{
 	  ftl = new Ftl(controller);
+	  log = new Logger(controller);
 	}
 	
 	ReturnReadData= NULL;
@@ -211,7 +225,7 @@ void NVDIMM::update(void){
 	{
 	    if(epoch_cycles >= EPOCH_TIME)
 	    {
-		ftl->saveStats(currentClockCycle, numReads, numWrites, numErases, epoch_count);
+		logger->saveStats(currentClockCycle, epoch_count);
 		epoch_count++;
 		epoch_cycles = 0;		
 	    }
