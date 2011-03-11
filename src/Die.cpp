@@ -128,11 +128,11 @@ void Die::update(void){
 				 case WRITE:
 					 planes[currentCommand->plane].write(currentCommand);
 					 parentNVDIMM->numWrites++;
+					 log->access_stop(currentCommand->virtualAddress);
 					 //call write callback
 					 if (parentNVDIMM->WriteDataDone != NULL){
 						 (*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->virtualAddress, currentClockCycle);
 					 }
-					 log->access_stop(currentCommand->virtualAddress);
 					 break;
 				 case GC_WRITE:
 					 planes[currentCommand->plane].write(currentCommand);

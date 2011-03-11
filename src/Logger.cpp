@@ -66,13 +66,13 @@ void Logger::access_process(uint64_t addr, uint package, ChannelPacketType op)
 
 	if (!found)
 	{
-		cerr << "ERROR: Logger.access_process() called with address not in the access_queue. address=0x" << hex << addr << "\n" << dec;
+		cerr << "ERROR: NVLogger.access_process() called with address not in the access_queue. address=0x" << hex << addr << "\n" << dec;
 		abort();
 	}
 
 	if (access_map.count(addr) != 0)
 	{
-		cerr << "ERROR: Logger.access_process() called with address already in access_map. address=0x" << hex << addr << "\n" << dec;
+		cerr << "ERROR: NVLogger.access_process() called with address already in access_map. address=0x" << hex << addr << "\n" << dec;
 		abort();
 	}
 
