@@ -294,12 +294,15 @@ void PCMFullGCLogger::print(uint64_t cycle) {
 
 vector<vector<double> > PCMFullGCLogger::getEnergyData(void)
 {
-    vector<vector<double> > temp = vector<vector<double> >(6, vector<double>(NUM_PACKAGES, 0.0));
-    temp[0] = idle_energy;
-    temp[1] = access_energy;
-    temp[2] = erase_energy;
-    temp[3] = vpp_idle_energy;
-    temp[4] = vpp_access_energy;
-    temp[5] = vpp_erase_energy;
+     vector<vector<double> > temp = vector<vector<double> >(6, vector<double>(NUM_PACKAGES, 0.0));
+    for(int i = 0; i < NUM_PACKAGES; i++)
+    {
+	temp[0][i] = idle_energy[i];
+	temp[1][i] = access_energy[i];
+	temp[2][i] = erase_energy[i];
+	temp[3][i] = vpp_idle_energy[i];
+	temp[4][i] = vpp_access_energy[i];
+	temp[5][i] = vpp_erase_energy[i];
+    }
     return temp;
 }

@@ -158,18 +158,18 @@ void PCMLogger::save(uint64_t cycle, uint epoch) {
 	}
 
 	savefile<<"Cycles Simulated: "<<cycle<<"\n";
-	savefile<<"Accesses "<<num_accesses<<"\n";
+	savefile<<"Accesses: "<<num_accesses<<"\n";
         savefile<<"Reads completed: "<<num_reads<<"\n";
 	savefile<<"Writes completed: "<<num_writes<<"\n";
-	savefile<<"Number of Misses " <<num_misses<<"\n";
-	savefile<<"Number of Hits " <<num_hits<<"\n";
-	savefile<<"Number of Read Misses " <<num_read_misses<<"\n";
-	savefile<<"Number of Read Hits " <<num_read_hits<<"\n";
-	savefile<<"Number of Write Misses " <<num_write_misses<<"\n";
-	savefile<<"Number of Write Hits " <<num_write_hits<<"\n";
-	savefile<<"Miss Rate " <<miss_rate()<<"\n";
-	savefile<<"Read Miss Rate " <<read_miss_rate()<<"\n";
-	savefile<<"Write Miss Rate " <<write_miss_rate()<<"\n";
+	savefile<<"Number of Misses: " <<num_misses<<"\n";
+	savefile<<"Number of Hits: " <<num_hits<<"\n";
+	savefile<<"Number of Read Misses: " <<num_read_misses<<"\n";
+	savefile<<"Number of Read Hits: " <<num_read_hits<<"\n";
+	savefile<<"Number of Write Misses: " <<num_write_misses<<"\n";
+	savefile<<"Number of Write Hits: " <<num_write_hits<<"\n";
+	savefile<<"Miss Rate: " <<miss_rate()<<"\n";
+	savefile<<"Read Miss Rate: " <<read_miss_rate()<<"\n";
+	savefile<<"Write Miss Rate: " <<write_miss_rate()<<"\n";
 
 	savefile<<"\nPower Data: \n";
 	savefile<<"========================\n";
@@ -246,9 +246,12 @@ void PCMLogger::print(uint64_t cycle) {
 vector<vector<double> > PCMLogger::getEnergyData(void)
 {
     vector<vector<double> > temp = vector<vector<double> >(4, vector<double>(NUM_PACKAGES, 0.0));
-    temp[0] = idle_energy;
-    temp[1] = access_energy;
-    temp[2] = vpp_idle_energy;
-    temp[3] = vpp_access_energy;
+    for(int i = 0; i < NUM_PACKAGES; i++)
+    {
+	temp[0][i] = idle_energy[i];
+	temp[1][i] = access_energy[i];
+	temp[2][i] = vpp_idle_energy[i];
+	temp[3][i] = vpp_access_energy[i];
+    }
     return temp;
 }

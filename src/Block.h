@@ -1,5 +1,5 @@
-#ifndef BLOCK_H
-#define BLOCK_H
+#ifndef NVBLOCK_H
+#define NVBLOCK_H
 //Block.h
 //header file for the Block class
 

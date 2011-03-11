@@ -1,5 +1,5 @@
-#ifndef CHANNEL_H
-#define CHANNEL_H
+#ifndef NVCHANNEL_H
+#define NVCHANNEL_H
 //Channel.h
 //header file for the Package class
 

@@ -1,5 +1,5 @@
-#ifndef SIMOBJ_H
-#define SIMOBJ_H
+#ifndef NVSIMOBJ_H
+#define NVSIMOBJ_H
 
 //SimObj.h
 //

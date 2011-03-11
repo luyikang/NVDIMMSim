@@ -1,5 +1,5 @@
-#ifndef FULLGCLOGGER_H
-#define FULLGCLOGGER_H
+#ifndef NVFULLGCLOGGER_H
+#define NVFULLGCLOGGER_H
 
 #include <iostream>
 #include <fstream>

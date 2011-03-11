@@ -1,5 +1,5 @@
-#ifndef TBS_H
-#define TBS_H
+#ifndef NVTBS_H
+#define NVTBS_H
 
 #include "NVDIMM.h"
 

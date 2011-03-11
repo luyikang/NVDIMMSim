@@ -252,8 +252,11 @@ void GCLogger::print(uint64_t cycle) {
 vector<vector<double> > GCLogger::getEnergyData(void)
 {
     vector<vector<double> > temp = vector<vector<double> >(3, vector<double>(NUM_PACKAGES, 0.0));
-    temp[0] = idle_energy;
-    temp[1] = access_energy;
-    temp[2] = erase_energy;
+    for(int i = 0; i < NUM_PACKAGES; i++)
+    {
+	temp[0][i] = idle_energy[i];
+	temp[1][i] = access_energy[i];
+	temp[2][i] = erase_energy[i];
+    }
     return temp;
 }

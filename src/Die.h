@@ -1,5 +1,5 @@
-#ifndef DIE_H
-#define DIE_H
+#ifndef NVDIE_H
+#define NVDIE_H
 //Die.h
 //header file for the Die class
 

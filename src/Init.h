@@ -1,5 +1,5 @@
-#ifndef INIT_H
-#define INIT_H
+#ifndef NVINIT_H
+#define NVINIT_H
 
 #include <iostream>
 #include <fstream>

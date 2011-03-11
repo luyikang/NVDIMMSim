@@ -1,5 +1,5 @@
-#ifndef FTL_H
-#define FTL_H
+#ifndef NVFTL_H
+#define NVFTL_H
 //Ftl.h
 //header file for the ftl
 
