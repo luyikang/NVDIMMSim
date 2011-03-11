@@ -8,18 +8,20 @@
 using namespace NVDSim;
 using namespace std;
 
-GCFtl::GCFtl(Controller *c) 
-  : Ftl(c)
+GCFtl::GCFtl(Controller *c, Logger *l) 
+    : Ftl(c, l)
 {	
         int numBlocks = NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE;
 	dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
-
-	erase_energy = vector<double>(NUM_PACKAGES, 0.0); 
 }
 
 bool GCFtl::addTransaction(FlashTransaction &t){
 	if (!gc_flag){
 		transactionQueue.push_back(t);
+
+		// Start the logging for this access.
+		log->access_start(t.address);
+
 		return true;
 	}
 	return false;
@@ -37,20 +39,30 @@ void GCFtl::update(void){
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
 					if (addressMap.find(vAddr) == addressMap.end()){
-						//update access energy figures
-						access_energy[0] += (READ_I - STANDBY_I) * READ_TIME/2;
+						//update the logger
+					        log->access_process(vAddr, 0, READ);
+						log->read_miss();
+						log->access_stop(vAddr);
+
+						//miss, nothing to read so return garbage
 						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
-					} else {
-						commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
+					} else {	
+					        commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
+						//update the logger
+					        log->read_hit();
+						//send the read to the controller
 						controller->addPacket(commandPacket);
-						//update access energy figures
-						access_energy[commandPacket->package] += (READ_I - STANDBY_I) * READ_TIME/2;
 					}
 					break;
 				case DATA_WRITE:
 				        if (addressMap.find(vAddr) != addressMap.end()){
 					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
-					}			          
+					    log->write_hit();
+					}
+					else
+					{
+					    log->write_miss();
+					}
 					//look for first free physical page starting at the write pointer
 	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
 
@@ -102,16 +114,75 @@ void GCFtl::update(void){
 						if (die == 0)
 							plane = (plane + 1) % PLANES_PER_DIE;
 					}
-					//update access energy figures
-					access_energy[commandPacket->package] += (WRITE_I - STANDBY_I) * WRITE_TIME/2;
 					break;
+			        case GC_DATA_READ:
+				    	if (addressMap.find(vAddr) == addressMap.end()){
+					        ERROR("GC tried to move data that wasn't there.");
+						exit(1);
+					} else {		
+					        commandPacket = Ftl::translate(GC_READ, vAddr, addressMap[vAddr]);
+						//send the read to the controller
+						controller->addPacket(commandPacket);
+					}
+					break;
+			        case GC_DATA_WRITE:
+				        if (addressMap.find(vAddr) != addressMap.end()){
+					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
+					}			          
+					//look for first free physical page starting at the write pointer
+	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
 
+					for (block = start ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++){
+					  for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
+						if (!used[block][page]){
+						        pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
+							used[block][page] = true;
+							used_page_count++;
+							done = true;
+						}
+					  }
+					}
+
+					//if we didn't find a free page after scanning til the end, check the beginning
+				        if (!done){
+					  for (block = 0 ; block < start / BLOCK_SIZE && !done ; block++){
+					      for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++){
+						if (!used[block][page]){
+							pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
+					  		used[block][page] = true;
+							used_page_count++;
+							done = true;		 
+					        }
+					      }
+					  }								
+					}
+
+					if (!done){
+						// TODO: Call GC
+						//ERROR("No free pages? GC needs some work.");
+						//exit(1);
+						// Trust that the GC is running and wait
+					        break;
+					} else {
+						addressMap[vAddr] = pAddr;
+					}
+					//send write to controller
+					dataPacket = Ftl::translate(DATA, vAddr, pAddr);
+					commandPacket = Ftl::translate(WRITE, vAddr, pAddr);
+					controller->addPacket(dataPacket);
+					controller->addPacket(commandPacket);
+					//update "write pointer"
+					channel = (channel + 1) % NUM_PACKAGES;
+					if (channel == 0){
+						die = (die + 1) % DIES_PER_PACKAGE;
+						if (die == 0)
+							plane = (plane + 1) % PLANES_PER_DIE;
+					}
+					break;
 				case BLOCK_ERASE:
-				        //update erase energy figures
 				        used_page_count -= PAGES_PER_BLOCK;
 					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
 					controller->addPacket(commandPacket);
-					erase_energy[commandPacket->package] += (ERASE_I - STANDBY_I) * ERASE_TIME/2;
 					break;		
 				default:
 					ERROR("Transaction in Ftl that isn't a read or write... What?");
@@ -156,13 +227,6 @@ void GCFtl::update(void){
 			runGC();
 	} else if ((float)used_page_count <= ((float)VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE))//this is a little iffy
 		gc_flag = false;
-
-	//update idle energy
-	//since this is already subtracted from the access energies we just do it every time
-	for(uint i = 0; i < (NUM_PACKAGES); i++)
-	{
-	  idle_energy[i] += STANDBY_I;
-	}
 
 	//place power callbacks to hybrid_system
 #if Verbose_Power_Callback
@@ -219,9 +283,9 @@ void GCFtl::runGC(void) {
 			
 
 		// Schedule a read and a write.
-		trans = FlashTransaction(DATA_READ, vAddr, NULL);
+		trans = FlashTransaction(GC_DATA_READ, vAddr, NULL);
 		addTransaction(trans);
-		trans = FlashTransaction(DATA_WRITE, vAddr, NULL);
+		trans = FlashTransaction(GC_DATA_WRITE, vAddr, NULL);
 		addTransaction(trans);
 	    } else if (dirty[dirty_block][page] == true){
 		dirty[dirty_block][page] = false;
@@ -238,136 +302,3 @@ void GCFtl::runGC(void) {
    addTransaction(trans);
 
 }
-
-void GCFtl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases, uint epochs) {
-        // Power stuff
-	// Total power used
-	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0); 
-	
-        // Average power used
-	vector<double> ave_idle_power = vector<double>(NUM_PACKAGES, 0.0);
-	vector<double> ave_access_power = vector<double>(NUM_PACKAGES, 0.0);
-	vector<double> ave_erase_power = vector<double>(NUM_PACKAGES, 0.0);
-	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
-
-	for(uint i = 0; i < NUM_PACKAGES; i++)
-	{
-	  total_energy[i] = (idle_energy[i] + access_energy[i] + erase_energy[i]) * VCC;
-	  ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
-	  ave_access_power[i] = (access_energy[i] * VCC) / cycle;
-	  ave_erase_power[i] = (erase_energy[i] * VCC) / cycle;	  
-	  average_power[i] = total_energy[i] / cycle;
-	}
-
-	if(USE_EPOCHS && epochs > 0)
-	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::app);
-	    savefile<<"\nData for Epoch "<<epochs<<"\n";
-	    savefile<<"========================\n";
-	    savefile<<"\nSimulation Data: \n";
-	    savefile<<"========================\n";
-	}
-	else if(USE_EPOCHS)
-	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
-	    savefile<<"NVDIMM Log \n";
-	    savefile<<"\nData for Epoch "<<epochs<<"\n";
-	    savefile<<"========================\n";
-	    savefile<<"\nSimulation Data: \n";
-	    savefile<<"========================\n";
-	}
-	else
-	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
-	    savefile<<"NVDIMM Log \n";
-	    savefile<<"\nSimulation Data: \n";
-	    savefile<<"========================\n";
-	}
-
-	if (!savefile) 
-	{
-	    ERROR("Cannot open PowerStats.log");
-	    exit(-1); 
-	}
-
-	savefile<<"Cycles Simulated: "<<cycle<<"\n";
-	savefile<<"Reads completed: "<<reads<<"\n";
-	savefile<<"Writes completed: "<<writes<<"\n";
-	savefile<<"Erases completed: "<<erases<<"\n";
-
-	savefile<<"\nPower Data: \n";
-	savefile<<"========================\n";
-
-	for(uint i = 0; i < NUM_PACKAGES; i++)
-	{
-	    savefile<<"Package: "<<i<<"\n";
-	    savefile<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    savefile<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    savefile<<"Accumulated Erase Energy: "<<(erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    
-	    savefile<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
-	 
-	    savefile<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
-	    savefile<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
-	    savefile<<"Average Erase Power: "<<ave_erase_power[i]<<"mW\n";
-
-	    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
-	}
-
-	savefile.close();
-}
-
-void GCFtl::printStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases) {
-	// Power stuff
-	// Total power used
-	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0); 
-	
-        // Average power used
-	vector<double> ave_idle_power = vector<double>(NUM_PACKAGES, 0.0);
-	vector<double> ave_access_power = vector<double>(NUM_PACKAGES, 0.0);
-	vector<double> ave_erase_power = vector<double>(NUM_PACKAGES, 0.0);
-	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
-
-	for(uint i = 0; i < NUM_PACKAGES; i++)
-	{
-	  total_energy[i] = (idle_energy[i] + access_energy[i] + erase_energy[i]) * VCC;
-	  ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
-	  ave_access_power[i] = (access_energy[i] * VCC) / cycle;
-	  ave_erase_power[i] = (erase_energy[i] * VCC) / cycle;	  
-	  average_power[i] = total_energy[i] / cycle;
-	}
-
-	cout<<"Reads completed: "<<reads<<"\n";
-	cout<<"Writes completed: "<<writes<<"\n";
-	cout<<"Erases completed: "<<erases<<"\n";
-
-	cout<<"\nPower Data: \n";
-	cout<<"========================\n";
-
-	for(uint i = 0; i < NUM_PACKAGES; i++)
-	{
-	    cout<<"Package: "<<i<<"\n";
-	    cout<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    cout<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    cout<<"Accumulated Erase Energy: "<<(erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    
-	    cout<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
-	 
-	    cout<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
-	    cout<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
-	    cout<<"Average Erase Power: "<<ave_erase_power[i]<<"mW\n";
-
-	    cout<<"Average Power: "<<average_power[i]<<"mW\n\n";
-	}
-}
-
-void GCFtl::powerCallback(void) {
-  controller->returnPowerData(idle_energy, access_energy, erase_energy);
-}
-
-vector<double> GCFtl::getEraseEnergy(void) {
-  return erase_energy;
-}
-
-
-

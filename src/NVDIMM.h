@@ -8,11 +8,15 @@
 #include "Controller.h"
 #include "Ftl.h"
 #include "GCFtl.h"
-#include "PCMFtl.h"
-#include "PCMGCFtl.h"
 #include "Die.h"
 #include "FlashTransaction.h"
 #include "Callbacks.h"
+#include "Logger.h"
+#include "GCLogger.h"
+#include "FullGCLogger.h"
+#include "PCMLogger.h"
+#include "PCMGCLogger.h"
+#include "PCMFullGCLogger.h"
 
 using std::string;
 
@@ -34,6 +38,7 @@ namespace NVDSim{
 
 			Controller *controller;
 			Ftl *ftl;
+			Logger *log;
 
 			vector<Package> *packages;
 

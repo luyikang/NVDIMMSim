@@ -16,6 +16,8 @@ namespace NVDSim
 		DATA_READ, 
 		DATA_WRITE,
 		GC_DATA,
+		GC_DATA_READ,
+		GC_DATA_WRITE,
 		RETURN_DATA,
 		BLOCK_ERASE
 	};

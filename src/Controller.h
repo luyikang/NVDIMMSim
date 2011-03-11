@@ -7,9 +7,9 @@
 #include "FlashConfiguration.h"
 #include "Die.h"
 #include "Ftl.h"
-
 #include "Channel.h"
 #include "FlashTransaction.h"
+#include "Logger.h"
 
 namespace NVDSim{
 	typedef struct {
@@ -20,7 +20,7 @@ namespace NVDSim{
 	class NVDIMM;
 	class Controller : public SimObj{
 		public:
-	                Controller(NVDIMM* parent);
+	                Controller(NVDIMM* parent, Logger* l);
 
 			void attachPackages(vector<Package> *packages);
 			void returnReadData(const FlashTransaction &trans);
@@ -45,6 +45,7 @@ namespace NVDSim{
 			void update(void);
 
 			NVDIMM *parentNVDIMM;
+			Logger *log;
 
 		private:
 			std::list<FlashTransaction> returnTransaction;

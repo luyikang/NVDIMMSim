@@ -9,9 +9,10 @@
 using namespace NVDSim;
 using namespace std;
 
-Die::Die(NVDIMM *parent, uint idNum){
+Die::Die(NVDIMM *parent, Logger *l, uint idNum){
 	id = idNum;
-	parentNVDIMM= parent;
+	parentNVDIMM = parent;
+	log = l;
 
 	planes= vector<Plane>(PLANES_PER_DIE, Plane());
 
@@ -21,7 +22,6 @@ Die::Die(NVDIMM *parent, uint idNum){
 	controlCyclesLeft= vector<uint>(PLANES_PER_DIE, 0);
 
 	currentClockCycle= 0;
-
 }
 
 void Die::attachToChannel(Channel *chan){
@@ -35,39 +35,67 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 		 currentCommands[busPacket->plane] = busPacket;
 		 switch (busPacket->busPacketType){
 			 case READ:
-			 case GC_READ:
-			   if(DEVICE_TYPE.compare("PCM") == 0)
+			     if(DEVICE_TYPE.compare("PCM") == 0)
 			     {
 				 controlCyclesLeft[busPacket->plane]= READ_TIME * (NV_PAGE_SIZE / 8);
 			     }
-			   else
+			     else
 			     {
 				 controlCyclesLeft[busPacket->plane]= READ_TIME;
 			     }
-				 break;
+			     //update the logger
+			     log->access_process(busPacket->virtualAddress, busPacket->package, READ);
+			     break;
+			 case GC_READ:
+			     if(DEVICE_TYPE.compare("PCM") == 0)
+			     {
+				 controlCyclesLeft[busPacket->plane]= READ_TIME * (NV_PAGE_SIZE / 8);
+			     }
+			     else
+			     {
+				 controlCyclesLeft[busPacket->plane]= READ_TIME;
+			     }
+			     //update the logger
+			     log->access_process(busPacket->virtualAddress, busPacket->package, GC_READ);
+			     break;
 			 case WRITE:
-			 case GC_WRITE:
-			   if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
+			     if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
 			     {
 			         controlCyclesLeft[busPacket->plane]= ERASE_TIME;
 			     }
-			   else
+			     else
 			     {
 				 controlCyclesLeft[busPacket->plane]= WRITE_TIME;
 			     }
-				 break;
+			     //update the logger
+			     log->access_process(busPacket->virtualAddress, busPacket->package, WRITE);
+			     break;
+			 case GC_WRITE:
+			     if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
+			     {
+			         controlCyclesLeft[busPacket->plane]= ERASE_TIME;
+			     }
+			     else
+			     {
+				 controlCyclesLeft[busPacket->plane]= WRITE_TIME;
+			     }
+			     //update the logger
+			     log->access_process(busPacket->virtualAddress, busPacket->package, GC_WRITE);
+			     break;
 			 case ERASE:
-			   if(DEVICE_TYPE.compare("PCM") == 0)
+			     if(DEVICE_TYPE.compare("PCM") == 0)
 			     {
 				 controlCyclesLeft[busPacket->plane]= ERASE_TIME * (BLOCK_SIZE / NV_PAGE_SIZE);
 			     }
-			   else
+			     else
 			     {
 				 controlCyclesLeft[busPacket->plane]= ERASE_TIME;
 			     }
-				 break;
+			     //update the logger
+			     log->access_process(busPacket->virtualAddress, busPacket->package, ERASE);
+			     break;
 			 default:
-				 break;
+			     break;
 		 }
 	 } else{
 		 ERROR("Die is busy");
@@ -91,8 +119,9 @@ void Die::update(void){
 	 if (currentCommand != NULL){
 		 if (controlCyclesLeft[i] == 0){
 			 switch (currentCommand->busPacketType){
+			         case GC_READ:
+				         log->access_stop(currentCommand->virtualAddress);
 				 case READ:
-				 case GC_READ:
 					 planes[currentCommand->plane].read(currentCommand);
 					 returnDataPackets.push(planes[currentCommand->plane].readFromData());
 					 break;
@@ -102,16 +131,18 @@ void Die::update(void){
 					 //call write callback
 					 if (parentNVDIMM->WriteDataDone != NULL){
 						 (*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->virtualAddress, currentClockCycle);
-
 					 }
+					 log->access_stop(currentCommand->virtualAddress);
 					 break;
 				 case GC_WRITE:
 					 planes[currentCommand->plane].write(currentCommand);
 					 parentNVDIMM->numWrites++;
-
+					 log->access_stop(currentCommand->virtualAddress);
+					 break;
 				 case ERASE:
 					 planes[currentCommand->plane].erase(currentCommand);
 					 parentNVDIMM->numErases++;
+					 log->access_stop(currentCommand->virtualAddress);
 					 break;
 				 default:
 					 break;

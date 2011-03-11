@@ -1,161 +1,19 @@
-//PCMFtl.cpp
-//class file for PCMftl
-//
-#include "PCMGCFtl.h"
-#include "ChannelPacket.h"
-#include <cmath>
+#include "PCMGCLogger.h"
 
 using namespace NVDSim;
 using namespace std;
 
-PCMGCFtl::PCMGCFtl(Controller *c)
-  : GCFtl(c)
+PCMGCLogger::PCMGCLogger()
+  : GCLogger()
 {
 	vpp_idle_energy = vector<double>(NUM_PACKAGES, 0.0); 
 	vpp_access_energy = vector<double>(NUM_PACKAGES, 0.0); 
-	vpp_erase_energy = vector<double>(NUM_PACKAGES, 0.0);
+	vpp_erase_energy = vector<double>(NUM_PACKAGES, 0.0); 
 }
 
-void PCMGCFtl::update(void){
-        uint64_t block, page, start;
-	uint i;
-	if (busy) {
-		if (lookupCounter == 0){
-			uint64_t vAddr = currentTransaction.address, pAddr;
-			bool done = false;
-			ChannelPacket *commandPacket, *dataPacket;
-			
-			switch (currentTransaction.transactionType){
-				case DATA_READ:
-					if (addressMap.find(vAddr) == addressMap.end()){
-						//update access energy figures
-						access_energy[0] += (READ_I - STANDBY_I) * READ_TIME/2;
-						//update access energy figure with PCM stuff (if applicable)
-						vpp_access_energy[0] += (VPP_READ_I - VPP_STANDBY_I) * READ_TIME/2;
-						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
-					} else {
-						commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
-						controller->addPacket(commandPacket);
-						//update access energy figures
-						access_energy[commandPacket->package] += (READ_I - STANDBY_I) * READ_TIME/2;
-						//update access energy figure with PCM stuff (if applicable)
-						vpp_access_energy[commandPacket->package] += (VPP_READ_I - VPP_STANDBY_I) * READ_TIME/2;
-					}
-					break;
-				case DATA_WRITE:
-				        if (addressMap.find(vAddr) != addressMap.end()){
-					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
-					}			          
-					//look for first free physical page starting at the write pointer
-	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
-
-					for (block = start ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++){
-					  for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
-						if (!used[block][page]){
-						        pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
-							used[block][page] = true;
-							used_page_count++;
-							done = true;
-						}
-					  }
-					}
-					
-
-
-					//if we didn't find a free page after scanning til the end, check the beginning
-				        if (!done){
-					  for (block = 0 ; block < start / BLOCK_SIZE && !done ; block++){
-					      for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++){
-						if (!used[block][page]){
-							pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
-					  		used[block][page] = true;
-							used_page_count++;
-							done = true;		 
-					        }
-					      }
-					  }								
-					}
-
-					if (!done){
-						// TODO: Call GC
-						//ERROR("No free pages? GC needs some work.");
-						//exit(1);
-						// Trust that the GC is running and wait
-					        break;
-					} else {
-						addressMap[vAddr] = pAddr;
-					}
-					//send write to controller
-					dataPacket = Ftl::translate(DATA, vAddr, pAddr);
-					commandPacket = Ftl::translate(WRITE, vAddr, pAddr);
-					controller->addPacket(dataPacket);
-					controller->addPacket(commandPacket);
-					//update "write pointer"
-					channel = (channel + 1) % NUM_PACKAGES;
-					if (channel == 0){
-						die = (die + 1) % DIES_PER_PACKAGE;
-						if (die == 0)
-							plane = (plane + 1) % PLANES_PER_DIE;
-					}
-					//update access energy figures
-					access_energy[commandPacket->package] += (WRITE_I - STANDBY_I) * WRITE_TIME/2;
-					//update access energy figure with PCM stuff (if applicable)
-					vpp_access_energy[commandPacket->package] += (VPP_WRITE_I - VPP_STANDBY_I) * WRITE_TIME/2;
-					break;
-
-				case BLOCK_ERASE:
-				        //update erase energy figures
-				        used_page_count -= PAGES_PER_BLOCK;
-					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
-					controller->addPacket(commandPacket);
-					erase_energy[commandPacket->package] += (ERASE_I - STANDBY_I) * ERASE_TIME/2;
-					//update access energy figure with PCM stuff (if applicable)
-					vpp_erase_energy[commandPacket->package] += (VPP_ERASE_I - VPP_STANDBY_I) * ERASE_TIME/2;
-					break;		
-				default:
-					ERROR("Transaction in Ftl that isn't a read or write... What?");
-					exit(1);
-					break;
-			}
-			transactionQueue.pop_front();
-			busy = 0;
-		} 
-		else
-			lookupCounter--;
-	} // if busy
-	else {
-		// Not currently busy.
-		if (!transactionQueue.empty()) {
-			busy = 1;
-			currentTransaction = transactionQueue.front();
-			lookupCounter = LOOKUP_TIME;
-		}
-		else {
-			// Check to see if GC needs to run.
-		        if (checkGC() && !gc_status) {
-				// Run the GC.
-				gc_counter = ERASE_TIME;
-				gc_status = 1;
-				runGC();
-			}
-		}
-	}
-
-	if (gc_counter == 0 && gc_status)
-		gc_status = 0;
-	if (gc_counter > 0)
-		gc_counter--;
-
-	if ((float)used_page_count > (float)FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE) && !gc_status){
-		gc_status = 1;
-		gc_counter = ERASE_TIME;
-		gc_flag = true;
-		for (i = 0 ; i < NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE ; i++)
-			runGC();
-	} else if ((float)used_page_count <= ((float)VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE))//this is a little iffy
-		gc_flag = false;
-
-	//update idle energy
+void PCMGCLogger::update()
+{
+    	//update idle energy
 	//since this is already subtracted from the access energies we just do it every time
 	for(uint i = 0; i < (NUM_PACKAGES); i++)
 	{
@@ -163,14 +21,98 @@ void PCMGCFtl::update(void){
 	  vpp_idle_energy[i] += VPP_STANDBY_I;
 	}
 
-	//place power callbacks to hybrid_system
-#if Verbose_Power_Callback
-	  controller->returnPowerData(idle_energy, access_energy, erase_energy);
-#endif
-
+	this->step();
 }
 
-void PCMGCFtl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases, uint epochs) {
+// Using virtual addresses here right now
+void PCMGCLogger::access_process(uint64_t addr, uint package, ChannelPacketType op)
+{
+        // Get entry off of the access_queue.
+	uint64_t start_cycle = 0;
+	bool found = false;
+	list<pair <uint64_t, uint64_t>>::iterator it;
+	for (it = access_queue.begin(); it != access_queue.end(); it++)
+	{
+		uint64_t cur_addr = (*it).first;
+		uint64_t cur_cycle = (*it).second;
+
+		if (cur_addr == addr)
+		{
+			start_cycle = cur_cycle;
+			found = true;
+			access_queue.erase(it);
+			break;
+		}
+	}
+
+	if (!found)
+	{
+		cerr << "ERROR: Logger.access_process() called with address not in the access_queue. address=0x" << hex << addr << "\n" << dec;
+		abort();
+	}
+
+	if (access_map.count(addr) != 0)
+	{
+		cerr << "ERROR: Logger.access_process() called with address already in access_map. address=0x" << hex << addr << "\n" << dec;
+		abort();
+	}
+
+	AccessMapEntry a;
+	a.start = start_cycle;
+	a.op = op;
+	a.process = this->currentClockCycle;
+	access_map[addr] = a;
+
+	// Log cache event type.
+	if (op == READ || op == GC_READ)
+	{
+	    //update access energy figures
+	    access_energy[package] += (READ_I - STANDBY_I) * READ_TIME/2;
+	    //update access energy figure with PCM stuff (if applicable)
+	    vpp_access_energy[package] += (VPP_READ_I - VPP_STANDBY_I) * READ_TIME/2;
+	    this->read();
+	}
+	else if (op == WRITE || op == GC_WRITE)
+	{
+	    //update access energy figures
+	    access_energy[package] += (WRITE_I - STANDBY_I) * WRITE_TIME/2;
+	    //update access energy figure with PCM stuff (if applicable)
+	    vpp_access_energy[package] += (VPP_WRITE_I - VPP_STANDBY_I) * WRITE_TIME/2;
+	    this->write();
+	}
+	else if (op == ERASE)
+	{
+	    //update erase energy figures
+	    erase_energy[package] += (ERASE_I - STANDBY_I) * ERASE_TIME/2;
+	    //update access energy figure with PCM stuff (if applicable)
+	    vpp_erase_energy[package] += (VPP_ERASE_I - VPP_STANDBY_I) * ERASE_TIME/2;
+	    this->erase();
+	}
+}
+
+void PCMGCLogger::access_stop(uint64_t addr)
+{
+	if (access_map.count(addr) == 0)
+	{
+		cerr << "ERROR: Logger.access_stop() called with address not in access_map. address=" << hex << addr << "\n" << dec;
+		abort();
+	}
+
+	AccessMapEntry a = access_map[addr];
+	a.stop = this->currentClockCycle;
+	access_map[addr] = a;
+
+	if (a.op == READ || a.op == GC_READ)
+		this->read_latency(a.stop - a.start);
+	else if (a.op == WRITE || a.op == GC_WRITE)
+	        this->write_latency(a.stop - a.start);
+	else if (a.op == ERASE)
+	        this->erase_latency(a.stop - a.start);
+		
+	access_map.erase(addr);
+}
+
+void PCMGCLogger::save(uint64_t cycle, uint epoch) {
         // Power stuff
 	// Total power used
 	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0);    
@@ -197,10 +139,10 @@ void PCMGCFtl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64
 	  average_power[i] = total_energy[i] / cycle;
 	}
 
-	if(USE_EPOCHS && epochs > 0)
+	if(USE_EPOCHS && epoch > 0)
 	{
 	    savefile.open("NVDIMM.log", ios_base::out | ios_base::app);
-	    savefile<<"\nData for Epoch "<<epochs<<"\n";
+	    savefile<<"\nData for Epoch "<<epoch<<"\n";
 	    savefile<<"========================\n";
 	    savefile<<"\nSimulation Data: \n";
 	    savefile<<"========================\n";
@@ -209,7 +151,7 @@ void PCMGCFtl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64
 	{
 	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
 	    savefile<<"NVDIMM Log \n";
-	    savefile<<"\nData for Epoch "<<epochs<<"\n";
+	    savefile<<"\nData for Epoch "<<epoch<<"\n";
 	    savefile<<"========================\n";
 	    savefile<<"\nSimulation Data: \n";
 	    savefile<<"========================\n";
@@ -229,9 +171,19 @@ void PCMGCFtl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64
 	}
 
 	savefile<<"Cycles Simulated: "<<cycle<<"\n";
-	savefile<<"Reads completed: "<<reads<<"\n";
-	savefile<<"Writes completed: "<<writes<<"\n";
-	savefile<<"Erases completed: "<<erases<<"\n";
+	savefile<<"Accesses: "<<num_accesses<<"\n";
+        savefile<<"Reads completed: "<<num_reads<<"\n";
+	savefile<<"Writes completed: "<<num_writes<<"\n";
+	savefile<<"Erases completed: "<<num_erases<<"\n";
+	savefile<<"Number of Misses: " <<num_misses<<"\n";
+	savefile<<"Number of Hits: " <<num_hits<<"\n";
+	savefile<<"Number of Read Misses: " <<num_read_misses<<"\n";
+	savefile<<"Number of Read Hits: " <<num_read_hits<<"\n";
+	savefile<<"Number of Write Misses: " <<num_write_misses<<"\n";
+	savefile<<"Number of Write Hits: " <<num_write_hits<<"\n";
+	savefile<<"Miss Rate: " <<miss_rate()<<"\n";
+	savefile<<"Read Miss Rate: " <<read_miss_rate()<<"\n";
+	savefile<<"Write Miss Rate: " <<write_miss_rate()<<"\n";
 	
 	savefile<<"\nPower Data: \n";
 	savefile<<"========================\n";
@@ -261,7 +213,7 @@ void PCMGCFtl::saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64
 	savefile.close();
 }
 
-void PCMGCFtl::printStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases) {
+void PCMGCLogger::print(uint64_t cycle) {
 	// Power stuff
 	// Total power used
 	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0);    
@@ -288,9 +240,9 @@ void PCMGCFtl::printStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint6
 	  average_power[i] = total_energy[i] / cycle;
 	}
 
-	cout<<"Reads completed: "<<reads<<"\n";
-	cout<<"Writes completed: "<<writes<<"\n";
-	cout<<"Erases completed: "<<erases<<"\n";
+	cout<<"Reads completed: "<<num_reads<<"\n";
+	cout<<"Writes completed: "<<num_writes<<"\n";
+	cout<<"Erases completed: "<<num_erases<<"\n";
 	
 	cout<<"\nPower Data: \n";
 	cout<<"========================\n";
@@ -318,21 +270,14 @@ void PCMGCFtl::printStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint6
 	 }
 }
 
-void PCMGCFtl::powerCallback(void) {
-  controller->returnPowerData(idle_energy, access_energy, erase_energy, vpp_idle_energy, vpp_access_energy, vpp_erase_energy);
+vector<vector<double> > PCMGCLogger::getEnergyData(void)
+{
+    vector<vector<double> > temp = vector<vector<double> >(6, vector<double>(NUM_PACKAGES, 0.0));
+    temp[0] = idle_energy;
+    temp[1] = access_energy;
+    temp[2] = erase_energy;
+    temp[3] = vpp_idle_energy;
+    temp[4] = vpp_access_energy;
+    temp[5] = vpp_erase_energy;
+    return temp;
 }
-
-vector<double> PCMGCFtl::getVppIdleEnergy(void) {
-  return vpp_idle_energy;
-}
-
-vector<double> PCMGCFtl::getVppAccessEnergy(void) {
-  return vpp_access_energy;
-}
-
-vector<double> PCMGCFtl::getVppEraseEnergy(void) {
-  return vpp_erase_energy;
-}
-
-
-

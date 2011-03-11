@@ -11,30 +11,21 @@
 #include "FlashTransaction.h"
 #include "Controller.h"
 #include "Ftl.h"
+#include "Logger.h"
+#include "GCLogger.h"
+#include "FullGCLogger.h"
 
 namespace NVDSim{
 	class GCFtl : public Ftl{
 		public:
-			GCFtl(Controller *c);
+	                GCFtl(Controller *c, Logger *l);
 			bool addTransaction(FlashTransaction &t);
 			void update(void);
 			bool checkGC(void); 
 			void runGC(void);
 
-			void saveStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases, uint epochs);
-			void printStats(uint64_t cycle, uint64_t reads, uint64_t writes, uint64_t erases);
-			void powerCallback(void);
-
-			//Accessors for power data
-			//Writing correct object oriented code up in this piece, what now?
-			vector<double> getEraseEnergy(void);
-
 		protected:
 			std::vector<vector<bool>> dirty;
-
-			// Power Stuff
-			// This is computed per package
-			std::vector<double> erase_energy;
 	};
 }
 #endif

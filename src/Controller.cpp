@@ -6,15 +6,16 @@
 
 using namespace NVDSim;
 
-Controller::Controller(NVDIMM* parent){
-	parentNVDIMM= parent;
+Controller::Controller(NVDIMM* parent, Logger* l){
+	parentNVDIMM = parent;
+	log = l;
 
-	channelXferCyclesLeft= vector<uint>(NUM_PACKAGES, 0);
+	channelXferCyclesLeft = vector<uint>(NUM_PACKAGES, 0);
 
-	channelQueues= vector<queue <ChannelPacket *> >(NUM_PACKAGES, queue<ChannelPacket *>());
-	outgoingPackets= vector<ChannelPacket *>(NUM_PACKAGES, NULL);
+	channelQueues = vector<queue <ChannelPacket *> >(NUM_PACKAGES, queue<ChannelPacket *>());
+	outgoingPackets = vector<ChannelPacket *>(NUM_PACKAGES, NULL);
 
-	currentClockCycle= 0;
+	currentClockCycle = 0;
 }
 
 void Controller::attachPackages(vector<Package> *packages){
@@ -26,6 +27,7 @@ void Controller::returnReadData(const FlashTransaction  &trans){
 		(*parentNVDIMM->ReturnReadData)(parentNVDIMM->systemID, trans.address, currentClockCycle);
 	}
 	parentNVDIMM->numReads++;
+	log->access_stop(trans.address);
 }
 
 void Controller::returnPowerData(vector<double> idle_energy, vector<double> access_energy, vector<double> erase_energy,

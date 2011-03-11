@@ -72,10 +72,13 @@ extern uint BLOCKS_PER_PLANE;
 extern uint VIRTUAL_BLOCKS_PER_PLANE;
 extern uint PAGES_PER_BLOCK;
 extern uint NV_PAGE_SIZE;
-// does the device need garbage collection 
+// does the device use garbage collection 
 extern bool GARBAGE_COLLECT;
 
 #define GC GARBAGE_COLLECT
+
+// do we want to log all GC information
+extern bool FULL_LOGGING;
 
 extern float IDLE_GC_THRESHOLD;
 extern float FORCE_GC_THRESHOLD;
