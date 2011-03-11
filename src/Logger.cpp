@@ -316,7 +316,10 @@ void Logger::print(uint64_t cycle)
 vector<vector<double> > Logger::getEnergyData(void)
 {
     vector<vector<double> > temp = vector<vector<double> >(2, vector<double>(NUM_PACKAGES, 0.0));
-    temp[0] = idle_energy;
-    temp[1] = access_energy;
+    for(int i = 0; i < NUM_PACKAGES; i++)
+    {
+	temp[0][i] = idle_energy[i];
+	temp[1][i] = access_energy[i];
+    }
     return temp;
 }

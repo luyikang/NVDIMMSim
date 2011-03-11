@@ -1,5 +1,5 @@
-#ifndef GCFTL_H
-#define GCFTL_H
+#ifndef NVGCFTL_H
+#define NVGCFTL_H
 //GCFtl.h
 //header file for the ftl with garbage collection
 

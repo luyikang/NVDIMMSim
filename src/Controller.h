@@ -1,5 +1,5 @@
-#ifndef CONTROLLER_H
-#define CONTROLLER_H
+#ifndef NVCONTROLLER_H
+#define NVCONTROLLER_H
 //Controller.h
 //header file for controller
 

@@ -1,5 +1,5 @@
-#ifndef LOGGER_H
-#define LOGGER_H
+#ifndef NVLOGGER_H
+#define NVLOGGER_H
 
 #include <iostream>
 #include <fstream>

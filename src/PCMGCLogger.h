@@ -1,5 +1,5 @@
-#ifndef PCMGCLOGGER_H
-#define PCMGCLOGGER_H
+#ifndef NVPCMGCLOGGER_H
+#define NVPCMGCLOGGER_H
 
 #include <iostream>
 #include <fstream>

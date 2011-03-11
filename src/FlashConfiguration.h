@@ -1,5 +1,5 @@
-#ifndef FLASHCONF_H
-#define FLASHCONF_H
+#ifndef NVFLASHCONF_H
+#define NVFLASHCONF_H
 //SysemConfiguration.h
 //Configuration values, headers, and macros for the whole system
 //

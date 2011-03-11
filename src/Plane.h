@@ -1,5 +1,5 @@
-#ifndef PLANE_H
-#define PLANE_H
+#ifndef NVPLANE_H
+#define NVPLANE_H
 //Plane.h
 //header file for the Plane class
 
