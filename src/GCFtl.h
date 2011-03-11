@@ -11,11 +11,14 @@
 #include "FlashTransaction.h"
 #include "Controller.h"
 #include "Ftl.h"
+#include "Logger.h"
+#include "GCLogger.h"
+#include "FullGCLogger.h"
 
 namespace NVDSim{
 	class GCFtl : public Ftl{
 		public:
-			GCFtl(Controller *c);
+	                GCFtl(Controller *c, Logger *l);
 			bool addTransaction(FlashTransaction &t);
 			void update(void);
 			bool checkGC(void); 

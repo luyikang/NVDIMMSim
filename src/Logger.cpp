@@ -3,7 +3,7 @@
 using namespace NVDSim;
 using namespace std;
 
-Logger::Logger(Controller *c)
+Logger::Logger()
 {
     	num_accesses = 0;
 	num_reads = 0;
@@ -24,8 +24,6 @@ Logger::Logger(Controller *c)
 
 	idle_energy = vector<double>(NUM_PACKAGES, 0.0); 
 	access_energy = vector<double>(NUM_PACKAGES, 0.0); 
-
-	controller = c;
 }
 
 void Logger::update()
@@ -46,7 +44,7 @@ void Logger::access_start(uint64_t addr)
 }
 
 // Using virtual addresses here right now
-void Logger::access_process(uint64_t addr, uint package, ChannelPacketType op, bool hit)
+void Logger::access_process(uint64_t addr, uint package, ChannelPacketType op)
 {
         // Get entry off of the access_queue.
 	uint64_t start_cycle = 0;
@@ -82,38 +80,20 @@ void Logger::access_process(uint64_t addr, uint package, ChannelPacketType op, b
 	a.start = start_cycle;
 	a.op = op;
 	a.process = this->currentClockCycle;
-	a.hit = hit;
 	access_map[addr] = a;
 
 	// Log cache event type.
-	if (hit && op == READ)
+	if (op == READ)
 	{
 	    //update access energy figures
 	    access_energy[package] += (READ_I - STANDBY_I) * READ_TIME/2;
 	    this->read();
-	    this->read_hit();
 	}
-	else if (hit && op == WRITE)
+	else if (op == WRITE)
 	{
 	    //update access energy figures
 	    access_energy[package] += (WRITE_I - STANDBY_I) * WRITE_TIME/2;
 	    this->write();
-	    this->write_hit();
-	}
-	else if (!hit && op == READ)
-	{   
-	    //update access energy figures
-	    //just a place holder, need a better way to handle this
-	    access_energy[0] += (READ_I - STANDBY_I) * READ_TIME/2;
-	    this->read();
-	    this->read_miss();
-	}
-	else if (!hit && op == WRITE)
-	{
-	    //update access energy figures
-	    access_energy[package] += (WRITE_I - STANDBY_I) * WRITE_TIME/2;
-	    this->write();
-	    this->write_miss();
 	}
 }
 
@@ -129,7 +109,7 @@ void Logger::access_stop(uint64_t addr)
 	a.stop = this->currentClockCycle;
 	access_map[addr] = a;
 
-	if (op == READ)
+	if (a.op == READ)
 		this->read_latency(a.stop - a.start);
 	else
 		this->write_latency(a.stop - a.start);
@@ -161,25 +141,25 @@ void Logger::miss()
 
 void Logger::read_hit()
 {
-	hit();
+	this->hit();
 	num_read_hits += 1;
 }
 
 void Logger::read_miss()
 {
-	miss();
+	this->miss();
 	num_read_misses += 1;
 }
 
 void Logger::write_hit()
 {
-	hit();
+	this->hit();
 	num_write_hits += 1;
 }
 
 void Logger::write_miss()
 {
-	miss();
+	this->miss();
 	num_write_misses += 1;
 }
 
@@ -264,18 +244,18 @@ void Logger::save(uint64_t cycle, uint epoch)
 	}
 
 	savefile<<"Cycles Simulated: "<<cycle<<"\n";
-	savefile<<"Accesses "<<num_accesses<<"\n";
-        savefile<<"Reads completed: "<<reads<<"\n";
-	savefile<<"Writes completed: "<<writes<<"\n";
-	savefile<<"Number of Misses " <<num_misses<<"\n";
-	savefile<<"Number of Hits " <<num_hits<<"\n";
-	savefile<<"Number of Read Misses " <<num_read_misses<<"\n";
-	savefile<<"Number of Read Hits " <<num_read_hits<<"\n";
-	savefile<<"Number of Write Misses " <<num_write_misses<<"\n";
-	savefile<<"Number of Write Hits " <<num_write_hits<<"\n";
-	savefile<<"Miss Rate " <<miss_rate()<<"\n";
-	savefile<<"Read Miss Rate " <<read_miss_rate()<<"\n";
-	savefile<<"Write Miss Rate " <<write_miss_rate()<<"\n";
+	savefile<<"Accesses: "<<num_accesses<<"\n";
+        savefile<<"Reads completed: "<<num_reads<<"\n";
+	savefile<<"Writes completed: "<<num_writes<<"\n";
+	savefile<<"Number of Misses: " <<num_misses<<"\n";
+	savefile<<"Number of Hits: " <<num_hits<<"\n";
+	savefile<<"Number of Read Misses: " <<num_read_misses<<"\n";
+	savefile<<"Number of Read Hits: " <<num_read_hits<<"\n";
+	savefile<<"Number of Write Misses: " <<num_write_misses<<"\n";
+	savefile<<"Number of Write Hits: " <<num_write_hits<<"\n";
+	savefile<<"Miss Rate: " <<miss_rate()<<"\n";
+	savefile<<"Read Miss Rate: " <<read_miss_rate()<<"\n";
+	savefile<<"Write Miss Rate: " <<write_miss_rate()<<"\n";
 
 	savefile<<"\nPower Data: \n";
 	savefile<<"========================\n";
@@ -314,9 +294,8 @@ void Logger::print(uint64_t cycle)
 	    average_power[i] = total_energy[i] / cycle;
 	}
 
-	cout<<"Reads completed: "<<reads<<"\n";
-	cout<<"Writes completed: "<<writes<<"\n";
-	cout<<"Erases completed: "<<erases<<"\n";
+	cout<<"Reads completed: "<<num_reads<<"\n";
+	cout<<"Writes completed: "<<num_writes<<"\n";
 
 	cout<<"\nPower Data: \n";
 	cout<<"========================\n";
@@ -334,17 +313,10 @@ void Logger::print(uint64_t cycle)
 	}
 }
 
-void Logger::powerCallback(void) 
+vector<vector<double> > Logger::getEnergyData(void)
 {
-  controller->returnPowerData(idle_energy, access_energy);
-}
-
-vector<double> Logger::getIdleEnergy(void) 
-{
-  return idle_energy;
-}
-
-vector<double> Logger::getAccessEnergy(void) 
-{
-  return access_energy;
+    vector<vector<double> > temp = vector<vector<double> >(2, vector<double>(NUM_PACKAGES, 0.0));
+    temp[0] = idle_energy;
+    temp[1] = access_energy;
+    return temp;
 }

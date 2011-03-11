@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 #include "FlashConfiguration.h"
 #include "Logger.h"
@@ -12,22 +13,19 @@ namespace NVDSim
     class PCMLogger: public Logger
     {
     public:
-	PCMLogger(Controller *c);
+	PCMLogger();
 	
-	void save();
-	void print();
-
-	void powerCallback();
+	void save(uint64_t cycle, uint epoch);
+	void print(uint64_t cycle);
 
 	void update();
 
-	void access_process(uint64_t addr, uint package, ChannelPacketType op, bool hit);
+	void access_process(uint64_t addr, uint package, ChannelPacketType op);
 	void access_stop(uint64_t addr);
 
 	//Accessors for power data
 	//Writing correct object oriented code up in this piece, what now?
-	vector<double> getVppIdleEnergy(void);
-	vector<double> getVppAccessEnergy(void);
+	std::vector<std::vector<double>> getEnergyData(void);
 
 	// State
 	// Power Stuff

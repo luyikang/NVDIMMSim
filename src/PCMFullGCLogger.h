@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
 
 #include "FlashConfiguration.h"
 #include "FullGCLogger.h"
@@ -12,23 +13,19 @@ namespace NVDSim
     class PCMFullGCLogger: public FullGCLogger
     {
     public:
-	PCMFullGCLogger(Controller *c);
+	PCMFullGCLogger();
 	
-	void save();
-	void print();
-
-	void powerCallback();
+	void save(uint64_t cycle, uint epoch);
+	void print(uint64_t cycle);
 
 	void update();
 
-	void access_process(uint64_t addr, uint package, ChannelPacketType op, bool hit);
+	void access_process(uint64_t addr, uint package, ChannelPacketType op);
 	void access_stop(uint64_t addr);
-
+	
 	//Accessors for power data
 	//Writing correct object oriented code up in this piece, what now?
-	vector<double> getVppIdleEnergy(void);
-	vector<double> getVppAccessEnergy(void);
-	vector<double> getVppEraseEnergy(void);
+	std::vector<std::vector<double>> getEnergyData(void);
 
 	// State
 	// Power Stuff
@@ -38,3 +35,5 @@ namespace NVDSim
 	std::vector<double> vpp_erase_energy;
     };
 }
+
+#endif

@@ -3,20 +3,27 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <unordered_map>
+#include <queue>
+#include <list>
 
+#include "SimObj.h"
 #include "FlashConfiguration.h"
 #include "ChannelPacket.h"
 
 namespace NVDSim
 {
-    class Logger: public SimulatorObject
+    class Logger: public SimObj
     {
     public:
-	Logger(Controller *c);
+	Logger();
 	
 	// operations
 	void read();
 	void write();
+	void hit();
+	void miss();
 
 	void read_hit();
 	void read_miss();
@@ -25,28 +32,24 @@ namespace NVDSim
 
 	void read_latency(uint64_t cycles);
 	void write_latency(uint64_t cycles);
+	void queue_latency(uint64_t cycles);
 
 	double miss_rate();
 	double read_miss_rate();
 	double write_miss_rate();
 
-	//Accessors for power data
+	//Accessor for power data
 	//Writing correct object oriented code up in this piece, what now?
-	vector<double> getIdleEnergy(void);
-	vector<double> getAccessEnergy(void);
+	virtual std::vector<std::vector<double>> getEnergyData(void);
 	
 	virtual void save(uint64_t cycle, uint epoch);
 	virtual void print(uint64_t cycle);
 
-	virtual void powerCallback(void); 
-
 	virtual void update();
 	
 	void access_start(uint64_t addr);
-	virtual void access_process(uint64_t addr, uint package, ChannelPacketType op, bool hit);
+	virtual void access_process(uint64_t addr, uint package, ChannelPacketType op);
 	virtual void access_stop(uint64_t addr);
-
-	Controller *controller;
 	
 	// State
 	std::ofstream savefile;
@@ -81,23 +84,21 @@ namespace NVDSim
 		uint64_t process; // Cycle when processing starts
 		uint64_t stop; // Stopping cycle of access
 		ChannelPacketType op; // what operation is this?
-		bool hit; // Is this a hit?
 		AccessMapEntry()
 		{
 			start = 0;
 			process = 0;
 			stop = 0;
-			read_op = false;
-			hit = false;
+			op = READ;
 		}
 	};
 
 	// Store access info while the access is being processed.
-	unordered_map<uint64_t, AccessMapEntry> access_map;
+	std::unordered_map<uint64_t, AccessMapEntry> access_map;
 
 	// Store the address and arrival time while access is waiting to be processed.
 	// Must do this because duplicate addresses may arrive close together.
-	list<pair <uint64_t, uint64_t>> access_queue;
+	std::list<std::pair <uint64_t, uint64_t>> access_queue;
     };
 }
 

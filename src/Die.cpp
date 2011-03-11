@@ -35,39 +35,67 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 		 currentCommands[busPacket->plane] = busPacket;
 		 switch (busPacket->busPacketType){
 			 case READ:
-			 case GC_READ:
-			   if(DEVICE_TYPE.compare("PCM") == 0)
+			     if(DEVICE_TYPE.compare("PCM") == 0)
 			     {
 				 controlCyclesLeft[busPacket->plane]= READ_TIME * (NV_PAGE_SIZE / 8);
 			     }
-			   else
+			     else
 			     {
 				 controlCyclesLeft[busPacket->plane]= READ_TIME;
 			     }
-				 break;
+			     //update the logger
+			     log->access_process(busPacket->virtualAddress, busPacket->package, READ);
+			     break;
+			 case GC_READ:
+			     if(DEVICE_TYPE.compare("PCM") == 0)
+			     {
+				 controlCyclesLeft[busPacket->plane]= READ_TIME * (NV_PAGE_SIZE / 8);
+			     }
+			     else
+			     {
+				 controlCyclesLeft[busPacket->plane]= READ_TIME;
+			     }
+			     //update the logger
+			     log->access_process(busPacket->virtualAddress, busPacket->package, GC_READ);
+			     break;
 			 case WRITE:
-			 case GC_WRITE:
-			   if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
+			     if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
 			     {
 			         controlCyclesLeft[busPacket->plane]= ERASE_TIME;
 			     }
-			   else
+			     else
 			     {
 				 controlCyclesLeft[busPacket->plane]= WRITE_TIME;
 			     }
-				 break;
+			     //update the logger
+			     log->access_process(busPacket->virtualAddress, busPacket->package, WRITE);
+			     break;
+			 case GC_WRITE:
+			     if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
+			     {
+			         controlCyclesLeft[busPacket->plane]= ERASE_TIME;
+			     }
+			     else
+			     {
+				 controlCyclesLeft[busPacket->plane]= WRITE_TIME;
+			     }
+			     //update the logger
+			     log->access_process(busPacket->virtualAddress, busPacket->package, GC_WRITE);
+			     break;
 			 case ERASE:
-			   if(DEVICE_TYPE.compare("PCM") == 0)
+			     if(DEVICE_TYPE.compare("PCM") == 0)
 			     {
 				 controlCyclesLeft[busPacket->plane]= ERASE_TIME * (BLOCK_SIZE / NV_PAGE_SIZE);
 			     }
-			   else
+			     else
 			     {
 				 controlCyclesLeft[busPacket->plane]= ERASE_TIME;
 			     }
-				 break;
+			     //update the logger
+			     log->access_process(busPacket->virtualAddress, busPacket->package, ERASE);
+			     break;
 			 default:
-				 break;
+			     break;
 		 }
 	 } else{
 		 ERROR("Die is busy");

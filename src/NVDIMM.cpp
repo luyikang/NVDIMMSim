@@ -104,7 +104,43 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	      }
 	  }
 
-	controller= new Controller(this);
+	
+	if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 1 && FULL_LOGGING == 1)
+	{
+	  log = new PCMFullGCLogger();
+	  controller= new Controller(this, log);
+	  ftl = new GCFtl(controller, log);	  
+	}
+	else if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 1)
+	{
+	  log = new PCMGCLogger();
+	  controller= new Controller(this, log);
+	  ftl = new GCFtl(controller, log);
+	}
+	else if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
+	{
+	  log = new PCMLogger();
+	  controller= new Controller(this, log);
+	  ftl = new Ftl(controller, log);
+	}
+	else if(GARBAGE_COLLECT == 1 && FULL_LOGGING == 1)
+	{
+	  log = new FullGCLogger();
+	  controller= new Controller(this, log);
+	  ftl = new GCFtl(controller, log);
+	}
+	else if(GARBAGE_COLLECT == 1)
+	{
+	  log = new GCLogger();
+	  controller= new Controller(this, log);
+	  ftl = new GCFtl(controller, log);
+	}
+	else
+	{
+	  log = new Logger();
+	  controller= new Controller(this, log);
+	  ftl = new Ftl(controller, log);
+	}
 	packages= new vector<Package>();
 
 	if (DIES_PER_PACKAGE > INT_MAX){
@@ -120,7 +156,7 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 		//pack.channel= new Channel();
 		pack.channel->attachController(controller);
 		for (j= 0; j < DIES_PER_PACKAGE; j++){
-			Die *die= new Die(this, j);
+		        Die *die= new Die(this, log, j);
 			die->attachToChannel(pack.channel);
 			pack.channel->attachDie(die);
 			pack.dies.push_back(die);
@@ -128,37 +164,6 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 		packages->push_back(pack);
 	}
 	controller->attachPackages(packages);
-
-	if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 1 && FULL_LOGGING == 1)
-	{
-	  ftl = new PCMGCFtl(controller);
-	  log = new PCMFullGCLogger(controller);
-	}
-	else if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 1)
-	{
-	  ftl = new PCMGCFtl(controller);
-	  log = new PCMGCLogger(controller);
-	}
-	else if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
-	{
-	  ftl = new PCMFtl(controller);
-	  log = new PCMLogger(controller);
-	}
-	else if(GARBAGE_COLLECT == 1 && FULL_LOGGING == 1)
-	{
-	  ftl = new GCFtl(controller);
-	  log = new FullGCLogger(controller);
-	}
-	else if(GARBAGE_COLLECT == 1)
-	{
-	  ftl = new GCFtl(controller);
-	  log = new GCLogger(controller);
-	}
-	else
-	{
-	  ftl = new Ftl(controller);
-	  log = new Logger(controller);
-	}
 	
 	ReturnReadData= NULL;
 	WriteDataDone= NULL;
@@ -194,11 +199,11 @@ void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback
 
 void NVDIMM::printStats(void){
 
-       ftl->printStats(currentClockCycle, numReads, numWrites, numErases);
+       log->print(currentClockCycle);
 }
 
 void NVDIMM::saveStats(void){
-    ftl->saveStats(currentClockCycle, numReads, numWrites, numErases, epoch_count);
+       log->save(currentClockCycle, epoch_count);
 }
 
 void NVDIMM::update(void){
@@ -217,6 +222,7 @@ void NVDIMM::update(void){
 	ftl->step();
 	controller->update();
 	controller->step();
+	log->update();
 
 	step();
 
@@ -225,7 +231,7 @@ void NVDIMM::update(void){
 	{
 	    if(epoch_cycles >= EPOCH_TIME)
 	    {
-		logger->saveStats(currentClockCycle, epoch_count);
+		log->save(currentClockCycle, epoch_count);
 		epoch_count++;
 		epoch_cycles = 0;		
 	    }

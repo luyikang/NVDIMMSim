@@ -9,12 +9,10 @@ using namespace NVDSim;
 using namespace std;
 
 GCFtl::GCFtl(Controller *c, Logger *l) 
-    : Ftl(c,l)
+    : Ftl(c, l)
 {	
         int numBlocks = NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE;
 	dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
-
-	erase_energy = vector<double>(NUM_PACKAGES, 0.0); 
 }
 
 bool GCFtl::addTransaction(FlashTransaction &t){
@@ -22,7 +20,7 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 		transactionQueue.push_back(t);
 
 		// Start the logging for this access.
-		log.access_start(t.address);
+		log->access_start(t.address);
 
 		return true;
 	}
@@ -42,24 +40,29 @@ void GCFtl::update(void){
 				case DATA_READ:
 					if (addressMap.find(vAddr) == addressMap.end()){
 						//update the logger
-					        log->access_process(vAddr, commandPacket->package, READ, false);
+					        log->access_process(vAddr, 0, READ);
+						log->read_miss();
 						log->access_stop(vAddr);
 
 						//miss, nothing to read so return garbage
 						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
-					} else {
-						//update the logger
-					        log->access_process(vAddr, commandPacket->package, READ, true);
-						
-						//send the read to the controller
+					} else {	
 					        commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
+						//update the logger
+					        log->read_hit();
+						//send the read to the controller
 						controller->addPacket(commandPacket);
 					}
 					break;
 				case DATA_WRITE:
 				        if (addressMap.find(vAddr) != addressMap.end()){
 					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
-					}			          
+					    log->write_hit();
+					}
+					else
+					{
+					    log->write_miss();
+					}
 					//look for first free physical page starting at the write pointer
 	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
 
@@ -111,19 +114,14 @@ void GCFtl::update(void){
 						if (die == 0)
 							plane = (plane + 1) % PLANES_PER_DIE;
 					}
-					//update the logger
-					log->access_process(vAddr, commandPacket->package, WRITE, addressMap.find(vAddr) != addressMap.end());
 					break;
 			        case GC_DATA_READ:
 				    	if (addressMap.find(vAddr) == addressMap.end()){
 					        ERROR("GC tried to move data that wasn't there.");
 						exit(1);
-					} else {
-						//update the logger
-					        log->access_process(vAddr, commandPacket->package, GC_READ, true);
-						
-						//send the read to the controller
+					} else {		
 					        commandPacket = Ftl::translate(GC_READ, vAddr, addressMap[vAddr]);
+						//send the read to the controller
 						controller->addPacket(commandPacket);
 					}
 					break;
@@ -144,8 +142,6 @@ void GCFtl::update(void){
 						}
 					  }
 					}
-					
-
 
 					//if we didn't find a free page after scanning til the end, check the beginning
 				        if (!done){
@@ -182,15 +178,11 @@ void GCFtl::update(void){
 						if (die == 0)
 							plane = (plane + 1) % PLANES_PER_DIE;
 					}
-					//update the logger
-					log->access_process(vAddr, commandPacket->package, GC_WRITE, addressMap.find(vAddr) != addressMap.end());
 					break;
 				case BLOCK_ERASE:
 				        used_page_count -= PAGES_PER_BLOCK;
 					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
 					controller->addPacket(commandPacket);
-					//update the logger
-					log->access_process(vAddr, commandPacket->package, ERASE, false);
 					break;		
 				default:
 					ERROR("Transaction in Ftl that isn't a read or write... What?");
@@ -310,6 +302,3 @@ void GCFtl::runGC(void) {
    addTransaction(trans);
 
 }
-
-
-

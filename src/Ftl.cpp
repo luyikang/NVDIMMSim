@@ -84,7 +84,7 @@ bool Ftl::addTransaction(FlashTransaction &t){
 	transactionQueue.push_back(t);
 
 	// Start the logging for this access.
-	log.access_start(t.address);
+	log->access_start(t.address);
 
 	return true;
 }
@@ -101,26 +101,32 @@ void Ftl::update(void){
 				case DATA_READ:
 					if (addressMap.find(vAddr) == addressMap.end()){
 					        //update the logger
-					        log->access_process(vAddr, commandPacket->package, READ, false);
+					        log->access_process(vAddr, 0, READ);
+						log->read_miss();
 						log->access_stop(vAddr);
 						
 						//miss, nothing to read so return garbage
 						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
-					} else {
-					        //update the logger
-					        log->access_process(vAddr, commandPacket->package, READ, true);
-						
-						//send the read to the controller
+					} else {					       
 						commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
+						
+						//update the logger
+						log->read_hit();
+						//send the read to the controller
 						controller->addPacket(commandPacket);	
 					}
 					break;
 				case DATA_WRITE:
 				        if (addressMap.find(vAddr) != addressMap.end()){
-					  // we're going to write this data somewhere else for wear-leveling purposes however we will probably 
-					  // want to reuse this block for something at some later time so mark it as unused because it is
-					   used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = false;
-					}			          
+					    // we're going to write this data somewhere else for wear-leveling purposes however we will probably 
+					    // want to reuse this block for something at some later time so mark it as unused because it is
+					    used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = false;
+					    log->write_hit();
+					}
+					else
+					{
+					    log->write_miss();
+					}
 					//look for first free physical page starting at the write pointer
 	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
 
@@ -170,10 +176,7 @@ void Ftl::update(void){
 						if (die == 0)
 							plane = (plane + 1) % PLANES_PER_DIE;
 					}
-					//update the logger
-					log->access_process(vAddr, commandPacket->package, WRITE, addressMap.find(vAddr) != addressMap.end());
 					break;
-
 				case BLOCK_ERASE:
 				        ERROR("Called Block erase on memory which does not need this");
 					break;					
@@ -196,17 +199,33 @@ void Ftl::update(void){
 			lookupCounter = LOOKUP_TIME;
 		}
 	}
-
-	//place power callbacks to hybrid_system
-#if Verbose_Power_Callback
-	controller->returnPowerData(idle_energy, access_energy);
-#endif
 }
 
 uint64_t Ftl::get_ptr(void) {
     // Return a pointer to the current plane.
     return NV_PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
 	   (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
+}
+
+void Ftl::powerCallback(void) 
+{
+    vector<vector<double> > temp = log->getEnergyData();
+    if(temp.size() == 2)
+    {
+	controller->returnPowerData(temp[0], temp[1]);
+    }
+    else if(temp.size() == 3)
+    {
+	controller->returnPowerData(temp[0], temp[1], temp[2]);
+    }
+    else if(temp.size() == 4)
+    {
+	controller->returnPowerData(temp[0], temp[1], temp[2], temp[3]);
+    }
+    else if(temp.size() == 6)
+    {
+	controller->returnPowerData(temp[0], temp[1], temp[2], temp[3], temp[4], temp[5]);
+    }
 }
 
 

@@ -3,8 +3,8 @@
 using namespace NVDSim;
 using namespace std;
 
-FullGCLogger::FullGCLogger(Controller *c)
-  : GCLogger(c)
+FullGCLogger::FullGCLogger()
+  : GCLogger()
 {
     	gcreads = 0;
 	gcwrites = 0;
@@ -14,7 +14,7 @@ FullGCLogger::FullGCLogger(Controller *c)
 }
 
 // Using virtual addresses here right now
-void FullGCLogger::access_process(uint64_t addr, uint package, ChannelPacketType op, bool hit)
+void FullGCLogger::access_process(uint64_t addr, uint package, ChannelPacketType op)
 {
         // Get entry off of the access_queue.
 	uint64_t start_cycle = 0;
@@ -50,38 +50,20 @@ void FullGCLogger::access_process(uint64_t addr, uint package, ChannelPacketType
 	a.start = start_cycle;
 	a.op = op;
 	a.process = this->currentClockCycle;
-	a.hit = hit;
 	access_map[addr] = a;
 
 	// Log cache event type.
-	if (hit && op == READ)
+	if (op == READ)
 	{
 	    //update access energy figures
 	    access_energy[package] += (READ_I - STANDBY_I) * READ_TIME/2;
 	    this->read();
-	    this->read_hit();
 	}
-	else if (hit && op == WRITE)
+	else if (op == WRITE)
 	{
 	    //update access energy figures
 	    access_energy[package] += (WRITE_I - STANDBY_I) * WRITE_TIME/2;
 	    this->write();
-	    this->write_hit();
-	}
-	else if (!hit && op == READ)
-	{   
-	    //update access energy figures
-	    //just a place holder, need a better way to handle this
-	    access_energy[0] += (READ_I - STANDBY_I) * READ_TIME/2;
-	    this->read();
-	    this->read_miss();
-	}
-	else if (!hit && op == WRITE)
-	{
-	    //update access energy figures
-	    access_energy[package] += (WRITE_I - STANDBY_I) * WRITE_TIME/2;
-	    this->write();
-	    this->write_miss();
 	}
 	else if (op == ERASE)
 	{
@@ -115,15 +97,15 @@ void FullGCLogger::access_stop(uint64_t addr)
 	a.stop = this->currentClockCycle;
 	access_map[addr] = a;
 
-	if (op == READ)
+	if (a.op == READ)
 		this->read_latency(a.stop - a.start);
-	else if (op == WRITE)
+	else if (a.op == WRITE)
 	        this->write_latency(a.stop - a.start);
-	else if (op == ERASE)
+	else if (a.op == ERASE)
 		this->erase_latency(a.stop - a.start);
-	else if (op == GC_READ)
+	else if (a.op == GC_READ)
 		this->gcread_latency(a.stop - a.start);
-	else if (op == GC_WRITE)
+	else if (a.op == GC_WRITE)
 	        this->gcwrite_latency(a.stop - a.start);
 		
 	access_map.erase(addr);
@@ -201,21 +183,21 @@ void FullGCLogger::save(uint64_t cycle, uint epoch) {
 	}
 
 	savefile<<"Cycles Simulated: "<<cycle<<"\n";
-	savefile<<"Accesses "<<num_accesses<<"\n";
-        savefile<<"Reads completed: "<<reads<<"\n";
-	savefile<<"Writes completed: "<<writes<<"\n";
-	savefile<<"Erases completed: "<<erases<<"\n";
+	savefile<<"Accesses: "<<num_accesses<<"\n";
+        savefile<<"Reads completed: "<<num_reads<<"\n";
+	savefile<<"Writes completed: "<<num_writes<<"\n";
+	savefile<<"Erases completed: "<<num_erases<<"\n";
 	savefile<<"GC Reads completed: "<<gcreads<<"\n";
 	savefile<<"GC Writes completed: "<<gcwrites<<"\n";
-	savefile<<"Number of Misses " <<num_misses<<"\n";
-	savefile<<"Number of Hits " <<num_hits<<"\n";
-	savefile<<"Number of Read Misses " <<num_read_misses<<"\n";
-	savefile<<"Number of Read Hits " <<num_read_hits<<"\n";
-	savefile<<"Number of Write Misses " <<num_write_misses<<"\n";
-	savefile<<"Number of Write Hits " <<num_write_hits<<"\n";
-	savefile<<"Miss Rate " <<miss_rate()<<"\n";
-	savefile<<"Read Miss Rate " <<read_miss_rate()<<"\n";
-	savefile<<"Write Miss Rate " <<write_miss_rate()<<"\n";
+	savefile<<"Number of Misses: " <<num_misses<<"\n";
+	savefile<<"Number of Hits: " <<num_hits<<"\n";
+	savefile<<"Number of Read Misses: " <<num_read_misses<<"\n";
+	savefile<<"Number of Read Hits: " <<num_read_hits<<"\n";
+	savefile<<"Number of Write Misses: " <<num_write_misses<<"\n";
+	savefile<<"Number of Write Hits: " <<num_write_hits<<"\n";
+	savefile<<"Miss Rate: " <<miss_rate()<<"\n";
+	savefile<<"Read Miss Rate: " <<read_miss_rate()<<"\n";
+	savefile<<"Write Miss Rate: " <<write_miss_rate()<<"\n";
 
 	savefile<<"\nPower Data: \n";
 	savefile<<"========================\n";
@@ -259,9 +241,9 @@ void FullGCLogger::print(uint64_t cycle) {
 	  average_power[i] = total_energy[i] / cycle;
 	}
 
-	cout<<"Reads completed: "<<reads<<"\n";
-	cout<<"Writes completed: "<<writes<<"\n";
-	cout<<"Erases completed: "<<erases<<"\n";
+	cout<<"Reads completed: "<<num_reads<<"\n";
+	cout<<"Writes completed: "<<num_writes<<"\n";
+	cout<<"Erases completed: "<<num_erases<<"\n";
 
 	cout<<"\nPower Data: \n";
 	cout<<"========================\n";

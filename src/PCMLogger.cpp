@@ -3,8 +3,8 @@
 using namespace NVDSim;
 using namespace std;
 
-PCMLogger::PCMLogger(Controller *c)
-  : Logger(c)
+PCMLogger::PCMLogger()
+  : Logger()
 {
 	vpp_idle_energy = vector<double>(NUM_PACKAGES, 0.0); 
 	vpp_access_energy = vector<double>(NUM_PACKAGES, 0.0); 
@@ -24,7 +24,7 @@ void PCMLogger::update()
 }
 
 // Using virtual addresses here right now
-void PCMLogger::access_process(uint64_t addr, uint package, ChannelPacketType op, bool hit)
+void PCMLogger::access_process(uint64_t addr, uint package, ChannelPacketType op)
 {
         // Get entry off of the access_queue.
 	uint64_t start_cycle = 0;
@@ -60,20 +60,18 @@ void PCMLogger::access_process(uint64_t addr, uint package, ChannelPacketType op
 	a.start = start_cycle;
 	a.op = op;
 	a.process = this->currentClockCycle;
-	a.hit = hit;
 	access_map[addr] = a;
 
 	// Log cache event type.
-	if (hit && op == READ)
+	if (op == READ)
 	{
 	    //update access energy figures
 	    access_energy[package] += (READ_I - STANDBY_I) * READ_TIME/2;
 	    //update access energy figure with PCM stuff (if applicable)
 	    vpp_access_energy[package] += (VPP_READ_I - VPP_STANDBY_I) * READ_TIME/2;
 	    this->read();
-	    this->read_hit();
 	}
-	else if (hit && op == WRITE)
+	else if (op == WRITE)
 	{
 	    //update access energy figures
 	    //without garbage collection PCM write and erase are the same
@@ -82,28 +80,6 @@ void PCMLogger::access_process(uint64_t addr, uint package, ChannelPacketType op
 	    //update access energy figure with PCM stuff (if applicable)
 	    vpp_access_energy[package] += (VPP_ERASE_I - VPP_STANDBY_I) * ERASE_TIME/2;
 	    this->write();
-	    this->write_hit();
-	}
-	else if (!hit && op == READ)
-	{   
-	    //update access energy figures
-	    //just a place holder, need a better way to handle this
-	    access_energy[0] += (READ_I - STANDBY_I) * READ_TIME/2;
-	    //update access energy figure with PCM stuff (if applicable)
-	    vpp_access_energy[0] += (VPP_READ_I - VPP_STANDBY_I) * READ_TIME/2;
-	    this->read();
-	    this->read_miss();
-	}
-	else if (!hit && op == WRITE)
-	{
-	    //update access energy figures
-	    //without garbage collection PCM write and erase are the same
-	    //this is due to the time it takes to set a bit
-	    access_energy[package] += (ERASE_I - STANDBY_I) * ERASE_TIME/2;
-	    //update access energy figure with PCM stuff (if applicable)
-	    vpp_access_energy[package] += (VPP_ERASE_I - VPP_STANDBY_I) * ERASE_TIME/2;
-	    this->write();
-	    this->write_miss();
 	}
 }
 
@@ -119,9 +95,9 @@ void PCMLogger::access_stop(uint64_t addr)
 	a.stop = this->currentClockCycle;
 	access_map[addr] = a;
 
-	if (op == READ)
+	if (a.op == READ)
 		this->read_latency(a.stop - a.start);
-	else if (op == WRITE)
+	else if (a.op == WRITE)
 	        this->write_latency(a.stop - a.start);
 		
 	access_map.erase(addr);
@@ -183,11 +159,8 @@ void PCMLogger::save(uint64_t cycle, uint epoch) {
 
 	savefile<<"Cycles Simulated: "<<cycle<<"\n";
 	savefile<<"Accesses "<<num_accesses<<"\n";
-        savefile<<"Reads completed: "<<reads<<"\n";
-	savefile<<"Writes completed: "<<writes<<"\n";
-	savefile<<"Erases completed: "<<erases<<"\n";
-	savefile<<"GC Reads completed: "<<gcreads<<"\n";
-	savefile<<"GC Writes completed: "<<gcwrites<<"\n";
+        savefile<<"Reads completed: "<<num_reads<<"\n";
+	savefile<<"Writes completed: "<<num_writes<<"\n";
 	savefile<<"Number of Misses " <<num_misses<<"\n";
 	savefile<<"Number of Hits " <<num_hits<<"\n";
 	savefile<<"Number of Read Misses " <<num_read_misses<<"\n";
@@ -245,9 +218,8 @@ void PCMLogger::print(uint64_t cycle) {
 	  average_power[i] = total_energy[i] / cycle;
 	}
 
-	cout<<"Reads completed: "<<reads<<"\n";
-	cout<<"Writes completed: "<<writes<<"\n";
-	cout<<"Erases completed: "<<erases<<"\n";
+	cout<<"Reads completed: "<<num_reads<<"\n";
+	cout<<"Writes completed: "<<num_writes<<"\n";
 
 	cout<<"\nPower Data: \n";
 	cout<<"========================\n";
@@ -271,14 +243,12 @@ void PCMLogger::print(uint64_t cycle) {
 	}
 }
 
-void PCMLogger::powerCallback(void) {
-  controller->returnPowerData(idle_energy, access_energy, vpp_idle_energy, vpp_access_energy);
-}
-
-vector<double> PCMLogger::getVppIdleEnergy(void) {
-  return vpp_idle_energy;
-}
-
-vector<double> PCMLogger::getVppAccessEnergy(void) {
-  return vpp_access_energy;
+vector<vector<double> > PCMLogger::getEnergyData(void)
+{
+    vector<vector<double> > temp = vector<vector<double> >(4, vector<double>(NUM_PACKAGES, 0.0));
+    temp[0] = idle_energy;
+    temp[1] = access_energy;
+    temp[2] = vpp_idle_energy;
+    temp[3] = vpp_access_energy;
+    return temp;
 }
