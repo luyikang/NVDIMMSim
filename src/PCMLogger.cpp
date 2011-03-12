@@ -87,7 +87,7 @@ void PCMLogger::access_stop(uint64_t addr)
 {
 	if (access_map.count(addr) == 0)
 	{
-		cerr << "ERROR: Logger.access_stop() called with address not in access_map. address=" << hex << addr << "\n" << dec;
+		cerr << "ERROR: NVLogger.access_stop() called with address not in access_map. address=" << hex << addr << "\n" << dec;
 		abort();
 	}
 
