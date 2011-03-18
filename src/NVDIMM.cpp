@@ -103,15 +103,8 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 		PRINT("VPP power data missing for PCM, using 0.0");
 	      }
 	  }
-
-	
-	if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 1 && FULL_LOGGING == 1)
-	{
-	  log = new PCMFullGCLogger();
-	  controller= new Controller(this, log);
-	  ftl = new GCFtl(controller, log);	  
-	}
-	else if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 1)
+		
+	if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 1)
 	{
 	  log = new PCMGCLogger();
 	  controller= new Controller(this, log);
@@ -122,12 +115,6 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	  log = new PCMLogger();
 	  controller= new Controller(this, log);
 	  ftl = new Ftl(controller, log);
-	}
-	else if(GARBAGE_COLLECT == 1 && FULL_LOGGING == 1)
-	{
-	  log = new FullGCLogger();
-	  controller= new Controller(this, log);
-	  ftl = new GCFtl(controller, log);
 	}
 	else if(GARBAGE_COLLECT == 1)
 	{
@@ -231,7 +218,7 @@ void NVDIMM::update(void){
 	{
 	    if(epoch_cycles >= EPOCH_TIME)
 	    {
-		log->save(currentClockCycle, epoch_count);
+		log->save_epoch(currentClockCycle, epoch_count);
 		epoch_count++;
 		epoch_cycles = 0;		
 	    }

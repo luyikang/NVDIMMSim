@@ -102,7 +102,7 @@ void Ftl::update(void){
 					if (addressMap.find(vAddr) == addressMap.end()){
 					        //update the logger
 					        log->access_process(vAddr, 0, READ);
-						log->read_miss();
+						log->read_unmapped();
 						log->access_stop(vAddr);
 						
 						//miss, nothing to read so return garbage
@@ -111,7 +111,7 @@ void Ftl::update(void){
 						commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
 						
 						//update the logger
-						log->read_hit();
+						log->read_mapped();
 						//send the read to the controller
 						controller->addPacket(commandPacket);	
 					}
@@ -121,11 +121,11 @@ void Ftl::update(void){
 					    // we're going to write this data somewhere else for wear-leveling purposes however we will probably 
 					    // want to reuse this block for something at some later time so mark it as unused because it is
 					    used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = false;
-					    log->write_hit();
+					    log->write_mapped();
 					}
 					else
 					{
-					    log->write_miss();
+					    log->write_unmapped();
 					}
 					//look for first free physical page starting at the write pointer
 	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));

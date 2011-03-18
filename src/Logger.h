@@ -22,21 +22,21 @@ namespace NVDSim
 	// operations
 	void read();
 	void write();
-	void hit();
-	void miss();
+	void mapped();
+	void unmapped();
 
-	void read_hit();
-	void read_miss();
-	void write_hit();
-	void write_miss();
+	void read_mapped();
+	void read_unmapped();
+	void write_mapped();
+	void write_unmapped();
 
 	void read_latency(uint64_t cycles);
 	void write_latency(uint64_t cycles);
 	void queue_latency(uint64_t cycles);
 
-	double miss_rate();
-	double read_miss_rate();
-	double write_miss_rate();
+	double unmapped_rate();
+	double read_unmapped_rate();
+	double write_unmapped_rate();
 
 	//Accessor for power data
 	//Writing correct object oriented code up in this piece, what now?
@@ -50,6 +50,8 @@ namespace NVDSim
 	void access_start(uint64_t addr);
 	virtual void access_process(uint64_t addr, uint package, ChannelPacketType op);
 	virtual void access_stop(uint64_t addr);
+
+	virtual void save_epoch(uint64_t cycle, uint epoch);
 	
 	// State
 	std::ofstream savefile;
@@ -58,13 +60,13 @@ namespace NVDSim
 	uint64_t num_reads;
 	uint64_t num_writes;
 
-	uint64_t num_misses;
-	uint64_t num_hits;
+	uint64_t num_unmapped;
+	uint64_t num_mapped;
 
-	uint64_t num_read_misses;
-	uint64_t num_read_hits;
-	uint64_t num_write_misses;
-	uint64_t num_write_hits;
+	uint64_t num_read_unmapped;
+	uint64_t num_read_mapped;
+	uint64_t num_write_unmapped;
+	uint64_t num_write_mapped;
 		
 	uint64_t average_latency;
 	uint64_t average_read_latency;
@@ -99,6 +101,62 @@ namespace NVDSim
 	// Store the address and arrival time while access is waiting to be processed.
 	// Must do this because duplicate addresses may arrive close together.
 	std::list<std::pair <uint64_t, uint64_t>> access_queue;
+
+	class EpochEntry
+	{
+	public:
+	    uint64_t cycle;
+	    uint64_t epoch;
+
+	    uint64_t num_accesses;
+	    uint64_t num_reads;
+	    uint64_t num_writes;
+
+	    uint64_t num_unmapped;
+	    uint64_t num_mapped;
+
+	    uint64_t num_read_unmapped;
+	    uint64_t num_read_mapped;
+	    uint64_t num_write_unmapped;
+	    uint64_t num_write_mapped;
+		
+	    uint64_t average_latency;
+	    uint64_t average_read_latency;
+	    uint64_t average_write_latency;
+	    uint64_t average_queue_latency;
+
+	    std::vector<double> idle_energy;
+	    std::vector<double> access_energy;
+
+	    EpochEntry()
+	    {
+		cycle = 0;
+		epoch = 0;
+
+		num_accesses = 0;
+		num_reads = 0;
+		num_writes = 0;
+	
+		num_unmapped = 0;
+		num_mapped = 0;
+
+		num_read_unmapped = 0;
+		num_read_mapped = 0;
+		num_write_unmapped = 0;
+		num_write_mapped = 0;
+		
+		average_latency = 0;
+		average_read_latency = 0;
+		average_write_latency = 0;
+		average_queue_latency = 0;
+	
+		idle_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
+		access_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
+	    }
+	};
+
+	// Store the data from each epoch for printing at the end of the simulation
+	std::list<EpochEntry> epoch_queue;
     };
 }
 

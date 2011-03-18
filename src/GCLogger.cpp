@@ -7,8 +7,12 @@ GCLogger::GCLogger()
   : Logger()
 {
     	num_erases = 0;
+	num_gcreads = 0;
+	num_gcwrites = 0;
 
 	average_erase_latency = 0;
+	average_gcread_latency = 0;
+	average_gcwrite_latency = 0;
 
 	erase_energy = vector<double>(NUM_PACKAGES, 0.0); 
 }
@@ -24,6 +28,7 @@ void GCLogger::update()
 
 	this->step();
 }
+
 
 // Using virtual addresses here right now
 void GCLogger::access_process(uint64_t addr, uint package, ChannelPacketType op)
@@ -65,13 +70,13 @@ void GCLogger::access_process(uint64_t addr, uint package, ChannelPacketType op)
 	access_map[addr] = a;
 
 	// Log cache event type.
-	if (op == READ || op == GC_READ)
+	if (op == READ)
 	{
 	    //update access energy figures
 	    access_energy[package] += (READ_I - STANDBY_I) * READ_TIME/2;
 	    this->read();
 	}
-	else if (op == WRITE || op == GC_WRITE)
+	else if (op == WRITE)
 	{
 	    //update access energy figures
 	    access_energy[package] += (WRITE_I - STANDBY_I) * WRITE_TIME/2;
@@ -82,6 +87,18 @@ void GCLogger::access_process(uint64_t addr, uint package, ChannelPacketType op)
 	    //update access energy figures
 	    erase_energy[package] += (ERASE_I - STANDBY_I) * ERASE_TIME/2;
 	    this->erase();
+	}
+	else if (op == GC_READ)
+	{
+	    //update access energy figures
+	    access_energy[package] += (READ_I - STANDBY_I) * READ_TIME/2;
+	    this->gcread();
+	}
+	else if (op == GC_WRITE)
+	{
+	    //update access energy figures
+	    access_energy[package] += (WRITE_I - STANDBY_I) * WRITE_TIME/2;
+	    this->gcwrite();
 	}
 }
 
@@ -97,12 +114,16 @@ void GCLogger::access_stop(uint64_t addr)
 	a.stop = this->currentClockCycle;
 	access_map[addr] = a;
 
-	if (a.op == READ || a.op == GC_READ)
+	if (a.op == READ)
 		this->read_latency(a.stop - a.start);
-	else if (a.op == WRITE || a.op == GC_WRITE)
+	else if (a.op == WRITE)
 	        this->write_latency(a.stop - a.start);
 	else if (a.op == ERASE)
 		this->erase_latency(a.stop - a.start);
+	else if (a.op == GC_READ)
+		this->gcread_latency(a.stop - a.start);
+	else if (a.op == GC_WRITE)
+	        this->gcwrite_latency(a.stop - a.start);
 		
 	access_map.erase(addr);
 }
@@ -112,15 +133,36 @@ void GCLogger::erase()
 	num_erases += 1;
 }
 
-void GCLogger::erase_latency(uint64_t cycles)
+void GCLogger::gcread()
 {
-	// Need to calculate a running average of latency.
+	num_gcreads += 1;
 }
 
-void GCLogger::save(uint64_t cycle, uint epoch) {
+void GCLogger::gcwrite()
+{
+	num_gcwrites += 1;
+}
+
+void GCLogger::erase_latency(uint64_t cycles)
+{
+	average_erase_latency += cycles;
+}
+
+void GCLogger::gcread_latency(uint64_t cycles)
+{
+	average_gcread_latency += cycles;
+}
+
+void GCLogger::gcwrite_latency(uint64_t cycles)
+{
+	average_gcwrite_latency += cycles;
+}
+
+void GCLogger::save(uint64_t cycle, uint epoch) 
+{
         // Power stuff
 	// Total power used
-	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0); 
+	vector<double> total_energy = vector<double>(NUM_PACKAGES, 0.0);
 	
         // Average power used
 	vector<double> ave_idle_power = vector<double>(NUM_PACKAGES, 0.0);
@@ -130,37 +172,26 @@ void GCLogger::save(uint64_t cycle, uint epoch) {
 
 	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{
-	  total_energy[i] = (idle_energy[i] + access_energy[i] + erase_energy[i]) * VCC;
-	  ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
-	  ave_access_power[i] = (access_energy[i] * VCC) / cycle;
-	  ave_erase_power[i] = (erase_energy[i] * VCC) / cycle;	  
-	  average_power[i] = total_energy[i] / cycle;
+	    if(cycle == 0)
+	    {
+		total_energy[i] = (idle_energy[i] + access_energy[i] + erase_energy[i]) * VCC;
+		ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
+		ave_access_power[i] = (access_energy[i] * VCC) / cycle;
+		ave_erase_power[i] = (erase_energy[i] * VCC) / cycle;	  
+		average_power[i] = total_energy[i] / cycle;
+	    }
+	    else
+	    {
+		total_energy[i] = 0;
+		ave_idle_power[i] = 0;
+		ave_access_power[i] = 0;
+		ave_erase_power[i] = 0;
+		average_power[i] = 0;
+	    }
 	}
 
-	if(USE_EPOCHS && epoch > 0)
-	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::app);
-	    savefile<<"\nData for Epoch "<<epoch<<"\n";
-	    savefile<<"========================\n";
-	    savefile<<"\nSimulation Data: \n";
-	    savefile<<"========================\n";
-	}
-	else if(USE_EPOCHS)
-	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
-	    savefile<<"NVDIMM Log \n";
-	    savefile<<"\nData for Epoch "<<epoch<<"\n";
-	    savefile<<"========================\n";
-	    savefile<<"\nSimulation Data: \n";
-	    savefile<<"========================\n";
-	}
-	else
-	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
-	    savefile<<"NVDIMM Log \n";
-	    savefile<<"\nSimulation Data: \n";
-	    savefile<<"========================\n";
-	}
+        
+	savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
 
 	if (!savefile) 
 	{
@@ -168,20 +199,66 @@ void GCLogger::save(uint64_t cycle, uint epoch) {
 	    exit(-1); 
 	}
 
+	savefile<<"NVDIMM Log \n";
+	savefile<<"\nData for Full Simulation: \n";
+	savefile<<"========================\n";
+	    
 	savefile<<"Cycles Simulated: "<<cycle<<"\n";
 	savefile<<"Accesses: "<<num_accesses<<"\n";
-        savefile<<"Reads completed: "<<num_reads<<"\n";
+	savefile<<"Reads completed: "<<num_reads<<"\n";
 	savefile<<"Writes completed: "<<num_writes<<"\n";
 	savefile<<"Erases completed: "<<num_erases<<"\n";
-	savefile<<"Number of Misses: " <<num_misses<<"\n";
-	savefile<<"Number of Hits: " <<num_hits<<"\n";
-	savefile<<"Number of Read Misses: " <<num_read_misses<<"\n";
-	savefile<<"Number of Read Hits: " <<num_read_hits<<"\n";
-	savefile<<"Number of Write Misses: " <<num_write_misses<<"\n";
-	savefile<<"Number of Write Hits: " <<num_write_hits<<"\n";
-	savefile<<"Miss Rate: " <<miss_rate()<<"\n";
-	savefile<<"Read Miss Rate: " <<read_miss_rate()<<"\n";
-	savefile<<"Write Miss Rate: " <<write_miss_rate()<<"\n";
+	savefile<<"GC Reads completed: "<<num_gcreads<<"\n";
+	savefile<<"GC Writes completed: "<<num_gcwrites<<"\n";
+	savefile<<"Number of Unmapped Accesses: " <<num_unmapped<<"\n";
+	savefile<<"Number of Mapped Accesses: " <<num_mapped<<"\n";
+	savefile<<"Number of Unmapped Reads: " <<num_read_unmapped<<"\n";
+	savefile<<"Number of Mapped Reads: " <<num_read_mapped<<"\n";
+	savefile<<"Number of Unmapped Writes: " <<num_write_unmapped<<"\n";
+	savefile<<"Number of Mapped Writes: " <<num_write_mapped<<"\n";
+	savefile<<"Unmapped Rate: " <<unmapped_rate()<<"\n";
+	savefile<<"Read Unmapped Rate: " <<read_unmapped_rate()<<"\n";
+	savefile<<"Write Unmapped Rate: " <<write_unmapped_rate()<<"\n";
+	if(num_reads == 0)
+	{
+	    savefile<<"Average Read Latency: " <<((float)average_read_latency/(float)num_reads)<<"\n";
+	}
+	else
+	{
+	    savefile<<"Average Read Latency: " <<0.0<<"\n";
+	}
+	if(num_writes == 0)
+	{
+	    savefile<<"Average Write Latency: " <<((float)average_write_latency/(float)num_writes)<<"\n";
+	}
+	else
+	{
+	    savefile<<"Average Write Latency: " <<0.0<<"\n";
+	}
+	if(num_erases == 0)
+	{
+	    savefile<<"Average Erase Latency: " <<((float)average_read_latency/(float)num_reads)<<"\n";
+	}
+	else
+	{
+	    savefile<<"Average Erase Latency: " <<0.0<<"\n";
+	}
+	if(num_gcreads == 0)
+	{
+	    savefile<<"Average Garbage Collector initiated Read Latency: " <<((float)average_gcread_latency/(float)num_gcreads)<<"\n";
+	}
+	else
+	{
+	    savefile<<"Average Garbage Collector initiated Read Latency: " <<0.0<<"\n";
+	}
+	if(num_gcwrites == 0)
+	{
+	    savefile<<"Average Garbage Collector initiated Write Latency: " <<((float)average_gcwrite_latency/(float)num_gcwrites)<<"\n";
+	}
+	else
+	{
+	    savefile<<"Average Garbage Collector initiated Write Latency: " <<0.0<<"\n";
+	}
 
 	savefile<<"\nPower Data: \n";
 	savefile<<"========================\n";
@@ -192,14 +269,115 @@ void GCLogger::save(uint64_t cycle, uint epoch) {
 	    savefile<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
 	    savefile<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
 	    savefile<<"Accumulated Erase Energy: "<<(erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    
 	    savefile<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
 	 
 	    savefile<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
 	    savefile<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
 	    savefile<<"Average Erase Power: "<<ave_erase_power[i]<<"mW\n";
-
 	    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
+	}
+
+	if(USE_EPOCHS)
+	{
+	    list<EpochEntry>::iterator it;
+	    for (it = epoch_queue.begin(); it != epoch_queue.end(); it++)
+	    {
+		for(uint i = 0; i < NUM_PACKAGES; i++)
+		{
+		    if((*it).cycle == 0)
+		    {
+			total_energy[i] = ((*it).idle_energy[i] + (*it).access_energy[i] + (*it).erase_energy[i]) * VCC;
+			ave_idle_power[i] = ((*it).idle_energy[i] * VCC) / (*it).cycle;
+			ave_access_power[i] = ((*it).access_energy[i] * VCC) / (*it).cycle;
+			ave_erase_power[i] = ((*it).erase_energy[i] * VCC) / (*it).cycle;
+			average_power[i] = total_energy[i] / (*it).cycle;
+		    }
+		    else
+		    {
+			total_energy[i] = 0;
+			ave_idle_power[i] = 0;
+			ave_access_power[i] = 0;
+			ave_erase_power[i] = 0;
+			average_power[i] = 0;
+		    }
+		}
+
+		savefile<<"\nData for Epoch "<<(*it).epoch<<"\n";
+		savefile<<"========================\n";
+		savefile<<"\nSimulation Data: \n";
+		savefile<<"========================\n";
+		
+		savefile<<"Cycles Simulated: "<<(*it).cycle<<"\n";
+		savefile<<"Accesses: "<<(*it).num_accesses<<"\n";
+		savefile<<"Reads completed: "<<(*it).num_reads<<"\n";
+		savefile<<"Writes completed: "<<(*it).num_writes<<"\n";
+		savefile<<"Erases completed: "<<(*it).num_erases<<"\n";
+		savefile<<"GC Reads completed: "<<(*it).num_gcreads<<"\n";
+		savefile<<"GC Writes completed: "<<(*it).num_gcwrites<<"\n";
+		savefile<<"Number of Unmapped Accesses: " <<(*it).num_unmapped<<"\n";
+		savefile<<"Number of Mapped Accesses: " <<(*it).num_mapped<<"\n";
+		savefile<<"Number of Unmapped Reads: " <<(*it).num_read_unmapped<<"\n";
+		savefile<<"Number of Mapped Reads: " <<(*it).num_read_mapped<<"\n";
+		savefile<<"Number of Unmapped Writes: " <<(*it).num_write_unmapped<<"\n";
+		savefile<<"Number of Mapped Writes: " <<(*it).num_write_mapped<<"\n";
+		if((*it).num_reads == 0)
+		{
+		    savefile<<"Average Read Latency: " <<((float)(*it).average_read_latency/(float)(*it).num_reads)<<"\n";
+		}
+		else
+		{
+		    savefile<<"Average Read Latency: " <<0.0<<"\n";
+		}
+		if((*it).num_writes == 0)
+		{
+		    savefile<<"Average Write Latency: " <<((float)(*it).average_write_latency/(float)(*it).num_writes)<<"\n";
+		}
+		else
+		{
+		    savefile<<"Average Write Latency: " <<0.0<<"\n";
+		}
+		if((*it).num_erases == 0)
+		{
+		    savefile<<"Average Erase Latency: " <<((float)(*it).average_read_latency/(float)(*it).num_reads)<<"\n";
+		}
+		else
+		{
+		    savefile<<"Average Erase Latency: " <<0.0<<"\n";
+		}
+		if((*it).num_gcreads == 0)
+		{
+		    savefile<<"Average Garbage Collector initiated Read Latency: " <<((float)(*it).average_gcread_latency/(float)(*it).num_gcreads)<<"\n";
+		}
+		else
+		{
+		    savefile<<"Average Garbage Collector initiated Read Latency: " <<0.0<<"\n";
+		}
+		if((*it).num_gcwrites == 0)
+		{
+		    savefile<<"Average Garbage Collector initiated Write Latency: " <<((float)(*it).average_gcwrite_latency/(float)(*it).num_gcwrites)<<"\n";
+		}
+		else
+		{
+		    savefile<<"Average Garbage Collector initiated Write Latency: " <<0.0<<"\n";
+		}
+		
+		savefile<<"\nPower Data: \n";
+		savefile<<"========================\n";
+
+		for(uint i = 0; i < NUM_PACKAGES; i++)
+		{
+		    savefile<<"Package: "<<i<<"\n";
+		    savefile<<"Accumulated Idle Energy: "<<((*it).idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+		    savefile<<"Accumulated Access Energy: "<<((*it).access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+		    savefile<<"Accumulated Erase Energy: "<<((*it).erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+		    savefile<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
+	 
+		    savefile<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
+		    savefile<<"Average Access Power: "<<ave_access_power[i]<<"mW\n"; 
+		    savefile<<"Average Erase Power: "<<ave_erase_power[i]<<"mW\n";
+		    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
+		}
+	    }
 	}
 
 	savefile.close();
@@ -259,4 +437,77 @@ vector<vector<double> > GCLogger::getEnergyData(void)
 	temp[2][i] = erase_energy[i];
     }
     return temp;
+}
+
+void GCLogger::save_epoch(uint64_t cycle, uint epoch)
+{    
+    EpochEntry this_epoch;
+    this_epoch.cycle = cycle;
+    this_epoch.epoch = epoch;
+
+    this_epoch.num_accesses = num_accesses;
+    this_epoch.num_reads = num_reads;
+    this_epoch.num_writes = num_writes;
+    this_epoch.num_erases = num_erases;
+    this_epoch.num_reads = num_gcreads;
+    this_epoch.num_writes = num_gcwrites;
+	
+    this_epoch.num_unmapped = num_unmapped;
+    this_epoch.num_mapped = num_mapped;
+
+    this_epoch.num_read_unmapped = num_read_unmapped;
+    this_epoch.num_read_mapped = num_read_mapped;
+    this_epoch.num_write_unmapped = num_write_unmapped;
+    this_epoch.num_write_mapped = num_write_mapped;
+		
+    this_epoch.average_latency = average_latency;
+    this_epoch.average_read_latency = average_read_latency;
+    this_epoch.average_write_latency = average_write_latency;
+    this_epoch.average_erase_latency = average_erase_latency;
+    this_epoch.average_gcread_latency = average_gcread_latency;
+    this_epoch.average_gcwrite_latency = average_gcwrite_latency;
+    this_epoch.average_queue_latency = average_queue_latency;
+
+    for(int i = 0; i < NUM_PACKAGES; i++)
+    {	
+	this_epoch.idle_energy[i] = idle_energy[i]; 
+	this_epoch.access_energy[i] = access_energy[i]; 
+    }
+    
+    if(!epoch_queue.empty())
+    {
+	EpochEntry last_epoch;
+	last_epoch = epoch_queue.front();
+
+	this_epoch.num_accesses -= last_epoch.num_accesses;
+	this_epoch.num_reads -= last_epoch.num_reads;
+	this_epoch.num_writes -= last_epoch.num_writes;
+	this_epoch.num_erases -= last_epoch.num_erases;
+	this_epoch.num_reads -= last_epoch.num_gcreads;
+	this_epoch.num_writes -= last_epoch.num_gcwrites;
+	
+	this_epoch.num_unmapped -= last_epoch.num_unmapped;
+	this_epoch.num_mapped -= last_epoch.num_mapped;
+	
+	this_epoch.num_read_unmapped -= last_epoch.num_read_unmapped;
+	this_epoch.num_read_mapped -= last_epoch.num_read_mapped;
+	this_epoch.num_write_unmapped -= last_epoch.num_write_unmapped;
+	this_epoch.num_write_mapped -= last_epoch.num_write_mapped;
+	
+	this_epoch.average_latency -= last_epoch.average_latency;
+	this_epoch.average_read_latency -= last_epoch.average_read_latency;
+	this_epoch.average_write_latency -= last_epoch.average_write_latency;
+	this_epoch.average_erase_latency -= last_epoch.average_erase_latency;
+	this_epoch.average_gcread_latency -= last_epoch.average_gcread_latency;
+	this_epoch.average_gcwrite_latency -= last_epoch.average_gcwrite_latency;
+	this_epoch.average_queue_latency -= last_epoch.average_queue_latency;
+	
+	for(int i = 0; i < NUM_PACKAGES; i++)
+	{	
+	    this_epoch.idle_energy[i] -= last_epoch.idle_energy[i]; 
+	    this_epoch.access_energy[i] -= last_epoch.access_energy[i]; 
+	}
+    }
+    
+    epoch_queue.push_front(this_epoch);
 }

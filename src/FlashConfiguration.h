@@ -77,9 +77,6 @@ extern bool GARBAGE_COLLECT;
 
 #define GC GARBAGE_COLLECT
 
-// do we want to log all GC information
-extern bool FULL_LOGGING;
-
 extern float IDLE_GC_THRESHOLD;
 extern float FORCE_GC_THRESHOLD;
 extern float PBLOCKS_PER_VBLOCK;

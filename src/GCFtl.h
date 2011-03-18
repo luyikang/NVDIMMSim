@@ -13,7 +13,6 @@
 #include "Ftl.h"
 #include "Logger.h"
 #include "GCLogger.h"
-#include "FullGCLogger.h"
 
 namespace NVDSim{
 	class GCFtl : public Ftl{

@@ -41,14 +41,14 @@ void GCFtl::update(void){
 					if (addressMap.find(vAddr) == addressMap.end()){
 						//update the logger
 					        log->access_process(vAddr, 0, READ);
-						log->read_miss();
+						log->read_unmapped();
 
 						//miss, nothing to read so return garbage
 						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
 					} else {	
 					        commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
 						//update the logger
-					        log->read_hit();
+					        log->read_mapped();
 						//send the read to the controller
 						controller->addPacket(commandPacket);
 					}
@@ -56,11 +56,11 @@ void GCFtl::update(void){
 				case DATA_WRITE:
 				        if (addressMap.find(vAddr) != addressMap.end()){
 					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
-					    log->write_hit();
+					    log->write_mapped();
 					}
 					else
 					{
-					    log->write_miss();
+					    log->write_unmapped();
 					}
 					//look for first free physical page starting at the write pointer
 	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));

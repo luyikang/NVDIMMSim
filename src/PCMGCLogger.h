@@ -27,12 +27,89 @@ namespace NVDSim
 	//Writing correct object oriented code up in this piece, what now?
 	std::vector<std::vector<double>> getEnergyData(void);
 
+	void save_epoch(uint64_t cycle, uint epoch);
+
 	// State
 	// Power Stuff
 	// This is computed per package
 	std::vector<double> vpp_idle_energy;
 	std::vector<double> vpp_access_energy;
 	std::vector<double> vpp_erase_energy;
+
+	class EpochEntry
+	{
+	public:
+	    uint64_t cycle;
+	    uint64_t epoch;
+
+	    uint64_t num_accesses;
+	    uint64_t num_reads;
+	    uint64_t num_writes;
+	    uint64_t num_erases;
+	    uint64_t num_gcreads;
+	    uint64_t num_gcwrites;
+
+	    uint64_t num_unmapped;
+	    uint64_t num_mapped;
+
+	    uint64_t num_read_unmapped;
+	    uint64_t num_read_mapped;
+	    uint64_t num_write_unmapped;
+	    uint64_t num_write_mapped;
+		
+	    uint64_t average_latency;
+	    uint64_t average_read_latency;
+	    uint64_t average_write_latency;
+	    uint64_t average_erase_latency;
+	    uint64_t average_queue_latency;
+	    uint64_t average_gcread_latency;
+	    uint64_t average_gcwrite_latency;
+
+	    std::vector<double> idle_energy;
+	    std::vector<double> access_energy;
+	    std::vector<double> erase_energy;
+
+	    std::vector<double> vpp_idle_energy;
+	    std::vector<double> vpp_access_energy;
+	    std::vector<double> vpp_erase_energy;
+
+	    EpochEntry()
+	    {
+		num_accesses = 0;
+		num_reads = 0;
+		num_writes = 0;
+		num_erases = 0;
+		num_gcreads = 0;
+		num_gcwrites = 0;
+
+		num_unmapped = 0;
+		num_mapped = 0;
+
+		num_read_unmapped = 0;
+		num_read_mapped = 0;
+		num_write_unmapped = 0;
+		num_write_mapped = 0;
+		
+		average_latency = 0;
+		average_read_latency = 0;
+		average_write_latency = 0;
+		average_erase_latency = 0;
+		average_queue_latency = 0;
+		average_gcread_latency = 0;
+		average_gcwrite_latency = 0;
+
+		idle_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
+		access_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
+		erase_energy = std::vector<double>(NUM_PACKAGES, 0.0);
+
+		vpp_idle_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
+		vpp_access_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
+		vpp_erase_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
+	    }
+	};
+	       
+	// Store the data from each epoch for printing at the end of the simulation
+	std::list<EpochEntry> epoch_queue;
     };
 }
 
