@@ -115,6 +115,9 @@ namespace NVDSim
 	    }
 	};
 
+	// Store system snapshot from last epoch to compute this epoch
+	EpochEntry last_epoch;
+
 	// Store the data from each epoch for printing at the end of the simulation
 	std::list<EpochEntry> epoch_queue;
     };

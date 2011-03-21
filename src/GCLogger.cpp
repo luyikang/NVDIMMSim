@@ -172,7 +172,7 @@ void GCLogger::save(uint64_t cycle, uint epoch)
 
 	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{
-	    if(cycle == 0)
+	    if(cycle != 0)
 	    {
 		total_energy[i] = (idle_energy[i] + access_energy[i] + erase_energy[i]) * VCC;
 		ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
@@ -284,7 +284,7 @@ void GCLogger::save(uint64_t cycle, uint epoch)
 	    {
 		for(uint i = 0; i < NUM_PACKAGES; i++)
 		{
-		    if((*it).cycle == 0)
+		    if((*it).cycle != 0)
 		    {
 			total_energy[i] = ((*it).idle_energy[i] + (*it).access_energy[i] + (*it).erase_energy[i]) * VCC;
 			ave_idle_power[i] = ((*it).idle_energy[i] * VCC) / (*it).cycle;
@@ -473,11 +473,14 @@ void GCLogger::save_epoch(uint64_t cycle, uint epoch)
 	this_epoch.idle_energy[i] = idle_energy[i]; 
 	this_epoch.access_energy[i] = access_energy[i]; 
     }
+
+    EpochEntry temp_epoch;
+
+    temp_epoch = this_epoch;
     
     if(!epoch_queue.empty())
     {
-	EpochEntry last_epoch;
-	last_epoch = epoch_queue.front();
+	this_epoch.cycle -= last_epoch.cycle;
 
 	this_epoch.num_accesses -= last_epoch.num_accesses;
 	this_epoch.num_reads -= last_epoch.num_reads;
@@ -506,8 +509,11 @@ void GCLogger::save_epoch(uint64_t cycle, uint epoch)
 	{	
 	    this_epoch.idle_energy[i] -= last_epoch.idle_energy[i]; 
 	    this_epoch.access_energy[i] -= last_epoch.access_energy[i]; 
+	    this_epoch.erase_energy[i] -= last_epoch.erase_energy[i];
 	}
     }
     
     epoch_queue.push_front(this_epoch);
+
+    last_epoch = temp_epoch;
 }
