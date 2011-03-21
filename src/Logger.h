@@ -85,12 +85,14 @@ namespace NVDSim
 		uint64_t start; // Starting cycle of access
 		uint64_t process; // Cycle when processing starts
 		uint64_t stop; // Stopping cycle of access
+		uint64_t package; // package for the power calculations
 		ChannelPacketType op; // what operation is this?
 		AccessMapEntry()
 		{
 			start = 0;
 			process = 0;
 			stop = 0;
+			package = 0;
 			op = READ;
 		}
 	};

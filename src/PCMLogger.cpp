@@ -60,27 +60,8 @@ void PCMLogger::access_process(uint64_t addr, uint package, ChannelPacketType op
 	a.start = start_cycle;
 	a.op = op;
 	a.process = this->currentClockCycle;
+	a.package = package;
 	access_map[addr] = a;
-
-	// Log cache event type.
-	if (op == READ)
-	{
-	    //update access energy figures
-	    access_energy[package] += (READ_I - STANDBY_I) * READ_TIME/2;
-	    //update access energy figure with PCM stuff (if applicable)
-	    vpp_access_energy[package] += (VPP_READ_I - VPP_STANDBY_I) * READ_TIME/2;
-	    this->read();
-	}
-	else if (op == WRITE)
-	{
-	    //update access energy figures
-	    //without garbage collection PCM write and erase are the same
-	    //this is due to the time it takes to set a bit
-	    access_energy[package] += (ERASE_I - STANDBY_I) * ERASE_TIME/2;
-	    //update access energy figure with PCM stuff (if applicable)
-	    vpp_access_energy[package] += (VPP_ERASE_I - VPP_STANDBY_I) * ERASE_TIME/2;
-	    this->write();
-	}
 }
 
 void PCMLogger::access_stop(uint64_t addr)
@@ -95,10 +76,27 @@ void PCMLogger::access_stop(uint64_t addr)
 	a.stop = this->currentClockCycle;
 	access_map[addr] = a;
 
+	// Log cache event type.
 	if (a.op == READ)
-		this->read_latency(a.stop - a.start);
+	{
+	    //update access energy figures
+	    access_energy[a.package] += (READ_I - STANDBY_I) * READ_TIME/2;
+	    //update access energy figure with PCM stuff (if applicable)
+	    vpp_access_energy[a.package] += (VPP_READ_I - VPP_STANDBY_I) * READ_TIME/2;
+	    this->read();
+	    this->read_latency(a.stop - a.start);
+	}
 	else if (a.op == WRITE)
-	        this->write_latency(a.stop - a.start);
+	{
+	    //update access energy figures
+	    //without garbage collection PCM write and erase are the same
+	    //this is due to the time it takes to set a bit
+	    access_energy[a.package] += (ERASE_I - STANDBY_I) * ERASE_TIME/2;
+	    //update access energy figure with PCM stuff (if applicable)
+	    vpp_access_energy[a.package] += (VPP_ERASE_I - VPP_STANDBY_I) * ERASE_TIME/2;
+	    this->write();
+	    this->write_latency(a.stop - a.start);
+	}
 		
 	access_map.erase(addr);
 }
@@ -165,7 +163,7 @@ void PCMLogger::save(uint64_t cycle, uint epoch)
 	savefile<<"Unmapped Rate: " <<unmapped_rate()<<"\n";
 	savefile<<"Read Unmapped Rate: " <<read_unmapped_rate()<<"\n";
 	savefile<<"Write Unmapped Rate: " <<write_unmapped_rate()<<"\n";
-	if(num_reads == 0)
+	if(num_reads != 0)
 	{
 	    savefile<<"Average Read Latency: " <<((float)average_read_latency/(float)num_reads)<<"\n";
 	}
@@ -173,7 +171,7 @@ void PCMLogger::save(uint64_t cycle, uint epoch)
 	{
 	    savefile<<"Average Read Latency: " <<0<<"\n";
 	}
-	if(num_writes == 0)
+	if(num_writes != 0)
 	{
 	    savefile<<"Average Write Latency: " <<((float)average_write_latency/(float)num_writes)<<"\n";
 	}
@@ -244,7 +242,7 @@ void PCMLogger::save(uint64_t cycle, uint epoch)
 		savefile<<"Number of Mapped Reads: " <<(*it).num_read_mapped<<"\n";
 		savefile<<"Number of Unmapped Writes: " <<(*it).num_write_unmapped<<"\n";
 		savefile<<"Number of Mapped Writes: " <<(*it).num_write_mapped<<"\n";
-		if((*it).num_reads == 0)
+		if((*it).num_reads != 0)
 		{
 		    savefile<<"Average Read Latency: " <<((float)(*it).average_read_latency/(float)(*it).num_reads)<<"\n";
 		}
@@ -252,7 +250,7 @@ void PCMLogger::save(uint64_t cycle, uint epoch)
 		{
 		    savefile<<"Average Read Latency: " <<0.0<<"\n";
 		}
-		if((*it).num_writes == 0)
+		if((*it).num_writes != 0)
 		{
 		    savefile<<"Average Write Latency: " <<((float)(*it).average_write_latency/(float)(*it).num_writes)<<"\n";
 		}
