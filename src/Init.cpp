@@ -25,6 +25,9 @@ uint LOOKUP_TIME;
 uint EPOCH_TIME;
 float CYCLE_TIME;
 
+uint FTL_QUEUE_LENGTH;
+uint CTRL_QUEUE_LENGTH;
+
 double READ_I;
 double WRITE_I;
 double ERASE_I;
@@ -68,6 +71,8 @@ namespace NVDSim
 		DEFINE_UINT_PARAM(LOOKUP_TIME,DEV_PARAM),
 		DEFINE_UINT_PARAM(EPOCH_TIME,DEV_PARAM),
 		DEFINE_FLOAT_PARAM(CYCLE_TIME,DEV_PARAM),
+		DEFINE_UINT_PARAM(FTL_QUEUE_LENGTH,DEV_PARAM),
+		DEFINE_UINT_PARAM(CTRL_QUEUE_LENGTH,DEV_PARAM),
 		DEFINE_DOUBLE_PARAM(READ_I,DEV_PARAM),
 		DEFINE_DOUBLE_PARAM(WRITE_I,DEV_PARAM),
 		DEFINE_DOUBLE_PARAM(ERASE_I,DEV_PARAM),
@@ -362,7 +367,9 @@ namespace NVDSim
 				{
 					//the string and bool values can be defaulted, but generally we need all the numeric values to be set to continue
 					case UINT: 
-					    if (configMap[i].iniKey.compare((std::string)"EPOCH_TIME") == 0)
+					    if (configMap[i].iniKey.compare((std::string)"EPOCH_TIME") == 0 ||
+					        configMap[i].iniKey.compare((std::string)"FTL_QUEUE_LENGTH") == 0 ||
+						configMap[i].iniKey.compare((std::string)"CTRL_QUEUE_LENGTH") == 0)
 					    {
 						*((uint *)configMap[i].variablePtr) = 0;
 						DEBUG("\tSetting Default: "<<configMap[i].iniKey<<"=0");

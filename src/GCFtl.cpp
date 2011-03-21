@@ -30,6 +30,8 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 void GCFtl::update(void){
         uint64_t block, page, start;
 	uint i;
+	bool result = true; 
+	bool wait = false;
 	if (busy) {
 		if (lookupCounter == 0){
 			uint64_t vAddr = currentTransaction.address, pAddr;
@@ -50,7 +52,7 @@ void GCFtl::update(void){
 						//update the logger
 					        log->read_mapped();
 						//send the read to the controller
-						controller->addPacket(commandPacket);
+						result = controller->addPacket(commandPacket);
 					}
 					break;
 				case DATA_WRITE:
@@ -105,7 +107,7 @@ void GCFtl::update(void){
 					dataPacket = Ftl::translate(DATA, vAddr, pAddr);
 					commandPacket = Ftl::translate(WRITE, vAddr, pAddr);
 					controller->addPacket(dataPacket);
-					controller->addPacket(commandPacket);
+					result = controller->addPacket(commandPacket);
 					//update "write pointer"
 					channel = (channel + 1) % NUM_PACKAGES;
 					if (channel == 0){
@@ -121,7 +123,7 @@ void GCFtl::update(void){
 					} else {		
 					        commandPacket = Ftl::translate(GC_READ, vAddr, addressMap[vAddr]);
 						//send the read to the controller
-						controller->addPacket(commandPacket);
+						result = controller->addPacket(commandPacket);
 					}
 					break;
 			        case GC_DATA_WRITE:
@@ -161,7 +163,7 @@ void GCFtl::update(void){
 						//ERROR("No free pages? GC needs some work.");
 						//exit(1);
 						// Trust that the GC is running and wait
-					        break;
+					        wait = true;
 					} else {
 						addressMap[vAddr] = pAddr;
 					}
@@ -169,7 +171,7 @@ void GCFtl::update(void){
 					dataPacket = Ftl::translate(DATA, vAddr, pAddr);
 					commandPacket = Ftl::translate(WRITE, vAddr, pAddr);
 					controller->addPacket(dataPacket);
-					controller->addPacket(commandPacket);
+					result = controller->addPacket(commandPacket);
 					//update "write pointer"
 					channel = (channel + 1) % NUM_PACKAGES;
 					if (channel == 0){
@@ -181,15 +183,18 @@ void GCFtl::update(void){
 				case BLOCK_ERASE:
 				        used_page_count -= PAGES_PER_BLOCK;
 					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
-					controller->addPacket(commandPacket);
+					result = controller->addPacket(commandPacket);
 					break;		
 				default:
 					ERROR("Transaction in Ftl that isn't a read or write... What?");
 					exit(1);
 					break;
 			}
-			transactionQueue.pop_front();
-			busy = 0;
+			if( result == true && wait == false)
+			{
+			    transactionQueue.pop_front();
+			    busy = 0;
+			}
 		} 
 		else
 			lookupCounter--;

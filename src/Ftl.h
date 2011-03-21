@@ -32,6 +32,7 @@ namespace NVDSim{
 			bool gc_flag;
 			uint offset,  pageBitWidth, blockBitWidth, planeBitWidth, dieBitWidth, packageBitWidth;
 			uint channel, die, plane, lookupCounter, gc_status, gc_counter;
+			uint64_t max_queue_length;
 			uint64_t used_page_count;
 			FlashTransaction currentTransaction;
 			uint busy;

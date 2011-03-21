@@ -81,16 +81,24 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t p
 }
 
 bool Ftl::addTransaction(FlashTransaction &t){
+    if(transactionQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+    {
+	return false;
+    }
+    else
+    {
 	transactionQueue.push_back(t);
 
 	// Start the logging for this access.
 	log->access_start(t.address);
 
 	return true;
+    }
 }
 
 void Ftl::update(void){
 	uint64_t block, page, start;
+	bool result;
 	if (busy) {
 		if (lookupCounter == 0){
 			uint64_t vAddr = currentTransaction.address, pAddr;
@@ -113,7 +121,7 @@ void Ftl::update(void){
 						//update the logger
 						log->read_mapped();
 						//send the read to the controller
-						controller->addPacket(commandPacket);	
+						result = controller->addPacket(commandPacket);
 					}
 					break;
 				case DATA_WRITE:
@@ -168,7 +176,7 @@ void Ftl::update(void){
 					dataPacket = Ftl::translate(DATA, vAddr, pAddr);
 					commandPacket = Ftl::translate(WRITE, vAddr, pAddr);
 					controller->addPacket(dataPacket);
-					controller->addPacket(commandPacket);
+					result = controller->addPacket(commandPacket);
 					//update "write pointer"
 					channel = (channel + 1) % NUM_PACKAGES;
 					if (channel == 0){
@@ -185,8 +193,11 @@ void Ftl::update(void){
 					exit(1);
 					break;
 			}
-			transactionQueue.pop_front();
-			busy = 0;
+			if(result == true)
+			{
+			    transactionQueue.pop_front();
+			    busy = 0;
+			}
 		} //if lookupCounter is not 0
 		else
 			lookupCounter--;

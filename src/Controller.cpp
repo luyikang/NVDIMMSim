@@ -96,8 +96,15 @@ void Controller::receiveFromChannel(ChannelPacket *busPacket){
 }
 
 bool Controller::addPacket(ChannelPacket *p){
+    if (channelQueues[p->package].size() >= CTRL_QUEUE_LENGTH && CTRL_QUEUE_LENGTH != 0)
+    {
+	return false;
+    }
+    else
+    {
 	channelQueues[p->package].push(p);
 	return true;
+    }
 }
 
 void Controller::update(void){
