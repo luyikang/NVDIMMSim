@@ -3,13 +3,14 @@
 //
 #include "GCFtl.h"
 #include "ChannelPacket.h"
+#include "NVDIMM.h"
 #include <cmath>
 
 using namespace NVDSim;
 using namespace std;
 
-GCFtl::GCFtl(Controller *c, Logger *l) 
-    : Ftl(c, l)
+GCFtl::GCFtl(Controller *c, Logger *l, NVDIMM *p) 
+    : Ftl(c, l, p)
 {	
         int numBlocks = NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE;
 	dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
@@ -22,14 +23,14 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 	}
 	else
 	{
-	    if (!gc_flag){
+	    if (!panic_mode)
+	    {
 		transactionQueue.push_back(t);
-
 		// Start the logging for this access.
 		log->access_start(t.address);
-
 		return true;
 	    }
+	    
 	    return false;
 	}
 	
@@ -189,7 +190,13 @@ void GCFtl::update(void){
 					}
 					break;
 				case BLOCK_ERASE:
-				        used_page_count -= PAGES_PER_BLOCK;
+				        for (i = 0 ; i < PAGES_PER_BLOCK ; i++){
+						dirty[vAddr / BLOCK_SIZE][i] = false;
+						if (used[vAddr / BLOCK_SIZE][i]){
+							used[vAddr / BLOCK_SIZE][i] = false;
+							used_page_count--;
+						}
+					}
 					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
 					result = controller->addPacket(commandPacket);
 					break;		
@@ -216,29 +223,32 @@ void GCFtl::update(void){
 		}
 		// Check to see if GC needs to run.
 		else {
-		  	// Check to see if GC needs to run.
+			// Check to see if GC needs to run.
 			if (checkGC() && !gc_status) {
 				// Run the GC.
-				gc_counter = ERASE_TIME;
+				start_erase = parent->numErases;
 				gc_status = 1;
 				runGC();
 			}
 		}
 	}
 
-	if (gc_counter == 0 && gc_status)
-		gc_status = 0;
-	if (gc_counter > 0)
-		gc_counter--;
+	if (gc_status){
+		if (!panic_mode && parent->numErases == start_erase + 1)
+			gc_status = 0;
+		if (panic_mode && parent->numErases == start_erase + PLANES_PER_DIE){
+			panic_mode = 0;
+			gc_status = 0;
+		}
+	}
 
-	if ((float)used_page_count > (float)FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE) && !gc_status){
+	if (!gc_status && (float)used_page_count >= (float)(FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE))){
+		start_erase = parent->numErases;
 		gc_status = 1;
-		gc_counter = ERASE_TIME;
-		gc_flag = true;
-		for (i = 0 ; i < NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE ; i++)
+		panic_mode = 1;
+		for (i = 0 ; i < PLANES_PER_DIE ; i++)
 			runGC();
-	} else if ((float)used_page_count <= ((float)VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE))//this is a little iffy
-		gc_flag = false;
+	}
 
 	//place power callbacks to hybrid_system
 #if Verbose_Power_Callback
@@ -296,9 +306,9 @@ void GCFtl::runGC(void) {
 
 		// Schedule a read and a write.
 		trans = FlashTransaction(GC_DATA_READ, vAddr, NULL);
-		addTransaction(trans);
+		addGcTransaction(trans);
 		trans = FlashTransaction(GC_DATA_WRITE, vAddr, NULL);
-		addTransaction(trans);
+		addGcTransaction(trans);
 	    } else if (dirty[dirty_block][page] == true){
 		dirty[dirty_block][page] = false;
 	    }	
@@ -311,6 +321,6 @@ void GCFtl::runGC(void) {
    // Schedule the BLOCK_ERASE command.
    // Note: The address field is just the block number, not an actual byte address.
    trans = FlashTransaction(BLOCK_ERASE, dirty_block * BLOCK_SIZE, NULL); 
-   addTransaction(trans);
+   addGcTransaction(trans);
 
 }

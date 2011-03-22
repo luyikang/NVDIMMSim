@@ -108,25 +108,25 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	{
 	  log = new PCMGCLogger();
 	  controller= new Controller(this, log);
-	  ftl = new GCFtl(controller, log);
+	  ftl = new GCFtl(controller, log, this);
 	}
 	else if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
 	{
 	  log = new PCMLogger();
 	  controller= new Controller(this, log);
-	  ftl = new Ftl(controller, log);
+	  ftl = new Ftl(controller, log, this);
 	}
 	else if(GARBAGE_COLLECT == 1)
 	{
 	  log = new GCLogger();
 	  controller= new Controller(this, log);
-	  ftl = new GCFtl(controller, log);
+	  ftl = new GCFtl(controller, log, this);
 	}
 	else
 	{
 	  log = new Logger();
 	  controller= new Controller(this, log);
-	  ftl = new Ftl(controller, log);
+	  ftl = new Ftl(controller, log, this);
 	}
 	packages= new vector<Package>();
 

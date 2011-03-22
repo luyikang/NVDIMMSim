@@ -15,9 +15,10 @@
 #include "GCLogger.h"
 
 namespace NVDSim{
+        class NVDIMM;
 	class GCFtl : public Ftl{
 		public:
-	                GCFtl(Controller *c, Logger *l);
+	                GCFtl(Controller *c, Logger *l, NVDIMM *p);
 			bool addTransaction(FlashTransaction &t);
 			void update(void);
 			bool checkGC(void); 

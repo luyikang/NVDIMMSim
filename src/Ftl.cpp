@@ -3,21 +3,22 @@
 //
 #include "Ftl.h"
 #include "ChannelPacket.h"
+#include "NVDIMM.h"
 #include <cmath>
 
 using namespace NVDSim;
 using namespace std;
 
-Ftl::Ftl(Controller *c, Logger *l){
+Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 	int numBlocks = NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE;
 
-	offset = log2(NV_PAGE_SIZE);
+	/*offset = log2(NV_PAGE_SIZE);
 	pageBitWidth = log2(PAGES_PER_BLOCK);
 	blockBitWidth = log2(BLOCKS_PER_PLANE);
 	planeBitWidth = log2(PLANES_PER_DIE);
 	dieBitWidth = log2(DIES_PER_PACKAGE);
 	packageBitWidth = log2(NUM_PACKAGES);
-
+	*/
 	channel = 0;
 	die = 0;
 	plane = 0;
@@ -32,9 +33,12 @@ Ftl::Ftl(Controller *c, Logger *l){
 	transactionQueue = list<FlashTransaction>();
 
 	used_page_count = 0;
-	gc_flag = false;
+	gc_status = 0;
+	panic_mode = 0;
 
 	controller = c;
+
+	parent = p;
 
 	log = l;
 }
@@ -42,17 +46,28 @@ Ftl::Ftl(Controller *c, Logger *l){
 ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr){
 
 	uint package, die, plane, block, page;
-	uint64_t tempA, tempB, physicalAddress = pAddr;
+	//uint64_t tempA, tempB, physicalAddress = pAddr;
+	uint64_t physicalAddress = pAddr;
 
 	if (physicalAddress > TOTAL_SIZE - 1 || physicalAddress < 0){
 		ERROR("Inavlid address in Ftl: "<<physicalAddress);
 		exit(1);
 	}
 
-	offset = log2(NV_PAGE_SIZE);
-	physicalAddress = physicalAddress >> offset;
+	//offset = log2(NV_PAGE_SIZE);
+	//physicalAddress = physicalAddress >> offset;
+	physicalAddress /= NV_PAGE_SIZE;
+	page = physicalAddress % PAGES_PER_BLOCK;
+	physicalAddress /= PAGES_PER_BLOCK;
+	block = physicalAddress % BLOCKS_PER_PLANE;
+	physicalAddress /= BLOCKS_PER_PLANE;
+	plane = physicalAddress % PLANES_PER_DIE;
+	physicalAddress /= PLANES_PER_DIE;
+	die = physicalAddress % DIES_PER_PACKAGE;
+	physicalAddress /= DIES_PER_PACKAGE;
+	package = physicalAddress % NUM_PACKAGES;
 
-	tempA = physicalAddress;
+	/*tempA = physicalAddress;
 	physicalAddress = physicalAddress >> pageBitWidth;
 	tempB = physicalAddress << pageBitWidth;
 	page = tempA ^ tempB;
@@ -76,16 +91,15 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t p
 	physicalAddress = physicalAddress >> packageBitWidth;
 	tempB = physicalAddress << packageBitWidth;
 	package = tempA ^ tempB;
-
+*/
 	return new ChannelPacket(type, vAddr, pAddr, page, block, plane, die, package, NULL);
 }
 
 bool Ftl::addTransaction(FlashTransaction &t){
+
     if(transactionQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
     {
 	return false;
-	cout << "failed to add transaction \n";
-	cout << "queue length: " << transactionQueue.size() << "\n";
     }
     else
     {
@@ -94,10 +108,15 @@ bool Ftl::addTransaction(FlashTransaction &t){
 	// Start the logging for this access.
 	log->access_start(t.address);
 
-	cout << "added transaction \n";
-	cout << "queue length: " << transactionQueue.size() << "\n";
 	return true;
     }
+}
+
+void Ftl::addGcTransaction(FlashTransaction &t){ 
+	transactionQueue.push_back(t);
+
+	// Start the logging for this access.
+	log->access_start(t.address);
 }
 
 void Ftl::update(void){
@@ -152,8 +171,6 @@ void Ftl::update(void){
 						}
 					  }
 					}
-					
-
 
 					//if we didn't find a free page after scanning til the end, check the beginning
 				        if (!done){
@@ -193,8 +210,6 @@ void Ftl::update(void){
 				        ERROR("Called Block erase on memory which does not need this");
 					break;					
 				default:
-					ERROR("Transaction in Ftl that isn't a read or write... What?");
-					exit(1);
 					break;
 			}
 			if(result == true)
@@ -247,7 +262,6 @@ void Ftl::sendQueueLength(void)
 {
     log->ftlQueueLength(transactionQueue.size());
 }
-
 
 
 
