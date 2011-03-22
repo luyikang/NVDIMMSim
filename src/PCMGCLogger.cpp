@@ -489,6 +489,8 @@ void PCMGCLogger::save_epoch(uint64_t cycle, uint epoch)
 
     this_epoch.num_accesses = num_accesses;
     this_epoch.num_reads = num_reads;
+    cout << "Num Reads " << num_reads << "\n";
+    cout << "This epoch num reads " << this_epoch.num_reads << "\n";
     this_epoch.num_writes = num_writes;
     this_epoch.num_erases = num_erases;
     this_epoch.num_reads = num_gcreads;
@@ -528,9 +530,51 @@ void PCMGCLogger::save_epoch(uint64_t cycle, uint epoch)
 	this_epoch.vpp_erase_energy[i] = vpp_erase_energy[i]; 
     }
 
-    EpochEntry temp_epoch;
+/*    EpochEntry temp_epoch;
 
-    temp_epoch = this_epoch;
+    temp_epoch.cycle = this_epoch.cycle;
+    temp_epoch.epoch = this_epoch.epoch;
+
+    temp_epoch.num_accesses = this_epoch.num_accesses;
+    temp_epoch.num_reads = this_epoch.num_reads;
+    temp_epoch.num_writes = this_epoch.num_writes;
+    temp_epoch.num_erases = this_epoch.num_erases;
+    temp_epoch.num_reads = this_epoch.num_gcreads;
+    temp_epoch.num_writes = this_epoch.num_gcwrites;
+	
+    temp_epoch.num_unmapped = this_epoch.num_unmapped;
+    temp_epoch.num_mapped = this_epoch.num_mapped;
+
+    temp_epoch.num_read_unmapped = this_epoch.num_read_unmapped;
+    temp_epoch.num_read_mapped = this_epoch.num_read_mapped;
+    temp_epoch.num_write_unmapped = this_epoch.num_write_unmapped;
+    temp_epoch.num_write_mapped = this_epoch.num_write_mapped;
+		
+    temp_epoch.average_latency = this_epoch.average_latency;
+    temp_epoch.average_read_latency = this_epoch.average_read_latency;
+    temp_epoch.average_write_latency = this_epoch.average_write_latency;
+    temp_epoch.average_erase_latency = this_epoch.average_erase_latency;
+    temp_epoch.average_gcread_latency = this_epoch.average_gcread_latency;
+    temp_epoch.average_gcwrite_latency = this_epoch.average_gcwrite_latency;
+    temp_epoch.average_queue_latency = this_epoch.average_queue_latency;
+
+    temp_epoch.ftl_queue_length = this_epoch.ftl_queue_length;
+
+    for(int i = 0; i < ctrl_queue_length.size(); i++)
+    {
+	temp_epoch.ctrl_queue_length[i] = this_epoch.ctrl_queue_length[i];
+    }
+
+    for(int i = 0; i < NUM_PACKAGES; i++)
+    {	
+	temp_epoch.idle_energy[i] = this_epoch.idle_energy[i]; 
+	temp_epoch.access_energy[i] = this_epoch.access_energy[i]; 
+	temp_epoch.erase_energy[i] = this_epoch.erase_energy[i]; 
+
+	temp_epoch.vpp_idle_energy[i] = this_epoch.vpp_idle_energy[i]; 
+	temp_epoch.vpp_access_energy[i] = this_epoch.vpp_access_energy[i]; 
+	temp_epoch.vpp_erase_energy[i] = this_epoch.vpp_erase_energy[i]; 
+    }
     
     if(!epoch_queue.empty())
     {
@@ -569,9 +613,15 @@ void PCMGCLogger::save_epoch(uint64_t cycle, uint epoch)
 	    this_epoch.vpp_access_energy[i] -= last_epoch.vpp_access_energy[i]; 
 	    this_epoch.vpp_erase_energy[i] -= last_epoch.vpp_erase_energy[i]; 
 	}
-    }
+	} */
     
     epoch_queue.push_front(this_epoch);
 
-    last_epoch = temp_epoch;
+    list<EpochEntry>::iterator it;
+    for (it = epoch_queue.begin(); it != epoch_queue.end(); it++)
+    {
+	cout<<"Reads completed: "<<(*it).num_reads<<"\n";
+    }
+
+    //  last_epoch = temp_epoch;
 }

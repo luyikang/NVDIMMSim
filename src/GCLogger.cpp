@@ -127,6 +127,7 @@ void GCLogger::access_stop(uint64_t addr)
 
 void GCLogger::erase()
 {
+        num_accesses += 1;
 	num_erases += 1;
 }
 
