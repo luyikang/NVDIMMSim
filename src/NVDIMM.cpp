@@ -218,6 +218,8 @@ void NVDIMM::update(void){
 	{
 	    if(epoch_cycles >= EPOCH_TIME)
 	    {
+		ftl->sendQueueLength();
+		controller->sendQueueLength();
 		log->save_epoch(currentClockCycle, epoch_count);
 		epoch_count++;
 		epoch_cycles = 0;		

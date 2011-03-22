@@ -44,6 +44,8 @@ namespace NVDSim{
 			bool addPacket(ChannelPacket *p);
 			void update(void);
 
+			void sendQueueLength(void);
+
 			NVDIMM *parentNVDIMM;
 			Logger *log;
 

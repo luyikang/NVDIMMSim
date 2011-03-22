@@ -38,6 +38,9 @@ namespace NVDSim
 	double read_unmapped_rate();
 	double write_unmapped_rate();
 
+	void ftlQueueLength(uint64_t length);
+	void ctrlQueueLength(std::vector<uint64_t> length);
+
 	//Accessor for power data
 	//Writing correct object oriented code up in this piece, what now?
 	virtual std::vector<std::vector<double>> getEnergyData(void);
@@ -72,6 +75,9 @@ namespace NVDSim
 	uint64_t average_read_latency;
 	uint64_t average_write_latency;
 	uint64_t average_queue_latency;
+
+	uint64_t ftl_queue_length;
+	std::vector<uint64_t> ctrl_queue_length;
 
 	// Power Stuff
 	// This is computed per package
@@ -127,6 +133,9 @@ namespace NVDSim
 	    uint64_t average_write_latency;
 	    uint64_t average_queue_latency;
 
+	    uint64_t ftl_queue_length;
+	    std::vector<uint64_t> ctrl_queue_length;
+
 	    std::vector<double> idle_energy;
 	    std::vector<double> access_energy;
 
@@ -151,9 +160,12 @@ namespace NVDSim
 		average_read_latency = 0;
 		average_write_latency = 0;
 		average_queue_latency = 0;
+		
+		ftl_queue_length = 0;
+		ctrl_queue_length = std::vector<uint64_t>(NUM_PACKAGES, 0);
 	
 		idle_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
-		access_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
+		access_energy = std::vector<double>(NUM_PACKAGES, 0.0);
 	    }
 	};
 

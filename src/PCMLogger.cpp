@@ -62,6 +62,8 @@ void PCMLogger::access_process(uint64_t addr, uint package, ChannelPacketType op
 	a.process = this->currentClockCycle;
 	a.package = package;
 	access_map[addr] = a;
+
+	this->queue_latency(a.process - a.start);
 }
 
 void PCMLogger::access_stop(uint64_t addr)
@@ -179,6 +181,19 @@ void PCMLogger::save(uint64_t cycle, uint epoch)
 	{
 	    savefile<<"Average Write Latency: " <<0<<"\n";
 	}
+	if(num_accesses != 0)
+	{
+	    savefile<<"Average Queue Latency: " <<((float)average_queue_latency/(float)num_accesses)<<"\n";
+	}
+	else
+	{
+	    savefile<<"Average Queue Latency: " <<0.0<<"\n";
+	}
+	savefile<<"Length of Ftl Queue: " <<ftl_queue_length<<"\n";
+	for(uint i = 0; i < ctrl_queue_length.size(); i++)
+	{
+	    savefile<<"Length of Controller Queue for Package " << i << " : "<<ctrl_queue_length[i]<<"\n";
+	}
 
 	savefile<<"\nPower Data: \n";
 	savefile<<"========================\n";
@@ -258,6 +273,20 @@ void PCMLogger::save(uint64_t cycle, uint epoch)
 		{
 		    savefile<<"Average Write Latency: " <<0.0<<"\n";
 		}
+		if((*it).num_accesses != 0)
+		{
+		    savefile<<"Average Queue Latency: " <<((float)(*it).average_queue_latency/(float)(*it).num_accesses)<<"\n";
+		}
+		else
+		{
+		    savefile<<"Average Queue Latency: " <<0.0<<"\n";
+		}
+		savefile<<"Length of Ftl Queue: " <<(*it).ftl_queue_length<<"\n";
+		for(uint i = 0; i < (*it).ctrl_queue_length.size(); i++)
+		{
+		    savefile<<"Length of Controller Queue for Package " << i << " : "<<(*it).ctrl_queue_length[i]<<"\n";
+		}
+
 		savefile<<"\nPower Data: \n";
 		savefile<<"========================\n";
 
@@ -365,6 +394,13 @@ void PCMLogger::save_epoch(uint64_t cycle, uint epoch)
     this_epoch.average_read_latency = average_read_latency;
     this_epoch.average_write_latency = average_write_latency;
     this_epoch.average_queue_latency = average_queue_latency;
+
+    this_epoch.ftl_queue_length = ftl_queue_length;
+
+    for(int i = 0; i < ctrl_queue_length.size(); i++)
+    {
+	this_epoch.ctrl_queue_length[i] = ctrl_queue_length[i];
+    }
 
     for(int i = 0; i < NUM_PACKAGES; i++)
     {	

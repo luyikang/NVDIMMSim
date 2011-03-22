@@ -16,15 +16,23 @@ GCFtl::GCFtl(Controller *c, Logger *l)
 }
 
 bool GCFtl::addTransaction(FlashTransaction &t){
-	if (!gc_flag){
+        if(transactionQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+	{
+	    return false;
+	}
+	else
+	{
+	    if (!gc_flag){
 		transactionQueue.push_back(t);
 
 		// Start the logging for this access.
 		log->access_start(t.address);
 
 		return true;
+	    }
+	    return false;
 	}
-	return false;
+	
 }
 
 void GCFtl::update(void){

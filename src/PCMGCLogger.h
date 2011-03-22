@@ -65,6 +65,9 @@ namespace NVDSim
 	    uint64_t average_gcread_latency;
 	    uint64_t average_gcwrite_latency;
 
+	    uint64_t ftl_queue_length;
+	    std::vector<uint64_t> ctrl_queue_length;
+
 	    std::vector<double> idle_energy;
 	    std::vector<double> access_energy;
 	    std::vector<double> erase_energy;
@@ -97,6 +100,9 @@ namespace NVDSim
 		average_queue_latency = 0;
 		average_gcread_latency = 0;
 		average_gcwrite_latency = 0;
+
+		ftl_queue_length = 0;
+		ctrl_queue_length = std::vector<uint64_t>(NUM_PACKAGES, 0);
 
 		idle_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
 		access_energy = std::vector<double>(NUM_PACKAGES, 0.0); 

@@ -84,6 +84,8 @@ bool Ftl::addTransaction(FlashTransaction &t){
     if(transactionQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
     {
 	return false;
+	cout << "failed to add transaction \n";
+	cout << "queue length: " << transactionQueue.size() << "\n";
     }
     else
     {
@@ -92,6 +94,8 @@ bool Ftl::addTransaction(FlashTransaction &t){
 	// Start the logging for this access.
 	log->access_start(t.address);
 
+	cout << "added transaction \n";
+	cout << "queue length: " << transactionQueue.size() << "\n";
 	return true;
     }
 }
@@ -237,6 +241,11 @@ void Ftl::powerCallback(void)
     {
 	controller->returnPowerData(temp[0], temp[1], temp[2], temp[3], temp[4], temp[5]);
     }
+}
+
+void Ftl::sendQueueLength(void)
+{
+    log->ftlQueueLength(transactionQueue.size());
 }
 
 

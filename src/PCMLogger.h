@@ -58,6 +58,9 @@ namespace NVDSim
 	    uint64_t average_write_latency;
 	    uint64_t average_queue_latency;
 
+	    uint64_t ftl_queue_length;
+	    std::vector<uint64_t> ctrl_queue_length;
+
 	    std::vector<double> idle_energy;
 	    std::vector<double> access_energy;
 
@@ -82,6 +85,9 @@ namespace NVDSim
 		average_read_latency = 0;
 		average_write_latency = 0;
 		average_queue_latency = 0;
+		
+		ftl_queue_length = 0;
+		ctrl_queue_length = std::vector<uint64_t>(NUM_PACKAGES, 0);
 
 		idle_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
 		access_energy = std::vector<double>(NUM_PACKAGES, 0.0); 

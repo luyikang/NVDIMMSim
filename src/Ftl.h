@@ -21,6 +21,8 @@ namespace NVDSim{
 			virtual void update(void);
 			uint64_t get_ptr(void); 
 			void inc_ptr(void); 
+
+			void sendQueueLength(void);
 			
 			void powerCallback();
 		       
