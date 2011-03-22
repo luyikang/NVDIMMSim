@@ -82,6 +82,8 @@ namespace NVDSim
 	uint64_t ftl_queue_length;
 	std::vector<uint64_t> ctrl_queue_length;
 
+	std::unordered_map<uint64_t> writes_per_address;
+
 	// Power Stuff
 	// This is computed per package
 	std::vector<double> idle_energy;
