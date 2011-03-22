@@ -183,17 +183,41 @@ void Logger::queue_latency(uint64_t cycles)
 
 double Logger::unmapped_rate()
 {
-	return (double)num_unmapped / num_accesses;
+    return (double)num_unmapped / num_accesses;
 }
 
 double Logger::read_unmapped_rate()
 {
-	return (double)num_read_unmapped / num_reads;
+    return (double)num_read_unmapped / num_reads;
 }
 
 double Logger::write_unmapped_rate()
 {
-	return (double)num_write_unmapped / num_writes;
+    return (double)num_write_unmapped / num_writes;
+}
+
+double Logger::calc_throughput(uint64_t cycles, uint64_t accesses)
+{
+    if(cycles != 0)
+    {
+	return ((((double)accesses / (double)cycles) * (1.0/(CYCLE_TIME * 0.000000001)) * NV_PAGE_SIZE));
+    }
+    else
+    {
+	return 0;
+    }
+}
+
+double Logger::divide(double num, double denom)
+{
+    if(denom == 0)
+    {
+	return 0.0;
+    }
+    else
+    {
+	return (num / denom);
+    }
 }
 
 void Logger::ftlQueueLength(uint64_t length)
@@ -261,34 +285,19 @@ void Logger::save(uint64_t cycle, uint epoch)
 	savefile<<"Unmapped Rate: " <<unmapped_rate()<<"\n";
 	savefile<<"Read Unmapped Rate: " <<read_unmapped_rate()<<"\n";
 	savefile<<"Write Unmapped Rate: " <<write_unmapped_rate()<<"\n";
-	if(num_reads != 0)
-	{
-	    savefile<<"Average Read Latency: " <<((float)average_read_latency/(float)num_reads)<<"\n";
-	}
-	else
-	{
-	    savefile<<"Average Read Latency: " <<0.0<<"\n";
-	}
-	if(num_writes != 0)
-	{
-	    savefile<<"Average Write Latency: " <<((float)average_write_latency/(float)num_writes)<<"\n";
-	}
-	else
-	{
-	    savefile<<"Average Write Latency: " <<0.0<<"\n";
-	}
-	if(num_accesses != 0)
-	{
-	    savefile<<"Average Queue Latency: " <<((float)average_queue_latency/(float)num_accesses)<<"\n";
-	}
-	else
-	{
-	    savefile<<"Average Queue Latency: " <<0.0<<"\n";
-	}
+	savefile<<"Average Read Latency: " <<(divide((float)average_read_latency,(float)num_reads))<<" cycles";
+	savefile<<" (" <<(divide((float)average_read_latency,(float)num_reads)*CYCLE_TIME)<<" ns)\n";
+	savefile<<"Average Write Latency: " <<divide((float)average_write_latency,(float)num_writes)<<" cycles";
+	savefile<<" (" <<(divide((float)average_write_latency,(float)num_writes))*CYCLE_TIME<<" ns)\n";
+	savefile<<"Average Queue Latency: " <<divide((float)average_queue_latency,(float)num_accesses)<<" cycles";
+	savefile<<" (" <<(divide((float)average_queue_latency,(float)num_accesses))*CYCLE_TIME<<" ns)\n";
+	savefile<<"Total Throughput: " <<this->calc_throughput(cycle, num_accesses)<<" KB/sec\n";
+	savefile<<"Read Throughput: " <<this->calc_throughput(cycle, num_reads)<<" KB/sec\n";
+	savefile<<"Write Throughput: " <<this->calc_throughput(cycle, num_writes)<<" KB/sec\n";
 	savefile<<"Length of Ftl Queue: " <<ftl_queue_length<<"\n";
 	for(uint i = 0; i < ctrl_queue_length.size(); i++)
 	{
-	    savefile<<"Length of Controller Queue for Package " << i << " : "<<ctrl_queue_length[i]<<"\n";
+	    savefile<<"Length of Controller Queue for Package " << i << ": "<<ctrl_queue_length[i]<<"\n";
 	}
 
 	savefile<<"\nPower Data: \n";
@@ -344,30 +353,16 @@ void Logger::save(uint64_t cycle, uint epoch)
 		savefile<<"Number of Mapped Reads: " <<(*it).num_read_mapped<<"\n";
 		savefile<<"Number of Unmapped Writes: " <<(*it).num_write_unmapped<<"\n";
 		savefile<<"Number of Mapped Writes: " <<(*it).num_write_mapped<<"\n";
-		if((*it).num_reads != 0)
-		{
-		    savefile<<"Average Read Latency: " <<((float)(*it).average_read_latency/(float)(*it).num_reads)<<"\n";
-		}
-		else
-		{
-		    savefile<<"Average Read Latency: " <<0.0<<"\n";
-		}
-		if((*it).num_writes != 0)
-		{
-		    savefile<<"Average Write Latency: " <<((float)(*it).average_write_latency/(float)(*it).num_writes)<<"\n";
-		}
-		else
-		{
-		    savefile<<"Average Write Latency: " <<0.0<<"\n";
-		}
-		if((*it).num_accesses != 0)
-		{
-		    savefile<<"Average Queue Latency: " <<((float)(*it).average_queue_latency/(float)(*it).num_accesses)<<"\n";
-		}
-		else
-		{
-		    savefile<<"Average Queue Latency: " <<0.0<<"\n";
-		}
+		savefile<<"Average Read Latency: " <<(divide((float)(*it).average_read_latency,(float)(*it).num_reads))<<" cycles";
+		savefile<<" (" <<(divide((float)(*it).average_read_latency,(float)(*it).num_reads)*CYCLE_TIME)<<" ns)\n";
+		savefile<<"Average Write Latency: " <<divide((float)(*it).average_write_latency,(float)(*it).num_writes)<<" cycles";
+		savefile<<" (" <<(divide((float)(*it).average_write_latency,(float)(*it).num_writes))*CYCLE_TIME<<" ns)\n";
+		savefile<<"Average Queue Latency: " <<divide((float)(*it).average_queue_latency,(float)(*it).num_accesses)<<" cycles";
+		savefile<<" (" <<(divide((float)(*it).average_queue_latency,(float)(*it).num_accesses))*CYCLE_TIME<<" ns)\n";
+		savefile<<"Total Throughput: " <<this->calc_throughput((*it).cycle, (*it).num_accesses)<<" KB/sec\n";
+		savefile<<"Read Throughput: " <<this->calc_throughput((*it).cycle, (*it).num_reads)<<" KB/sec\n";
+		savefile<<"Write Throughput: " <<this->calc_throughput((*it).cycle, (*it).num_writes)<<" KB/sec\n";
+		
 		savefile<<"Length of Ftl Queue: " <<(*it).ftl_queue_length<<"\n";
 		for(uint i = 0; i < (*it).ctrl_queue_length.size(); i++)
 		{

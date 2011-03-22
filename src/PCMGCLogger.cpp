@@ -200,54 +200,22 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 	savefile<<"Unmapped Rate: " <<unmapped_rate()<<"\n";
 	savefile<<"Read Unmapped Rate: " <<read_unmapped_rate()<<"\n";
 	savefile<<"Write Unmapped Rate: " <<write_unmapped_rate()<<"\n";
-	if(num_reads != 0)
-	{
-	    savefile<<"Average Read Latency: " <<((float)average_read_latency/(float)num_reads)<<"\n";
-	}
-	else
-	{
-	    savefile<<"Average Read Latency: " <<0.0<<"\n";
-	}
-	if(num_writes != 0)
-	{
-	    savefile<<"Average Write Latency: " <<((float)average_write_latency/(float)num_writes)<<"\n";
-	}
-	else
-	{
-	    savefile<<"Average Write Latency: " <<0.0<<"\n";
-	}
-	if(num_erases != 0)
-	{
-	    savefile<<"Average Erase Latency: " <<((float)average_read_latency/(float)num_reads)<<"\n";
-	}
-	else
-	{
-	    savefile<<"Average Erase Latency: " <<0.0<<"\n";
-	}
-	if(num_gcreads != 0)
-	{
-	    savefile<<"Average Garbage Collector initiated Read Latency: " <<((float)average_gcread_latency/(float)num_gcreads)<<"\n";
-	}
-	else
-	{
-	    savefile<<"Average Garbage Collector initiated Read Latency: " <<0.0<<"\n";
-	}
-	if(num_gcwrites != 0)
-	{
-	    savefile<<"Average Garbage Collector initiated Write Latency: " <<((float)average_gcwrite_latency/(float)num_gcwrites)<<"\n";
-	}
-	else
-	{
-	    savefile<<"Average Garbage Collector initiated Write Latency: " <<0.0<<"\n";
-	}
-	if(num_accesses != 0)
-	{
-	    savefile<<"Average Queue Latency: " <<((float)average_queue_latency/(float)num_accesses)<<"\n";
-	}
-	else
-	{
-	    savefile<<"Average Queue Latency: " <<0.0<<"\n";
-	}
+	savefile<<"Average Read Latency: " <<(divide((float)average_read_latency,(float)num_reads))<<" cycles";
+	savefile<<" (" <<(divide((float)average_read_latency,(float)num_reads)*CYCLE_TIME)<<" ns)\n";
+	savefile<<"Average Write Latency: " <<divide((float)average_write_latency,(float)num_writes)<<" cycles";
+	savefile<<" (" <<(divide((float)average_write_latency,(float)num_writes))*CYCLE_TIME<<" ns)\n";	
+	savefile<<"Average Erase Latency: " <<divide((float)average_erase_latency,(float)num_erases)<<" cycles";
+	savefile<<" (" <<(divide((float)average_erase_latency,(float)num_erases))*CYCLE_TIME<<" ns)\n";
+	savefile<<"Average Garbage Collector initiated Read Latency: " <<divide((float)average_gcread_latency,(float)num_gcreads)<<" cycles";
+	savefile<<" (" <<divide((float)average_gcread_latency,(float)num_gcreads)*CYCLE_TIME<<" ns)\n";
+        savefile<<"Average Garbage Collector initiated Write Latency: " <<divide((float)average_gcwrite_latency,(float)num_gcwrites)<<" cycles";
+	savefile<<" (" <<divide((float)average_gcwrite_latency,(float)num_gcwrites)*CYCLE_TIME<<" ns)\n";
+	savefile<<"Average Queue Latency: " <<divide((float)average_queue_latency,(float)num_accesses)<<" cycles";
+	savefile<<" (" <<(divide((float)average_queue_latency,(float)num_accesses))*CYCLE_TIME<<" ns)\n";
+
+	savefile<<"Total Throughput: " <<this->calc_throughput(cycle, num_accesses)<<" KB/sec\n";
+	savefile<<"Read Throughput: " <<this->calc_throughput(cycle, num_reads)<<" KB/sec\n";
+	savefile<<"Write Throughput: " <<this->calc_throughput(cycle, num_writes)<<" KB/sec\n";
 	savefile<<"Length of Ftl Queue: " <<ftl_queue_length<<"\n";
 	for(uint i = 0; i < ctrl_queue_length.size(); i++)
 	{
@@ -327,54 +295,23 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 		savefile<<"Number of Mapped Reads: " <<(*it).num_read_mapped<<"\n";
 		savefile<<"Number of Unmapped Writes: " <<(*it).num_write_unmapped<<"\n";
 		savefile<<"Number of Mapped Writes: " <<(*it).num_write_mapped<<"\n";
-		if((*it).num_reads != 0)
-		{
-		    savefile<<"Average Read Latency: " <<((float)(*it).average_read_latency/(float)(*it).num_reads)<<"\n";
-		}
-		else
-		{
-		    savefile<<"Average Read Latency: " <<0.0<<"\n";
-		}
-		if((*it).num_writes != 0)
-		{
-		    savefile<<"Average Write Latency: " <<((float)(*it).average_write_latency/(float)(*it).num_writes)<<"\n";
-		}
-		else
-		{
-		    savefile<<"Average Write Latency: " <<0.0<<"\n";
-		}
-		if((*it).num_erases != 0)
-		{
-		    savefile<<"Average Erase Latency: " <<((float)(*it).average_read_latency/(float)(*it).num_reads)<<"\n";
-		}
-		else
-		{
-		    savefile<<"Average Erase Latency: " <<0.0<<"\n";
-		}
-		if((*it).num_gcreads != 0)
-		{
-		    savefile<<"Average Garbage Collector initiated Read Latency: " <<((float)(*it).average_gcread_latency/(float)(*it).num_gcreads)<<"\n";
-		}
-		else
-		{
-		    savefile<<"Average Garbage Collector initiated Read Latency: " <<0.0<<"\n";
-		}
-		if((*it).num_gcwrites != 0)
-		{
-		    savefile<<"Average Garbage Collector initiated Write Latency: " <<((float)(*it).average_gcwrite_latency/(float)(*it).num_gcwrites)<<"\n";
-		}
-		else
-		{
-		    savefile<<"Average Garbage Collector initiated Write Latency: " <<0.0<<"\n";
-		}
-		if((*it).num_accesses != 0)
-		{
-		    savefile<<"Average Queue Latency: " <<((float)(*it).average_queue_latency/(float)(*it).num_accesses)<<"\n";
-		}
-		else
-		{
-		    savefile<<"Average Queue Latency: " <<0.0<<"\n";
-		}
+		savefile<<"Average Read Latency: " <<(divide((float)(*it).average_read_latency,(float)(*it).num_reads))<<" cycles";
+		savefile<<" (" <<(divide((float)(*it).average_read_latency,(float)(*it).num_reads)*CYCLE_TIME)<<" ns)\n";
+		savefile<<"Average Write Latency: " <<divide((float)(*it).average_write_latency,(float)(*it).num_writes)<<" cycles";
+		savefile<<" (" <<(divide((float)(*it).average_write_latency,(float)(*it).num_writes))*CYCLE_TIME<<" ns)\n";	
+		savefile<<"Average Erase Latency: " <<divide((float)(*it).average_erase_latency,(float)(*it).num_erases)<<" cycles";
+		savefile<<" (" <<(divide((float)(*it).average_erase_latency,(float)(*it).num_erases))*CYCLE_TIME<<" ns)\n";
+		savefile<<"Average Garbage Collector initiated Read Latency: " <<divide((float)(*it).average_gcread_latency,(float)(*it).num_gcreads)<<" cycles";
+		savefile<<" (" <<divide((float)(*it).average_gcread_latency,(float)(*it).num_gcreads)*CYCLE_TIME<<" ns)\n";
+		savefile<<"Average Garbage Collector initiated Write Latency: " <<divide((float)(*it).average_gcwrite_latency,(float)(*it).num_gcwrites)<<" cycles";
+		savefile<<" (" <<divide((float)(*it).average_gcwrite_latency,(float)(*it).num_gcwrites)*CYCLE_TIME<<" ns)\n";
+		savefile<<"Average Queue Latency: " <<divide((float)(*it).average_queue_latency,(float)(*it).num_accesses)<<" cycles";
+		savefile<<" (" <<(divide((float)(*it).average_queue_latency,(float)(*it).num_accesses))*CYCLE_TIME<<" ns)\n";
+
+		savefile<<"Total Throughput: " <<this->calc_throughput((*it).cycle, (*it).num_accesses)<<" KB/sec\n";
+		savefile<<"Read Throughput: " <<this->calc_throughput((*it).cycle, (*it).num_reads)<<" KB/sec\n";
+		savefile<<"Write Throughput: " <<this->calc_throughput((*it).cycle, (*it).num_writes)<<" KB/sec\n";
+		
 		savefile<<"Length of Ftl Queue: " <<(*it).ftl_queue_length<<"\n";
 		for(uint i = 0; i < (*it).ctrl_queue_length.size(); i++)
 		{
@@ -489,12 +426,10 @@ void PCMGCLogger::save_epoch(uint64_t cycle, uint epoch)
 
     this_epoch.num_accesses = num_accesses;
     this_epoch.num_reads = num_reads;
-    cout << "Num Reads " << num_reads << "\n";
-    cout << "This epoch num reads " << this_epoch.num_reads << "\n";
     this_epoch.num_writes = num_writes;
     this_epoch.num_erases = num_erases;
-    this_epoch.num_reads = num_gcreads;
-    this_epoch.num_writes = num_gcwrites;
+    this_epoch.num_gcreads = num_gcreads;
+    this_epoch.num_gcwrites = num_gcwrites;
 	
     this_epoch.num_unmapped = num_unmapped;
     this_epoch.num_mapped = num_mapped;
@@ -530,51 +465,9 @@ void PCMGCLogger::save_epoch(uint64_t cycle, uint epoch)
 	this_epoch.vpp_erase_energy[i] = vpp_erase_energy[i]; 
     }
 
-/*    EpochEntry temp_epoch;
-
-    temp_epoch.cycle = this_epoch.cycle;
-    temp_epoch.epoch = this_epoch.epoch;
-
-    temp_epoch.num_accesses = this_epoch.num_accesses;
-    temp_epoch.num_reads = this_epoch.num_reads;
-    temp_epoch.num_writes = this_epoch.num_writes;
-    temp_epoch.num_erases = this_epoch.num_erases;
-    temp_epoch.num_reads = this_epoch.num_gcreads;
-    temp_epoch.num_writes = this_epoch.num_gcwrites;
-	
-    temp_epoch.num_unmapped = this_epoch.num_unmapped;
-    temp_epoch.num_mapped = this_epoch.num_mapped;
-
-    temp_epoch.num_read_unmapped = this_epoch.num_read_unmapped;
-    temp_epoch.num_read_mapped = this_epoch.num_read_mapped;
-    temp_epoch.num_write_unmapped = this_epoch.num_write_unmapped;
-    temp_epoch.num_write_mapped = this_epoch.num_write_mapped;
-		
-    temp_epoch.average_latency = this_epoch.average_latency;
-    temp_epoch.average_read_latency = this_epoch.average_read_latency;
-    temp_epoch.average_write_latency = this_epoch.average_write_latency;
-    temp_epoch.average_erase_latency = this_epoch.average_erase_latency;
-    temp_epoch.average_gcread_latency = this_epoch.average_gcread_latency;
-    temp_epoch.average_gcwrite_latency = this_epoch.average_gcwrite_latency;
-    temp_epoch.average_queue_latency = this_epoch.average_queue_latency;
-
-    temp_epoch.ftl_queue_length = this_epoch.ftl_queue_length;
-
-    for(int i = 0; i < ctrl_queue_length.size(); i++)
-    {
-	temp_epoch.ctrl_queue_length[i] = this_epoch.ctrl_queue_length[i];
-    }
-
-    for(int i = 0; i < NUM_PACKAGES; i++)
-    {	
-	temp_epoch.idle_energy[i] = this_epoch.idle_energy[i]; 
-	temp_epoch.access_energy[i] = this_epoch.access_energy[i]; 
-	temp_epoch.erase_energy[i] = this_epoch.erase_energy[i]; 
-
-	temp_epoch.vpp_idle_energy[i] = this_epoch.vpp_idle_energy[i]; 
-	temp_epoch.vpp_access_energy[i] = this_epoch.vpp_access_energy[i]; 
-	temp_epoch.vpp_erase_energy[i] = this_epoch.vpp_erase_energy[i]; 
-    }
+    EpochEntry temp_epoch;
+    
+    temp_epoch = this_epoch;
     
     if(!epoch_queue.empty())
     {
@@ -584,8 +477,8 @@ void PCMGCLogger::save_epoch(uint64_t cycle, uint epoch)
 	this_epoch.num_reads -= last_epoch.num_reads;
 	this_epoch.num_writes -= last_epoch.num_writes;
 	this_epoch.num_erases -= last_epoch.num_erases;
-	this_epoch.num_reads -= last_epoch.num_gcreads;
-	this_epoch.num_writes -= last_epoch.num_gcwrites;
+	this_epoch.num_gcreads -= last_epoch.num_gcreads;
+	this_epoch.num_gcwrites -= last_epoch.num_gcwrites;
 	
 	this_epoch.num_unmapped -= last_epoch.num_unmapped;
 	this_epoch.num_mapped -= last_epoch.num_mapped;
@@ -613,15 +506,9 @@ void PCMGCLogger::save_epoch(uint64_t cycle, uint epoch)
 	    this_epoch.vpp_access_energy[i] -= last_epoch.vpp_access_energy[i]; 
 	    this_epoch.vpp_erase_energy[i] -= last_epoch.vpp_erase_energy[i]; 
 	}
-	} */
+    }
     
     epoch_queue.push_front(this_epoch);
 
-    list<EpochEntry>::iterator it;
-    for (it = epoch_queue.begin(); it != epoch_queue.end(); it++)
-    {
-	cout<<"Reads completed: "<<(*it).num_reads<<"\n";
-    }
-
-    //  last_epoch = temp_epoch;
+    last_epoch = temp_epoch;
 }

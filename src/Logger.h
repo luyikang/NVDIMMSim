@@ -37,6 +37,9 @@ namespace NVDSim
 	double unmapped_rate();
 	double read_unmapped_rate();
 	double write_unmapped_rate();
+	double calc_throughput(uint64_t cycles, uint64_t accesses);
+
+	double divide(double num, double denom);
 
 	void ftlQueueLength(uint64_t length);
 	void ctrlQueueLength(std::vector<uint64_t> length);
