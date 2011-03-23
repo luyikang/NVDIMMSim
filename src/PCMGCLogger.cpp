@@ -274,6 +274,8 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 	    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
 	}
 
+	savefile<<"\n=================================================\n";
+
 	if(USE_EPOCHS)
 	{
 	    list<EpochEntry>::iterator it;
@@ -381,6 +383,8 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 		    savefile<<"Average VPP Erase Power: "<<ave_vpp_erase_power[i]<<"mW\n";
 		    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
 		}
+		
+		savefile<<"\n-------------------------------------------------\n";
 	    }
 	}
 

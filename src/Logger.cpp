@@ -338,6 +338,8 @@ void Logger::save(uint64_t cycle, uint epoch)
 	    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
 	}
 
+	savefile<<"\n=================================================\n";
+
 	if(USE_EPOCHS)
 	{
 	    list<EpochEntry>::iterator it;
@@ -418,6 +420,8 @@ void Logger::save(uint64_t cycle, uint epoch)
 		    savefile<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
 		    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
 		}
+
+		savefile<<"\n-------------------------------------------------\n";
 	    }
 	}
 

@@ -286,6 +286,8 @@ void GCLogger::save(uint64_t cycle, uint epoch)
 	    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
 	}
 
+	savefile<<"\n=================================================\n";
+
 	if(USE_EPOCHS)
 	{
 	    list<EpochEntry>::iterator it;
@@ -379,6 +381,8 @@ void GCLogger::save(uint64_t cycle, uint epoch)
 		    savefile<<"Average Erase Power: "<<ave_erase_power[i]<<"mW\n";
 		    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
 		}
+
+		savefile<<"\n-------------------------------------------------\n";
 	    }
 	}
 

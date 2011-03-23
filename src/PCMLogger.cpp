@@ -222,6 +222,8 @@ void PCMLogger::save(uint64_t cycle, uint epoch)
 	    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
 	}
 
+	savefile<<"\n=================================================\n";
+
 	if(USE_EPOCHS)
 	{
 	    list<EpochEntry>::iterator it;
@@ -311,6 +313,8 @@ void PCMLogger::save(uint64_t cycle, uint epoch)
 		    savefile<<"Average VPP Access Power: "<<ave_vpp_access_power[i]<<"mW\n";
 		    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
 	        }
+
+		savefile<<"\n-------------------------------------------------\n";
 	    }
 	}
 
