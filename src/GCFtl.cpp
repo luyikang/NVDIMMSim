@@ -53,6 +53,7 @@ void GCFtl::update(void){
 						//update the logger
 					        log->access_process(vAddr, 0, READ);
 						log->read_unmapped();
+						log->access_stop(vAddr, vAddr);
 
 						//miss, nothing to read so return garbage
 						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));

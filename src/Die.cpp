@@ -120,7 +120,7 @@ void Die::update(void){
 		 if (controlCyclesLeft[i] == 0){
 			 switch (currentCommand->busPacketType){
 			         case GC_READ:
-				         log->access_stop(currentCommand->virtualAddress);
+				     log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
 				 case READ:
 					 planes[currentCommand->plane].read(currentCommand);
 					 returnDataPackets.push(planes[currentCommand->plane].readFromData());
@@ -128,7 +128,7 @@ void Die::update(void){
 				 case WRITE:
 					 planes[currentCommand->plane].write(currentCommand);
 					 parentNVDIMM->numWrites++;
-					 log->access_stop(currentCommand->virtualAddress);
+					 log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
 					 //call write callback
 					 if (parentNVDIMM->WriteDataDone != NULL){
 						 (*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->virtualAddress, currentClockCycle);
@@ -137,12 +137,12 @@ void Die::update(void){
 				 case GC_WRITE:
 					 planes[currentCommand->plane].write(currentCommand);
 					 parentNVDIMM->numWrites++;
-					 log->access_stop(currentCommand->virtualAddress);
+					 log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
 					 break;
 				 case ERASE:
 					 planes[currentCommand->plane].erase(currentCommand);
 					 parentNVDIMM->numErases++;
-					 log->access_stop(currentCommand->virtualAddress);
+					 log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
 					 break;
 				 default:
 					 break;

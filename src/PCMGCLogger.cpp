@@ -67,7 +67,7 @@ void PCMGCLogger::access_process(uint64_t addr, uint package, ChannelPacketType 
 	this->queue_latency(a.process - a.start);
 }
 
-void PCMGCLogger::access_stop(uint64_t addr)
+void PCMGCLogger::access_stop(uint64_t addr, uint64_t paddr)
 {
 	if (access_map.count(addr) == 0)
 	{
@@ -97,6 +97,14 @@ void PCMGCLogger::access_stop(uint64_t addr)
 	    vpp_access_energy[a.package] += (VPP_WRITE_I - VPP_STANDBY_I) * WRITE_TIME/2;
 	    this->write();
 	    this->write_latency(a.stop - a.start);
+	    if(writes_per_address.count(paddr) == 0)
+	    {
+		writes_per_address[paddr] = 1;
+	    }
+	    else
+	    {
+		writes_per_address[paddr]++;
+	    }
 	}
 	else if (a.op == ERASE)
 	{
@@ -124,6 +132,14 @@ void PCMGCLogger::access_stop(uint64_t addr)
 	    vpp_access_energy[a.package] += (VPP_WRITE_I - VPP_STANDBY_I) * WRITE_TIME/2;
 	    this->gcwrite();
 	    this->gcwrite_latency(a.stop - a.start);
+	    if(writes_per_address.count(paddr) == 0)
+	    {
+		writes_per_address[paddr] = 1;
+	    }
+	    else
+	    {
+		writes_per_address[paddr]++;
+	    }
 	}
 	
 	access_map.erase(addr);
@@ -183,7 +199,8 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 	savefile<<"NVDIMM Log \n";
 	savefile<<"\nData for Full Simulation: \n";
 	savefile<<"========================\n";
-	    
+	savefile<<"\nAccess Data: \n";
+	savefile<<"========================\n";	    
 	savefile<<"Cycles Simulated: "<<cycle<<"\n";
 	savefile<<"Accesses: "<<num_accesses<<"\n";
 	savefile<<"Reads completed: "<<num_reads<<"\n";
@@ -200,6 +217,9 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 	savefile<<"Unmapped Rate: " <<unmapped_rate()<<"\n";
 	savefile<<"Read Unmapped Rate: " <<read_unmapped_rate()<<"\n";
 	savefile<<"Write Unmapped Rate: " <<write_unmapped_rate()<<"\n";
+
+	savefile<<"\nThroughput and Latency Data: \n";
+	savefile<<"========================\n";
 	savefile<<"Average Read Latency: " <<(divide((float)average_read_latency,(float)num_reads))<<" cycles";
 	savefile<<" (" <<(divide((float)average_read_latency,(float)num_reads)*CYCLE_TIME)<<" ns)\n";
 	savefile<<"Average Write Latency: " <<divide((float)average_write_latency,(float)num_writes)<<" cycles";
@@ -212,19 +232,28 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 	savefile<<" (" <<divide((float)average_gcwrite_latency,(float)num_gcwrites)*CYCLE_TIME<<" ns)\n";
 	savefile<<"Average Queue Latency: " <<divide((float)average_queue_latency,(float)num_accesses)<<" cycles";
 	savefile<<" (" <<(divide((float)average_queue_latency,(float)num_accesses))*CYCLE_TIME<<" ns)\n";
-
 	savefile<<"Total Throughput: " <<this->calc_throughput(cycle, num_accesses)<<" KB/sec\n";
 	savefile<<"Read Throughput: " <<this->calc_throughput(cycle, num_reads)<<" KB/sec\n";
 	savefile<<"Write Throughput: " <<this->calc_throughput(cycle, num_writes)<<" KB/sec\n";
+
+	savefile<<"\nQueue Length Data: \n";
+	savefile<<"========================\n";
 	savefile<<"Length of Ftl Queue: " <<ftl_queue_length<<"\n";
 	for(uint i = 0; i < ctrl_queue_length.size(); i++)
 	{
 	    savefile<<"Length of Controller Queue for Package " << i << " : "<<ctrl_queue_length[i]<<"\n";
 	}
+	
+	savefile<<"\nWrite Frequency Data\n";
+	savefile<<"========================\n";
+	unordered_map<uint64_t, uint64_t>::iterator it;
+	for (it = writes_per_address.begin(); it != writes_per_address.end(); it++)
+	{
+	    savefile<<"Address "<<(*it).first<<" had "<<(*it).second<<" writes\n";
+	}
 
 	savefile<<"\nPower Data: \n";
 	savefile<<"========================\n";
-
 	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{
 	    savefile<<"Package: "<<i<<"\n";
@@ -279,7 +308,7 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 
 		savefile<<"\nData for Epoch "<<(*it).epoch<<"\n";
 		savefile<<"========================\n";
-		savefile<<"\nSimulation Data: \n";
+		savefile<<"\nAccess Data: \n";
 		savefile<<"========================\n";
 		
 		savefile<<"Cycles Simulated: "<<(*it).cycle<<"\n";
@@ -295,6 +324,9 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 		savefile<<"Number of Mapped Reads: " <<(*it).num_read_mapped<<"\n";
 		savefile<<"Number of Unmapped Writes: " <<(*it).num_write_unmapped<<"\n";
 		savefile<<"Number of Mapped Writes: " <<(*it).num_write_mapped<<"\n";
+
+		savefile<<"\nThroughput and Latency Data: \n";
+		savefile<<"========================\n";
 		savefile<<"Average Read Latency: " <<(divide((float)(*it).average_read_latency,(float)(*it).num_reads))<<" cycles";
 		savefile<<" (" <<(divide((float)(*it).average_read_latency,(float)(*it).num_reads)*CYCLE_TIME)<<" ns)\n";
 		savefile<<"Average Write Latency: " <<divide((float)(*it).average_write_latency,(float)(*it).num_writes)<<" cycles";
@@ -311,16 +343,25 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 		savefile<<"Total Throughput: " <<this->calc_throughput((*it).cycle, (*it).num_accesses)<<" KB/sec\n";
 		savefile<<"Read Throughput: " <<this->calc_throughput((*it).cycle, (*it).num_reads)<<" KB/sec\n";
 		savefile<<"Write Throughput: " <<this->calc_throughput((*it).cycle, (*it).num_writes)<<" KB/sec\n";
-		
+
+		savefile<<"\nQueue Length Data: \n";
+		savefile<<"========================\n";
 		savefile<<"Length of Ftl Queue: " <<(*it).ftl_queue_length<<"\n";
 		for(uint i = 0; i < (*it).ctrl_queue_length.size(); i++)
 		{
 		    savefile<<"Length of Controller Queue for Package " << i << " : "<<(*it).ctrl_queue_length[i]<<"\n";
 		}
 		
+		savefile<<"\nWrite Frequency Data\n";
+		savefile<<"========================\n";
+		unordered_map<uint64_t, uint64_t>::iterator it2;
+		for (it2 = (*it).writes_per_address.begin(); it2 != (*it).writes_per_address.end(); it2++)
+		{
+		    savefile<<"Address "<<(*it2).first<<" had "<<(*it2).second<<" writes\n";
+		}
+
 		savefile<<"\nPower Data: \n";
 		savefile<<"========================\n";
-
 		for(uint i = 0; i < NUM_PACKAGES; i++)
 		{
 		    savefile<<"Package: "<<i<<"\n";
@@ -448,6 +489,8 @@ void PCMGCLogger::save_epoch(uint64_t cycle, uint epoch)
     this_epoch.average_queue_latency = average_queue_latency;
 
     this_epoch.ftl_queue_length = ftl_queue_length;
+
+    this_epoch.writes_per_address = writes_per_address;
 
     for(int i = 0; i < ctrl_queue_length.size(); i++)
     {

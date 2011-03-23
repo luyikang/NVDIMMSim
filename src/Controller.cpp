@@ -23,7 +23,7 @@ void Controller::attachPackages(vector<Package> *packages){
 }
 
 void Controller::returnReadData(const FlashTransaction  &trans){
-	log->access_stop(trans.address);
+    log->access_stop(trans.address, trans.address);
 	if(parentNVDIMM->ReturnReadData!=NULL){
 		(*parentNVDIMM->ReturnReadData)(parentNVDIMM->systemID, trans.address, currentClockCycle);
 	}

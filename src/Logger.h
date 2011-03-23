@@ -55,7 +55,7 @@ namespace NVDSim
 	
 	void access_start(uint64_t addr);
 	virtual void access_process(uint64_t addr, uint package, ChannelPacketType op);
-	virtual void access_stop(uint64_t addr);
+	virtual void access_stop(uint64_t addr, uint64_t paddr);
 
 	virtual void save_epoch(uint64_t cycle, uint epoch);
 	
@@ -82,7 +82,7 @@ namespace NVDSim
 	uint64_t ftl_queue_length;
 	std::vector<uint64_t> ctrl_queue_length;
 
-	std::unordered_map<uint64_t> writes_per_address;
+	std::unordered_map<uint64_t, uint64_t> writes_per_address;
 
 	// Power Stuff
 	// This is computed per package
@@ -140,6 +140,8 @@ namespace NVDSim
 
 	    uint64_t ftl_queue_length;
 	    std::vector<uint64_t> ctrl_queue_length;
+	    
+	    std::unordered_map<uint64_t, uint64_t> writes_per_address;
 
 	    std::vector<double> idle_energy;
 	    std::vector<double> access_energy;
