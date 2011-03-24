@@ -198,7 +198,7 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 
 	savefile<<"NVDIMM Log \n";
 	savefile<<"\nData for Full Simulation: \n";
-	savefile<<"========================\n";
+	savefile<<"===========================\n";
 	savefile<<"\nAccess Data: \n";
 	savefile<<"========================\n";	    
 	savefile<<"Cycles Simulated: "<<cycle<<"\n";
@@ -241,15 +241,15 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 	savefile<<"Length of Ftl Queue: " <<ftl_queue_length<<"\n";
 	for(uint i = 0; i < ctrl_queue_length.size(); i++)
 	{
-	    savefile<<"Length of Controller Queue for Package " << i << " : "<<ctrl_queue_length[i]<<"\n";
+	    savefile<<"Length of Controller Queue for Package " << i << ": "<<ctrl_queue_length[i]<<"\n";
 	}
 	
-	savefile<<"\nWrite Frequency Data\n";
+	savefile<<"\nWrite Frequency Data: \n";
 	savefile<<"========================\n";
 	unordered_map<uint64_t, uint64_t>::iterator it;
 	for (it = writes_per_address.begin(); it != writes_per_address.end(); it++)
 	{
-	    savefile<<"Address "<<(*it).first<<" had "<<(*it).second<<" writes\n";
+	    savefile<<"Address "<<(*it).first<<": "<<(*it).second<<" writes\n";
 	}
 
 	savefile<<"\nPower Data: \n";
@@ -257,21 +257,21 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{
 	    savefile<<"Package: "<<i<<"\n";
-	    savefile<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    savefile<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    savefile<<"Accumulated Erase Energy: "<<(erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    savefile<<"Accumulated VPP Idle Energy: "<<(vpp_idle_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    savefile<<"Accumulated VPP Access Energy: "<<(vpp_access_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";		 
-	    savefile<<"Accumulated VPP Erase Energy: "<<(vpp_erase_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    savefile<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
+	    savefile<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+	    savefile<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+	    savefile<<"Accumulated Erase Energy: "<<(erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+	    savefile<<"Accumulated VPP Idle Energy: "<<(vpp_idle_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+	    savefile<<"Accumulated VPP Access Energy: "<<(vpp_access_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";		 
+	    savefile<<"Accumulated VPP Erase Energy: "<<(vpp_erase_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+	    savefile<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<" mJ\n\n";
 	 
-	    savefile<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
-	    savefile<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
-	    savefile<<"Average Erase Power: "<<ave_erase_power[i]<<"mW\n";
-	    savefile<<"Average VPP Idle Power: "<<ave_vpp_idle_power[i]<<"mW\n";
-	    savefile<<"Average VPP Access Power: "<<ave_vpp_access_power[i]<<"mW\n";
-	    savefile<<"Average VPP Erase Power: "<<ave_vpp_erase_power[i]<<"mW\n";
-	    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
+	    savefile<<"Average Idle Power: "<<ave_idle_power[i]<<" mW\n";
+	    savefile<<"Average Access Power: "<<ave_access_power[i]<<" mW\n";
+	    savefile<<"Average Erase Power: "<<ave_erase_power[i]<<" mW\n";
+	    savefile<<"Average VPP Idle Power: "<<ave_vpp_idle_power[i]<<" mW\n";
+	    savefile<<"Average VPP Access Power: "<<ave_vpp_access_power[i]<<" mW\n";
+	    savefile<<"Average VPP Erase Power: "<<ave_vpp_erase_power[i]<<" mW\n";
+	    savefile<<"Average Power: "<<average_power[i]<<" mW\n\n";
 	}
 
 	savefile<<"\n=================================================\n";
@@ -308,8 +308,8 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 		    }
 		}
 
-		savefile<<"\nData for Epoch "<<(*it).epoch<<"\n";
-		savefile<<"========================\n";
+		savefile<<"\nData for Epoch: "<<(*it).epoch<<"\n";
+		savefile<<"===========================\n";
 		savefile<<"\nAccess Data: \n";
 		savefile<<"========================\n";
 		
@@ -351,15 +351,15 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 		savefile<<"Length of Ftl Queue: " <<(*it).ftl_queue_length<<"\n";
 		for(uint i = 0; i < (*it).ctrl_queue_length.size(); i++)
 		{
-		    savefile<<"Length of Controller Queue for Package " << i << " : "<<(*it).ctrl_queue_length[i]<<"\n";
+		    savefile<<"Length of Controller Queue for Package " << i << ": "<<(*it).ctrl_queue_length[i]<<"\n";
 		}
 		
-		savefile<<"\nWrite Frequency Data\n";
+		savefile<<"\nWrite Frequency Data: \n";
 		savefile<<"========================\n";
 		unordered_map<uint64_t, uint64_t>::iterator it2;
 		for (it2 = (*it).writes_per_address.begin(); it2 != (*it).writes_per_address.end(); it2++)
 		{
-		    savefile<<"Address "<<(*it2).first<<" had "<<(*it2).second<<" writes\n";
+		    savefile<<"Address "<<(*it2).first<<": "<<(*it2).second<<" writes\n";
 		}
 
 		savefile<<"\nPower Data: \n";
@@ -367,21 +367,21 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 		for(uint i = 0; i < NUM_PACKAGES; i++)
 		{
 		    savefile<<"Package: "<<i<<"\n";
-		    savefile<<"Accumulated Idle Energy: "<<((*it).idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-		    savefile<<"Accumulated Access Energy: "<<((*it).access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-		    savefile<<"Accumulated Erase Energy: "<<((*it).erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-		    savefile<<"Accumulated VPP Idle Energy: "<<((*it).vpp_idle_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-		    savefile<<"Accumulated VPP Access Energy: "<<((*it).vpp_access_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";		 
-		    savefile<<"Accumulated VPP Erase Energy: "<<((*it).vpp_erase_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-		    savefile<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
+		    savefile<<"Accumulated Idle Energy: "<<((*it).idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+		    savefile<<"Accumulated Access Energy: "<<((*it).access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+		    savefile<<"Accumulated Erase Energy: "<<((*it).erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+		    savefile<<"Accumulated VPP Idle Energy: "<<((*it).vpp_idle_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+		    savefile<<"Accumulated VPP Access Energy: "<<((*it).vpp_access_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";		 
+		    savefile<<"Accumulated VPP Erase Energy: "<<((*it).vpp_erase_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+		    savefile<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<" mJ\n\n";
 	 
-		    savefile<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
-		    savefile<<"Average Access Power: "<<ave_access_power[i]<<"mW\n"; 
-		    savefile<<"Average Erase Power: "<<ave_erase_power[i]<<"mW\n";
-		    savefile<<"Average VPP Idle Power: "<<ave_vpp_idle_power[i]<<"mW\n";
-		    savefile<<"Average VPP Access Power: "<<ave_vpp_access_power[i]<<"mW\n";
-		    savefile<<"Average VPP Erase Power: "<<ave_vpp_erase_power[i]<<"mW\n";
-		    savefile<<"Average Power: "<<average_power[i]<<"mW\n\n";
+		    savefile<<"Average Idle Power: "<<ave_idle_power[i]<<" mW\n";
+		    savefile<<"Average Access Power: "<<ave_access_power[i]<<" mW\n"; 
+		    savefile<<"Average Erase Power: "<<ave_erase_power[i]<<" mW\n";
+		    savefile<<"Average VPP Idle Power: "<<ave_vpp_idle_power[i]<<" mW\n";
+		    savefile<<"Average VPP Access Power: "<<ave_vpp_access_power[i]<<" mW\n";
+		    savefile<<"Average VPP Erase Power: "<<ave_vpp_erase_power[i]<<" mW\n";
+		    savefile<<"Average Power: "<<average_power[i]<<" mW\n\n";
 		}
 		
 		savefile<<"\n-------------------------------------------------\n";
