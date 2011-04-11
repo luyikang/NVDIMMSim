@@ -2,8 +2,11 @@
 
 using namespace std;
 
-// these are the values that are extern'd in SystemConfig.h so that they
+// these are the values that are extern'd in FlashConfiguration.h so that they
 // have global scope even though they are set by Init
+
+bool WEAR_LEVEL_LOG;
+bool RUNTIME_WRITE;
 
 std::string DEVICE_TYPE;
 uint NUM_PACKAGES;
@@ -54,6 +57,8 @@ namespace NVDSim
 	//Map the string names to the variables they set
 	static ConfigMap configMap[] = {
 		//DEFINE_UINT_PARAM -- see Init.h
+	        DEFINE_BOOL_PARAM(WEAR_LEVEL_LOG, DEV_PARAM),
+		DEFINE_BOOL_PARAM(RUNTIME_WRITE, DEV_PARAM),
 	        DEFINE_STRING_PARAM(DEVICE_TYPE, DEV_PARAM),
 		DEFINE_UINT_PARAM(NUM_PACKAGES,DEV_PARAM),
 		DEFINE_UINT_PARAM(DIES_PER_PACKAGE,DEV_PARAM),
@@ -131,44 +136,6 @@ namespace NVDSim
 				visDataOut << endl;
 			}
 		}
-
-		visDataOut<<"!!DEVICE_INI"<<endl;
-		for (size_t i=0; configMap[i].variablePtr != NULL; i++) 
-		{
-			if (configMap[i].parameterType == DEV_PARAM) 
-			{
-				visDataOut<<configMap[i].iniKey<<"=";
-				switch (configMap[i].variableType) 
-				{
-					//parse and set each type of variable
-					case UINT:
-						visDataOut << *((uint *)configMap[i].variablePtr);
-					break;
-					case UINT64:
-						visDataOut << *((uint64_t *)configMap[i].variablePtr);
-					break;
-
-					case FLOAT:
-						visDataOut << *((float *)configMap[i].variablePtr);
-					break;
-				        case DOUBLE:
-					        visDataOut << *((double *)configMap[i].variablePtr);
-					break;
-					case STRING:
-						visDataOut << *((string *)configMap[i].variablePtr);
-					break;
-					case BOOL:
-						if (*((bool *)configMap[i].variablePtr)) {
-							visDataOut <<"true";
-						} else {
-							visDataOut <<"false";
-						}
-					break;
-				}
-				visDataOut << endl;
-			}
-		}
-		visDataOut<<"!!EPOCH_DATA"<<endl;
 
 	}
 
