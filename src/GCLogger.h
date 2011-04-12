@@ -128,7 +128,9 @@ namespace NVDSim
 
 	// Store the data from each epoch for printing at the end of the simulation
 	std::list<EpochEntry> epoch_queue;
-    };
+
+	void write_epoch(EpochEntry *e);
+    };   
 }
 
 #endif

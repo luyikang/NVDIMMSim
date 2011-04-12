@@ -241,99 +241,9 @@ void PCMLogger::save(uint64_t cycle, uint epoch)
 	    list<EpochEntry>::iterator it;
 	    for (it = epoch_queue.begin(); it != epoch_queue.end(); it++)
 	    {
-		for(uint i = 0; i < NUM_PACKAGES; i++)
-		{
-		    if((*it).cycle != 0)
-		    {
-			total_energy[i] = (((*it).idle_energy[i] + (*it).access_energy[i]) * VCC)
-			                  + (((*it).vpp_idle_energy[i] + (*it).vpp_access_energy[i]) * VPP);
-			ave_idle_power[i] = ((*it).idle_energy[i] * VCC) / (*it).cycle;
-			ave_access_power[i] = ((*it).access_energy[i] * VCC) / (*it).cycle;
-			ave_vpp_idle_power[i] = ((*it).vpp_idle_energy[i] * VPP) / (*it).cycle;
-			ave_vpp_access_power[i] = ((*it).vpp_access_energy[i] * VPP) / (*it).cycle;
-			average_power[i] = total_energy[i] / (*it).cycle;
-		    }
-		    else
-		    {
-			total_energy[i] = 0;
-			ave_idle_power[i] = 0;
-			ave_access_power[i] = 0;
-			ave_vpp_idle_power[i] = 0;
-			ave_vpp_access_power[i] = 0;
-			average_power[i] = 0;
-		    }
-		}
-
-		savefile<<"\nData for Epoch: "<<(*it).epoch<<"\n";
-		savefile<<"===========================\n";;
-		savefile<<"\nAccess Data: \n";
-		savefile<<"========================\n";	
-		savefile<<"Cycles Simulated: "<<(*it).cycle<<"\n";
-		savefile<<"Accesses: "<<(*it).num_accesses<<"\n";
-		savefile<<"Reads completed: "<<(*it).num_reads<<"\n";
-		savefile<<"Writes completed: "<<(*it).num_writes<<"\n";
-		savefile<<"Number of Unmapped Accesses: " <<(*it).num_unmapped<<"\n";
-		savefile<<"Number of Mapped Accesses: " <<(*it).num_mapped<<"\n";
-		savefile<<"Number of Unmapped Reads: " <<(*it).num_read_unmapped<<"\n";
-		savefile<<"Number of Mapped Reads: " <<(*it).num_read_mapped<<"\n";
-		savefile<<"Number of Unmapped Writes: " <<(*it).num_write_unmapped<<"\n";
-		savefile<<"Number of Mapped Writes: " <<(*it).num_write_mapped<<"\n";
-		
-		savefile<<"\nThroughput and Latency Data: \n";
-		savefile<<"========================\n";
-		savefile<<"Average Read Latency: " <<(divide((float)(*it).average_read_latency,(float)(*it).num_reads))<<" cycles";
-		savefile<<" (" <<(divide((float)(*it).average_read_latency,(float)(*it).num_reads)*CYCLE_TIME)<<" ns)\n";
-		savefile<<"Average Write Latency: " <<divide((float)(*it).average_write_latency,(float)(*it).num_writes)<<" cycles";
-		savefile<<" (" <<(divide((float)(*it).average_write_latency,(float)(*it).num_writes))*CYCLE_TIME<<" ns)\n";
-		savefile<<"Average Queue Latency: " <<divide((float)(*it).average_queue_latency,(float)(*it).num_accesses)<<" cycles";
-		savefile<<" (" <<(divide((float)(*it).average_queue_latency,(float)(*it).num_accesses))*CYCLE_TIME<<" ns)\n";
-		savefile<<"Total Throughput: " <<this->calc_throughput((*it).cycle, (*it).num_accesses)<<" KB/sec\n";
-		savefile<<"Read Throughput: " <<this->calc_throughput((*it).cycle, (*it).num_reads)<<" KB/sec\n";
-		savefile<<"Write Throughput: " <<this->calc_throughput((*it).cycle, (*it).num_writes)<<" KB/sec\n";
-		
-		savefile<<"\nQueue Length Data: \n";
-		savefile<<"========================\n";
-		savefile<<"Length of Ftl Queue: " <<(*it).ftl_queue_length<<"\n";
-		for(uint i = 0; i < (*it).ctrl_queue_length.size(); i++)
-		{
-		    savefile<<"Length of Controller Queue for Package " << i << ": "<<(*it).ctrl_queue_length[i]<<"\n";
-		}
-
-		if(WEAR_LEVEL_LOG)
-		{
-		    savefile<<"\nWrite Frequency Data: \n";
-		    savefile<<"========================\n";
-		    unordered_map<uint64_t, uint64_t>::iterator it2;
-		    for (it2 = (*it).writes_per_address.begin(); it2 != (*it).writes_per_address.end(); it2++)
-		    {
-			savefile<<"Address "<<(*it2).first<<": "<<(*it2).second<<" writes\n";
-		    }
-		}
-
-		savefile<<"\nPower Data: \n";
-		savefile<<"========================\n";
-
-		for(uint i = 0; i < NUM_PACKAGES; i++)
-		{
-		    savefile<<"Package: "<<i<<"\n";
-		    savefile<<"Accumulated Idle Energy: "<<((*it).idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-		    savefile<<"Accumulated Access Energy: "<<((*it).access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-		    savefile<<"Accumulated VPP Idle Energy: "<<((*it).vpp_idle_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-		    savefile<<"Accumulated VPP Access Energy: "<<((*it).vpp_access_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-		    savefile<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<" mJ\n\n";
-	 
-		    savefile<<"Average Idle Power: "<<ave_idle_power[i]<<" mW\n";
-		    savefile<<"Average Access Power: "<<ave_access_power[i]<<" W\n";
-		    savefile<<"Average VPP Idle Power: "<<ave_vpp_idle_power[i]<<" mW\n";
-		    savefile<<"Average VPP Access Power: "<<ave_vpp_access_power[i]<<" mW\n";
-		    savefile<<"Average Power: "<<average_power[i]<<" mW\n\n";
-	        }
-
-		savefile<<"\n-------------------------------------------------\n";
+		write_epoch(&(*it));
 	    }
 	}
-
-	savefile.close();
 }
 
 void PCMLogger::print(uint64_t cycle) {
@@ -475,7 +385,19 @@ void PCMLogger::save_epoch(uint64_t cycle, uint epoch)
     
     if(RUNTIME_WRITE)
     {
-	if(epoch == 0)
+	write_epoch(&this_epoch);
+    }
+    else
+    {
+	epoch_queue.push_front(this_epoch);
+    }
+
+    last_epoch = temp_epoch;
+}
+
+void PCMLogger::write_epoch(EpochEntry *e)
+{
+    if(e->epoch == 0)
 	{
 	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
 	}
@@ -503,15 +425,15 @@ void PCMLogger::save_epoch(uint64_t cycle, uint epoch)
 
 	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{
-	     if(cycle != 0)
+	     if(e->cycle != 0)
 	     {
-		 total_energy[i] = ((idle_energy[i] + access_energy[i]) * VCC)
-	                           + ((vpp_idle_energy[i] + vpp_access_energy[i]) * VPP);
-		 ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
-		 ave_access_power[i] = (access_energy[i] * VCC) / cycle;
-		 ave_vpp_idle_power[i] = (vpp_idle_energy[i] * VPP) / cycle;
-		 ave_vpp_access_power[i] = (vpp_access_energy[i] * VPP) / cycle;
-		 average_power[i] = total_energy[i] / cycle;
+		 total_energy[i] = ((e->idle_energy[i] + e->access_energy[i]) * VCC)
+	                           + ((e->vpp_idle_energy[i] + e->vpp_access_energy[i]) * VPP);
+		 ave_idle_power[i] = (e->idle_energy[i] * VCC) / e->cycle;
+		 ave_access_power[i] = (e->access_energy[i] * VCC) / e->cycle;
+		 ave_vpp_idle_power[i] = (e->vpp_idle_energy[i] * VPP) / e->cycle;
+		 ave_vpp_access_power[i] = (e->vpp_access_energy[i] * VPP) / e->cycle;
+		 average_power[i] = total_energy[i] / e->cycle;
 	     }
 	     else
 	     {
@@ -524,42 +446,39 @@ void PCMLogger::save_epoch(uint64_t cycle, uint epoch)
 	     }
 	}
 
-	savefile<<"\nData for Epoch: "<<epoch<<"\n";
+	savefile<<"\nData for Epoch: "<<e->epoch<<"\n";
 	savefile<<"===========================\n";;
 	savefile<<"\nAccess Data: \n";
 	savefile<<"========================\n";
-	savefile<<"Cycles Simulated: "<<cycle<<"\n";
-	savefile<<"Accesses: "<<num_accesses<<"\n";
-	savefile<<"Reads completed: "<<num_reads<<"\n";
-	savefile<<"Writes completed: "<<num_writes<<"\n";
-	savefile<<"Number of Unmapped Accesses: " <<num_unmapped<<"\n";
-	savefile<<"Number of Mapped Accesses: " <<num_mapped<<"\n";
-	savefile<<"Number of Unmapped Reads: " <<num_read_unmapped<<"\n";
-	savefile<<"Number of Mapped Reads: " <<num_read_mapped<<"\n";
-	savefile<<"Number of Unmapped Writes: " <<num_write_unmapped<<"\n";
-	savefile<<"Number of Mapped Writes: " <<num_write_mapped<<"\n";
-	savefile<<"Unmapped Rate: " <<unmapped_rate()<<"\n";
-	savefile<<"Read Unmapped Rate: " <<read_unmapped_rate()<<"\n";
-	savefile<<"Write Unmapped Rate: " <<write_unmapped_rate()<<"\n";
+	savefile<<"Cycles Simulated: "<<e->cycle<<"\n";
+	savefile<<"Accesses: "<<e->num_accesses<<"\n";
+	savefile<<"Reads completed: "<<e->num_reads<<"\n";
+	savefile<<"Writes completed: "<<e->num_writes<<"\n";
+	savefile<<"Number of Unmapped Accesses: " <<e->num_unmapped<<"\n";
+	savefile<<"Number of Mapped Accesses: " <<e->num_mapped<<"\n";
+	savefile<<"Number of Unmapped Reads: " <<e->num_read_unmapped<<"\n";
+	savefile<<"Number of Mapped Reads: " <<e->num_read_mapped<<"\n";
+	savefile<<"Number of Unmapped Writes: " <<e->num_write_unmapped<<"\n";
+	savefile<<"Number of Mapped Writes: " <<e->num_write_mapped<<"\n";
 
 	savefile<<"\nThroughput and Latency Data: \n";
 	savefile<<"========================\n";
-	savefile<<"Average Read Latency: " <<(divide((float)average_read_latency,(float)num_reads))<<" cycles";
-	savefile<<" (" <<(divide((float)average_read_latency,(float)num_reads)*CYCLE_TIME)<<" ns)\n";
-	savefile<<"Average Write Latency: " <<divide((float)average_write_latency,(float)num_writes)<<" cycles";
-	savefile<<" (" <<(divide((float)average_write_latency,(float)num_writes))*CYCLE_TIME<<" ns)\n";
-	savefile<<"Average Queue Latency: " <<divide((float)average_queue_latency,(float)num_accesses)<<" cycles";
-	savefile<<" (" <<(divide((float)average_queue_latency,(float)num_accesses))*CYCLE_TIME<<" ns)\n";
-	savefile<<"Total Throughput: " <<this->calc_throughput(cycle, num_accesses)<<" KB/sec\n";
-	savefile<<"Read Throughput: " <<this->calc_throughput(cycle, num_reads)<<" KB/sec\n";
-	savefile<<"Write Throughput: " <<this->calc_throughput(cycle, num_writes)<<" KB/sec\n";
+	savefile<<"Average Read Latency: " <<(divide((float)e->average_read_latency,(float)e->num_reads))<<" cycles";
+	savefile<<" (" <<(divide((float)e->average_read_latency,(float)e->num_reads)*CYCLE_TIME)<<" ns)\n";
+	savefile<<"Average Write Latency: " <<divide((float)e->average_write_latency,(float)e->num_writes)<<" cycles";
+	savefile<<" (" <<(divide((float)e->average_write_latency,(float)e->num_writes))*CYCLE_TIME<<" ns)\n";
+	savefile<<"Average Queue Latency: " <<divide((float)e->average_queue_latency,(float)e->num_accesses)<<" cycles";
+	savefile<<" (" <<(divide((float)e->average_queue_latency,(float)e->num_accesses))*CYCLE_TIME<<" ns)\n";
+	savefile<<"Total Throughput: " <<this->calc_throughput(e->cycle, e->num_accesses)<<" KB/sec\n";
+	savefile<<"Read Throughput: " <<this->calc_throughput(e->cycle, e->num_reads)<<" KB/sec\n";
+	savefile<<"Write Throughput: " <<this->calc_throughput(e->cycle, e->num_writes)<<" KB/sec\n";
 
 	savefile<<"\nQueue Length Data: \n";
 	savefile<<"========================\n";
-	savefile<<"Length of Ftl Queue: " <<ftl_queue_length<<"\n";
-	for(uint i = 0; i < ctrl_queue_length.size(); i++)
+	savefile<<"Length of Ftl Queue: " <<e->ftl_queue_length<<"\n";
+	for(uint i = 0; i < e->ctrl_queue_length.size(); i++)
 	{
-	    savefile<<"Length of Controller Queue for Package " << i << ": "<<ctrl_queue_length[i]<<"\n";
+	    savefile<<"Length of Controller Queue for Package " << i << ": "<<e->ctrl_queue_length[i]<<"\n";
 	}
 	
 	if(WEAR_LEVEL_LOG)
@@ -567,7 +486,7 @@ void PCMLogger::save_epoch(uint64_t cycle, uint epoch)
 	    savefile<<"\nWrite Frequency Data: \n";
 	    savefile<<"========================\n";
 	    unordered_map<uint64_t, uint64_t>::iterator it;
-	    for (it = writes_per_address.begin(); it != writes_per_address.end(); it++)
+	    for (it = e->writes_per_address.begin(); it != e->writes_per_address.end(); it++)
 	    {
 		savefile<<"Address "<<(*it).first<<": "<<(*it).second<<" writes\n";
 	    }
@@ -579,10 +498,10 @@ void PCMLogger::save_epoch(uint64_t cycle, uint epoch)
 	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{
 	    savefile<<"Package: "<<i<<"\n";
-	    savefile<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-	    savefile<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-	    savefile<<"Accumulated VPP Idle Energy: "<<(vpp_idle_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-	    savefile<<"Accumulated VPP Access Energy: "<<(vpp_access_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+	    savefile<<"Accumulated Idle Energy: "<<(e->idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+	    savefile<<"Accumulated Access Energy: "<<(e->access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+	    savefile<<"Accumulated VPP Idle Energy: "<<(e->vpp_idle_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
+	    savefile<<"Accumulated VPP Access Energy: "<<(e->vpp_access_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
 	    savefile<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<" mJ\n\n";
 	 
 	    savefile<<"Average Idle Power: "<<ave_idle_power[i]<<" mW\n";
@@ -595,11 +514,4 @@ void PCMLogger::save_epoch(uint64_t cycle, uint epoch)
 	savefile<<"\n-------------------------------------------------\n";
 
 	savefile.close();
-    }
-    else
-    {
-	epoch_queue.push_front(this_epoch);
-    }
-
-    last_epoch = temp_epoch;
 }
