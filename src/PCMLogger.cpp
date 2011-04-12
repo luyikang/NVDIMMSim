@@ -157,6 +157,7 @@ void PCMLogger::save(uint64_t cycle, uint epoch)
 	else
 	{
 	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
+	    savefile<<"NVDIMM Log \n";
 	}
 
 	if (!savefile) 
@@ -165,7 +166,6 @@ void PCMLogger::save(uint64_t cycle, uint epoch)
 	    exit(-1); 
 	}
 
-	savefile<<"NVDIMM Log \n";
 	savefile<<"\nData for Full Simulation: \n";
 	savefile<<"===========================\n";
 	savefile<<"\nAccess Data: \n";
@@ -236,6 +236,8 @@ void PCMLogger::save(uint64_t cycle, uint epoch)
 
 	savefile<<"\n=================================================\n";
 
+	savefile.close();
+
 	if(USE_EPOCHS && !RUNTIME_WRITE)
 	{
 	    list<EpochEntry>::iterator it;
@@ -297,7 +299,7 @@ void PCMLogger::print(uint64_t cycle) {
 vector<vector<double> > PCMLogger::getEnergyData(void)
 {
     vector<vector<double> > temp = vector<vector<double> >(4, vector<double>(NUM_PACKAGES, 0.0));
-    for(int i = 0; i < NUM_PACKAGES; i++)
+    for(uint i = 0; i < NUM_PACKAGES; i++)
     {
 	temp[0][i] = idle_energy[i];
 	temp[1][i] = access_energy[i];
@@ -334,12 +336,12 @@ void PCMLogger::save_epoch(uint64_t cycle, uint epoch)
 
     this_epoch.writes_per_address = writes_per_address;
 
-    for(int i = 0; i < ctrl_queue_length.size(); i++)
+    for(uint i = 0; i < ctrl_queue_length.size(); i++)
     {
 	this_epoch.ctrl_queue_length[i] = ctrl_queue_length[i];
     }
 
-    for(int i = 0; i < NUM_PACKAGES; i++)
+    for(uint i = 0; i < NUM_PACKAGES; i++)
     {	
 	this_epoch.idle_energy[i] = idle_energy[i]; 
 	this_epoch.access_energy[i] = access_energy[i]; 
@@ -373,7 +375,7 @@ void PCMLogger::save_epoch(uint64_t cycle, uint epoch)
 	this_epoch.average_write_latency -= last_epoch.average_write_latency;
 	this_epoch.average_queue_latency -= last_epoch.average_queue_latency;
 	
-	for(int i = 0; i < NUM_PACKAGES; i++)
+	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{	
 	    this_epoch.idle_energy[i] -= last_epoch.idle_energy[i]; 
 	    this_epoch.access_energy[i] -= last_epoch.access_energy[i]; 
@@ -397,9 +399,10 @@ void PCMLogger::save_epoch(uint64_t cycle, uint epoch)
 
 void PCMLogger::write_epoch(EpochEntry *e)
 {
-    if(e->epoch == 0)
+        if(e->epoch == 0 && RUNTIME_WRITE)
 	{
 	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
+	    savefile<<"NVDIMM Log \n";
 	}
 	else
 	{
@@ -408,7 +411,7 @@ void PCMLogger::write_epoch(EpochEntry *e)
 
 	if (!savefile) 
 	{
-	    ERROR("Cannot open PowerStats.log");
+	    ERROR("Cannot open NVDIMM.log");
 	    exit(-1); 
 	}
 

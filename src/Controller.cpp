@@ -152,7 +152,7 @@ void Controller::update(void){
 void Controller::sendQueueLength(void)
 {
     vector<uint64_t> temp = vector<uint64_t>(channelQueues.size(),0);
-    for(int i = 0; i < channelQueues.size(); i++)
+    for(uint i = 0; i < channelQueues.size(); i++)
     {
 	temp[i] = channelQueues[i].size();
     }

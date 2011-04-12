@@ -58,8 +58,8 @@ void test_obj::write_cb(uint id, uint64_t address, uint64_t cycle){
 
 void test_obj::power_cb(uint id, vector<vector<double>> data, uint64_t cycle){
         cout<<"[Callback] Power Data for cycle: "<<cycle<<endl;
-	for(int i = 0; i < NUM_PACKAGES; i++){
-	  for(int j = 0; j < data.size(); j++){
+	for(uint i = 0; i < NUM_PACKAGES; i++){
+	  for(uint j = 0; j < data.size(); j++){
 	    if(DEVICE_TYPE.compare("PCM") == 0){
 	      if(j == 0){
 		cout<<"    Package: "<<i<<" Idle Energy: "<<data[0][i]<<"\n";
