@@ -64,6 +64,10 @@
 #define Power_Callback 1
 #define Verbose_Power_Callback 0
 
+// Logging Options
+extern bool WEAR_LEVEL_LOG;
+extern bool RUNTIME_WRITE;
+
 extern std::string DEVICE_TYPE;
 extern uint NUM_PACKAGES;
 extern uint DIES_PER_PACKAGE;
