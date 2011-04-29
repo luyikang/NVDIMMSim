@@ -427,35 +427,32 @@ void PCMLogger::save_epoch(uint64_t cycle, uint epoch)
 
     temp_epoch = this_epoch;
 
-    if(!epoch_queue.empty())
-    {
-	this_epoch.cycle -= last_epoch.cycle;
+    this_epoch.cycle -= last_epoch.cycle;
 
-	this_epoch.num_accesses -= last_epoch.num_accesses;
-	this_epoch.num_reads -= last_epoch.num_reads;
-	this_epoch.num_writes -= last_epoch.num_writes;
+    this_epoch.num_accesses -= last_epoch.num_accesses;
+    this_epoch.num_reads -= last_epoch.num_reads;
+    this_epoch.num_writes -= last_epoch.num_writes;
 	
-	this_epoch.num_unmapped -= last_epoch.num_unmapped;
-	this_epoch.num_mapped -= last_epoch.num_mapped;
+    this_epoch.num_unmapped -= last_epoch.num_unmapped;
+    this_epoch.num_mapped -= last_epoch.num_mapped;
 	
-	this_epoch.num_read_unmapped -= last_epoch.num_read_unmapped;
-	this_epoch.num_read_mapped -= last_epoch.num_read_mapped;
-	this_epoch.num_write_unmapped -= last_epoch.num_write_unmapped;
-	this_epoch.num_write_mapped -= last_epoch.num_write_mapped;
+    this_epoch.num_read_unmapped -= last_epoch.num_read_unmapped;
+    this_epoch.num_read_mapped -= last_epoch.num_read_mapped;
+    this_epoch.num_write_unmapped -= last_epoch.num_write_unmapped;
+    this_epoch.num_write_mapped -= last_epoch.num_write_mapped;
 	
-	this_epoch.average_latency -= last_epoch.average_latency;
-	this_epoch.average_read_latency -= last_epoch.average_read_latency;
-	this_epoch.average_write_latency -= last_epoch.average_write_latency;
-	this_epoch.average_queue_latency -= last_epoch.average_queue_latency;
+    this_epoch.average_latency -= last_epoch.average_latency;
+    this_epoch.average_read_latency -= last_epoch.average_read_latency;
+    this_epoch.average_write_latency -= last_epoch.average_write_latency;
+    this_epoch.average_queue_latency -= last_epoch.average_queue_latency;
 	
-	for(int i = 0; i < NUM_PACKAGES; i++)
-	{	
-	    this_epoch.idle_energy[i] -= last_epoch.idle_energy[i]; 
-	    this_epoch.access_energy[i] -= last_epoch.access_energy[i]; 
+    for(int i = 0; i < NUM_PACKAGES; i++)
+    {	
+        this_epoch.idle_energy[i] -= last_epoch.idle_energy[i]; 
+        this_epoch.access_energy[i] -= last_epoch.access_energy[i]; 
 
-	    this_epoch.vpp_idle_energy[i] -= last_epoch.vpp_idle_energy[i]; 
-	    this_epoch.vpp_access_energy[i] -= last_epoch.vpp_access_energy[i]; 
-	}
+        this_epoch.vpp_idle_energy[i] -= last_epoch.vpp_idle_energy[i]; 
+        this_epoch.vpp_access_energy[i] -= last_epoch.vpp_access_energy[i]; 
     }
     
     epoch_queue.push_front(this_epoch);
