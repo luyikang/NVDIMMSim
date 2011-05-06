@@ -191,6 +191,7 @@ void NVDIMM::printStats(void){
 
 void NVDIMM::saveStats(void){
        log->save(currentClockCycle, epoch_count);
+       saveNVState();
 }
 
 void NVDIMM::update(void){
@@ -235,4 +236,12 @@ void NVDIMM::update(void){
 
 void NVDIMM::powerCallback(void){
     ftl->powerCallback();
+}
+
+void NVDIMM::saveNVState(){
+    ftl->saveNVState();
+}
+
+void NVDIMM::loadNVState(){
+    ftl->loadNVState();
 }

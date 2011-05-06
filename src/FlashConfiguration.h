@@ -68,6 +68,12 @@
 extern bool WEAR_LEVEL_LOG;
 extern bool RUNTIME_WRITE;
 
+// Save and Restore Options
+extern bool ENABLE_NV_SAVE;
+extern std::string NVDIMM_SAVE_FILE;
+extern bool ENABLE_NV_RESTORE;
+extern std::string NVDIMM_RESTORE_FILE;
+
 extern std::string DEVICE_TYPE;
 extern uint NUM_PACKAGES;
 extern uint DIES_PER_PACKAGE;

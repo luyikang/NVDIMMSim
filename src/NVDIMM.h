@@ -34,6 +34,9 @@ namespace NVDSim{
 
 			void powerCallback(void);
 
+			void saveNVState(void);
+			void loadNVState(void);
+
 			Controller *controller;
 			Ftl *ftl;
 			Logger *log;

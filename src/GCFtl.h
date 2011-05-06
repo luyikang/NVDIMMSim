@@ -24,6 +24,9 @@ namespace NVDSim{
 			bool checkGC(void); 
 			void runGC(void);
 
+			void saveNVState(void);
+			void loadNVState(void);
+
 		protected:
 			std::vector<vector<bool>> dirty;
 	};

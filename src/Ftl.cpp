@@ -262,6 +262,77 @@ void Ftl::sendQueueLength(void)
     log->ftlQueueLength(transactionQueue.size());
 }
 
+void Ftl::saveNVState(void)
+{
+    if(ENABLE_NV_SAVE)
+    {
+	ofstream save_file;
+	save_file.open("../NVDIMMSim/src/"+NVDIMM_SAVE_FILE, ios_base::out | ios_base::trunc);
+	if(!save_file)
+	{
+	    cout << "ERROR: Could not open NVDIMM state save file: " << NVDIMM_SAVE_FILE << "\n";
+	    abort();
+	}
+	
+	cout << "NVDIMM is saving the used table and address map \n";
+
+	// save the used table
+	save_file << "Used \n";
+	for(int i = 0; i < used.size(); i++)
+	{
+	    for(int j = 0; j < used[i].size(); j++)
+	    {
+		save_file << used[i][j] << " ";
+	    }
+	    save_file << "\n";
+	}
+	
+	// save the address map
+	save_file << "Address Map \n";
+	std::unordered_map<unit64_t, uint64_t>::iterator it;
+	for (it = addressMap.begin(); it != addressMap.end(); it++)
+	{
+	    save_file << (*it).first << " " << (*it).second << " \n";
+	}
+
+	save_file.close();
+    }
+}
+
+void Ftl::loadNVState(void)
+{
+    if(ENABLE_NV_RESTORE)
+    {
+	ifstream restore_file;
+	restore_file.open("../NVDIMMSim/src/"+NVDIMM_RESTORE_FILE);
+	if(!restore_file)
+	{
+	    cout << "ERROR: Could not open NVDIMM restore file: " << NVDIMM_RESTORE_FILE << "\n";
+	    abort();
+	}
+
+	cout << "NVDIMM is restoring the system from file \n";
+
+	// restore the data
+	int doing_used = 0;
+	int doing_addresses = 0;
+	while(!restore_file.eof());
+	{
+	    std::string temp;
+	    restore_file >> temp;
+	    if(temp.strcmp("Used ") == 0)
+	    {
+		doing_used = 1;
+	    }
+
+	    // restore used data
+	    if(doing_used == 1)
+	    {
+	    }
+	}
+	
+    }
+}
 
 
 

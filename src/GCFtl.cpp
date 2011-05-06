@@ -324,3 +324,11 @@ void GCFtl::runGC(void) {
    addGcTransaction(trans);
 
 }
+
+void Ftl::saveNVState(void)
+{
+}
+
+void Ftl::loadNVState(void)
+{
+}

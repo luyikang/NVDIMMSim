@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
 #include "SimObj.h"
 #include "FlashConfiguration.h"
 #include "ChannelPacket.h"
@@ -19,7 +20,7 @@ namespace NVDSim{
 	                Ftl(Controller *c, Logger *l, NVDIMM *p);
 
 			ChannelPacket *translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr);
-			bool addTransaction(FlashTransaction &t);
+			virtual bool addTransaction(FlashTransaction &t);
 			virtual void update(void);
 			uint64_t get_ptr(void); 
 			void inc_ptr(void); 
@@ -27,6 +28,9 @@ namespace NVDSim{
 			void sendQueueLength(void);
 			
 			void powerCallback();
+
+			virtual void saveNVState(void);
+			virtual void loadNVState(void);
 		       
 			Controller *controller;
 
