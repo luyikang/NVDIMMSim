@@ -264,10 +264,11 @@ void Ftl::sendQueueLength(void)
 
 void Ftl::saveNVState(void)
 {
+    cout << "got here \n";
     if(ENABLE_NV_SAVE)
     {
 	ofstream save_file;
-	save_file.open("../NVDIMMSim/src/"+NVDIMM_SAVE_FILE, ios_base::out | ios_base::trunc);
+	save_file.open(NVDIMM_SAVE_FILE, ios_base::out | ios_base::trunc);
 	if(!save_file)
 	{
 	    cout << "ERROR: Could not open NVDIMM state save file: " << NVDIMM_SAVE_FILE << "\n";
@@ -289,7 +290,7 @@ void Ftl::saveNVState(void)
 	
 	// save the address map
 	save_file << "Address Map \n";
-	std::unordered_map<unit64_t, uint64_t>::iterator it;
+	std::unordered_map<uint64_t, uint64_t>::iterator it;
 	for (it = addressMap.begin(); it != addressMap.end(); it++)
 	{
 	    save_file << (*it).first << " " << (*it).second << " \n";
@@ -320,7 +321,7 @@ void Ftl::loadNVState(void)
 	{
 	    std::string temp;
 	    restore_file >> temp;
-	    if(temp.strcmp("Used ") == 0)
+	    if(temp.compare("Used ") == 0)
 	    {
 		doing_used = 1;
 	    }

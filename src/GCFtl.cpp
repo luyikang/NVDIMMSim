@@ -325,10 +325,10 @@ void GCFtl::runGC(void) {
 
 }
 
-void Ftl::saveNVState(void)
+void GCFtl::saveNVState(void)
 {
 }
 
-void Ftl::loadNVState(void)
+void GCFtl::loadNVState(void)
 {
 }
