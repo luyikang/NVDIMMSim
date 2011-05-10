@@ -162,6 +162,8 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	numWrites= 0;
 	numErases= 0;
 	currentClockCycle= 0;
+
+	loadNVState();
 }
 
 bool NVDIMM::add(FlashTransaction &trans){

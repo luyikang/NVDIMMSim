@@ -305,7 +305,7 @@ void Ftl::loadNVState(void)
     if(ENABLE_NV_RESTORE)
     {
 	ifstream restore_file;
-	restore_file.open("../NVDIMMSim/src/"+NVDIMM_RESTORE_FILE);
+	restore_file.open(NVDIMM_RESTORE_FILE);
 	if(!restore_file)
 	{
 	    cout << "ERROR: Could not open NVDIMM restore file: " << NVDIMM_RESTORE_FILE << "\n";
@@ -317,19 +317,29 @@ void Ftl::loadNVState(void)
 	// restore the data
 	int doing_used = 0;
 	int doing_addresses = 0;
-	while(!restore_file.eof());
-	{
-	    std::string temp;
+	int row = 0;
+	int column = 0;
+
+	std::string temp;
+	
+	while(!restore_file.eof())
+	{ 
+	    cout << "looping \n";
+
 	    restore_file >> temp;
-	    if(temp.compare("Used ") == 0)
-	    {
-		doing_used = 1;
-	    }
 
 	    // restore used data
 	    if(doing_used == 1)
 	    {
+		cout << "Temp is " << temp << "\n";
 	    }
+	    
+	    if(temp.compare("Used") == 0)
+	    {
+		doing_used = 1;
+	    }
+
+	    cout << restore_file.eof() << "\n";	    
 	}
 	
     }
