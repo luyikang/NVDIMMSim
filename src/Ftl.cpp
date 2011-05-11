@@ -112,11 +112,8 @@ bool Ftl::addTransaction(FlashTransaction &t){
     }
 }
 
-void Ftl::addGcTransaction(FlashTransaction &t){ 
+void Ftl::addFfTransaction(FlashTransaction &t){ 
 	transactionQueue.push_back(t);
-
-	// Start the logging for this access.
-	log->access_start(t.address);
 }
 
 void Ftl::update(void){
@@ -205,6 +202,20 @@ void Ftl::update(void){
 							plane = (plane + 1) % PLANES_PER_DIE;
 					}
 					break;
+				 case FF_DATA_WRITE:
+				        if (addressMap.find(vAddr) != addressMap.end()){
+					    pAddr = addressMap[vAddr];
+					    dataPacket = Ftl::translate(DATA, vAddr, pAddr);
+					    commandPacket = Ftl::translate(FF_WRITE, vAddr, pAddr);
+					    controller->addPacket(dataPacket);
+					    result = controller->addPacket(commandPacket);
+					}
+					// fast forwarding used and address maps do not match, we have a problem!
+					else
+					{
+					    ERROR("Attempted Fast Forward Write on location not in uploaded address map");
+					}
+					break;
 				case BLOCK_ERASE:
 				        ERROR("Called Block erase on memory which does not need this");
 					break;					
@@ -264,9 +275,10 @@ void Ftl::sendQueueLength(void)
 
 void Ftl::saveNVState(void)
 {
-    cout << "got here \n";
     if(ENABLE_NV_SAVE)
     {
+	cout << "got here \n";
+	cout << NVDIMM_SAVE_FILE << "\n";
 	ofstream save_file;
 	save_file.open(NVDIMM_SAVE_FILE, ios_base::out | ios_base::trunc);
 	if(!save_file)
@@ -277,6 +289,14 @@ void Ftl::saveNVState(void)
 	
 	cout << "NVDIMM is saving the used table and address map \n";
 
+	// save the address map
+	save_file << "AddressMap \n";
+	std::unordered_map<uint64_t, uint64_t>::iterator it;
+	for (it = addressMap.begin(); it != addressMap.end(); it++)
+	{
+	    save_file << (*it).first << " " << (*it).second << " \n";
+	}
+
 	// save the used table
 	save_file << "Used \n";
 	for(int i = 0; i < used.size(); i++)
@@ -286,14 +306,6 @@ void Ftl::saveNVState(void)
 		save_file << used[i][j] << " ";
 	    }
 	    save_file << "\n";
-	}
-	
-	// save the address map
-	save_file << "Address Map \n";
-	std::unordered_map<uint64_t, uint64_t>::iterator it;
-	for (it = addressMap.begin(); it != addressMap.end(); it++)
-	{
-	    save_file << (*it).first << " " << (*it).second << " \n";
 	}
 
 	save_file.close();
@@ -319,27 +331,66 @@ void Ftl::loadNVState(void)
 	int doing_addresses = 0;
 	int row = 0;
 	int column = 0;
+	int first = 0;
+	int key = 0;
+	uint64_t pAddr = 0;
+	uint64_t vAddr = 0;
+
+	std::unordered_map<uint64_t,uint64_t> tempMap;
 
 	std::string temp;
 	
 	while(!restore_file.eof())
 	{ 
-	    cout << "looping \n";
-
 	    restore_file >> temp;
 
 	    // restore used data
 	    if(doing_used == 1)
 	    {
-		cout << "Temp is " << temp << "\n";
+		used[row][column] = convert_uint64_t(temp);
+		column++;
+		if(column > PAGES_PER_BLOCK)
+		{
+		    row++;
+		    column = 0;
+		}
+
+		// this page was used need to issue fake write
+		if(temp.compare("1") == 0)
+		{
+		    pAddr = (row * BLOCK_SIZE + column * NV_PAGE_SIZE);
+		    vAddr = tempMap[pAddr];
+		    FlashTransaction trans = FlashTransaction(FF_DATA_WRITE, vAddr, NULL);
+		    addFfTransaction(trans);
+		}
 	    }
 	    
 	    if(temp.compare("Used") == 0)
 	    {
 		doing_used = 1;
+		doing_addresses = 0;
 	    }
 
-	    cout << restore_file.eof() << "\n";	    
+	    // restore address map data
+	    if(doing_addresses == 1)
+	    {
+		if(first == 0)
+		{
+		    first = 1;
+		    key = convert_uint64_t(temp);
+		}
+		else
+		{
+		    addressMap[key] = convert_uint64_t(temp);
+		    tempMap[convert_uint64_t(temp)] = key;
+		    first = 0;
+		}
+	    }
+
+	    if(temp.compare("AddressMap") == 0)
+	    {
+		doing_addresses = 1;
+	    }
 	}
 	
     }

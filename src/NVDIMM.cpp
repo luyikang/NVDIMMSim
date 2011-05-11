@@ -163,7 +163,7 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	numErases= 0;
 	currentClockCycle= 0;
 
-	loadNVState();
+	ftl->loadNVState();
 }
 
 bool NVDIMM::add(FlashTransaction &trans){
@@ -193,7 +193,7 @@ void NVDIMM::printStats(void){
 
 void NVDIMM::saveStats(void){
        log->save(currentClockCycle, epoch_count);
-       saveNVState();
+       ftl->saveNVState();
 }
 
 void NVDIMM::update(void){
@@ -240,10 +240,17 @@ void NVDIMM::powerCallback(void){
     ftl->powerCallback();
 }
 
-void NVDIMM::saveNVState(){
+//If either of these methods are called it is because HybridSim called them
+//therefore the appropriate system setting should be set
+void NVDIMM::saveNVState(string filename){
+    ENABLE_NV_SAVE = 1;
+    NVDIMM_SAVE_FILE = filename;
+    cout << "got to save state in nvdimm \n";
     ftl->saveNVState();
 }
 
-void NVDIMM::loadNVState(){
+void NVDIMM::loadNVState(string filename){
+    ENABLE_NV_RESTORE = 1;
+    NVDIMM_RESTORE_FILE = filename;
     ftl->loadNVState();
 }

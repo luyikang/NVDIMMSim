@@ -12,6 +12,7 @@
 #include "FlashTransaction.h"
 #include "Controller.h"
 #include "Logger.h"
+#include "Util.h"
 
 namespace NVDSim{
         class NVDIMM;
@@ -21,6 +22,7 @@ namespace NVDSim{
 
 			ChannelPacket *translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr);
 			virtual bool addTransaction(FlashTransaction &t);
+			void addFfTransaction(FlashTransaction &t);
 			virtual void update(void);
 			uint64_t get_ptr(void); 
 			void inc_ptr(void); 
@@ -49,8 +51,6 @@ namespace NVDSim{
 			std::unordered_map<uint64_t,uint64_t> addressMap;
 			std::vector<vector<bool>> used;
 			std::list<FlashTransaction> transactionQueue;
-
-			void addGcTransaction(FlashTransaction &t);
 	};
 }
 #endif

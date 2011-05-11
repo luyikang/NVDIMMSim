@@ -20,6 +20,7 @@ namespace NVDSim{
 		public:
 	                GCFtl(Controller *c, Logger *l, NVDIMM *p);
 			bool addTransaction(FlashTransaction &t);
+			void addGcTransaction(FlashTransaction &t);
 			void update(void);
 			bool checkGC(void); 
 			void runGC(void);

@@ -34,8 +34,8 @@ namespace NVDSim{
 
 			void powerCallback(void);
 
-			void saveNVState(void);
-			void loadNVState(void);
+			void saveNVState(string filename);
+			void loadNVState(string filename);
 
 			Controller *controller;
 			Ftl *ftl;

@@ -36,6 +36,13 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 	
 }
 
+void GCFtl::addGcTransaction(FlashTransaction &t){ 
+	transactionQueue.push_back(t);
+
+	// Start the logging for this access.
+	log->access_start(t.address);
+}
+
 void GCFtl::update(void){
         uint64_t block, page, start;
 	uint i;

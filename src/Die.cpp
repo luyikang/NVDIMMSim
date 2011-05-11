@@ -82,6 +82,9 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 			     //update the logger
 			     log->access_process(busPacket->virtualAddress, busPacket->package, GC_WRITE);
 			     break;
+		         case FF_WRITE:
+			     controlCyclesLeft[busPacket->plane]= 1;
+		             break;
 			 case ERASE:
 			     if(DEVICE_TYPE.compare("PCM") == 0)
 			     {
@@ -139,6 +142,10 @@ void Die::update(void){
 					 parentNVDIMM->numWrites++;
 					 log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
 					 break;
+			         case FF_WRITE:
+				         planes[currentCommand->plane].write(currentCommand);
+					 parentNVDIMM->numWrites++;
+				         break;
 				 case ERASE:
 					 planes[currentCommand->plane].erase(currentCommand);
 					 parentNVDIMM->numErases++;
