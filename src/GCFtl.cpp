@@ -196,6 +196,25 @@ void GCFtl::update(void){
 							plane = (plane + 1) % PLANES_PER_DIE;
 					}
 					break;
+			        case FF_DATA_WRITE:
+				        if (addressMap.find(vAddr) != addressMap.end()){
+					    pAddr = addressMap[vAddr];
+					    dataPacket = Ftl::translate(DATA, vAddr, pAddr);
+					    commandPacket = Ftl::translate(FF_WRITE, vAddr, pAddr);
+					    controller->addPacket(dataPacket);
+					    //cout << "sent command packet for page" << commandPacket->page << "\n";
+					    //cout << "wait status" << wait << "\n";
+					    //cout << "pAddr was" << pAddr << "\n";
+					    //cout << "vAddr was" << vAddr << "\n";
+					    result = controller->addPacket(commandPacket);
+					    //cout << "result was" << result << "\n";
+					}
+					// fast forwarding used and address maps do not match, we have a problem!
+					else
+					{
+					    ERROR("Attempted Fast Forward Write on location not in uploaded address map");
+					}
+					break;
 				case BLOCK_ERASE:
 				        for (i = 0 ; i < PAGES_PER_BLOCK ; i++){
 						dirty[vAddr / BLOCK_SIZE][i] = false;
@@ -334,8 +353,166 @@ void GCFtl::runGC(void) {
 
 void GCFtl::saveNVState(void)
 {
+     if(ENABLE_NV_SAVE)
+    {
+	cout << "got here \n";
+	cout << NVDIMM_SAVE_FILE << "\n";
+	ofstream save_file;
+	save_file.open(NVDIMM_SAVE_FILE, ios_base::out | ios_base::trunc);
+	if(!save_file)
+	{
+	    cout << "ERROR: Could not open NVDIMM state save file: " << NVDIMM_SAVE_FILE << "\n";
+	    abort();
+	}
+	
+	cout << "NVDIMM is saving the used table, dirty table and address map \n";
+
+	// save the address map
+	save_file << "AddressMap \n";
+	std::unordered_map<uint64_t, uint64_t>::iterator it;
+	for (it = addressMap.begin(); it != addressMap.end(); it++)
+	{
+	    save_file << (*it).first << " " << (*it).second << " \n";
+	}
+
+        // save the dirty table
+	save_file << "Dirty \n";
+	for(uint i = 0; i < dirty.size(); i++)
+	{
+	    for(uint j = 0; j < dirty[i].size(); j++)
+	    {
+		save_file << dirty[i][j] << " ";
+	    }
+	    save_file << "\n";
+	}
+
+	// save the used table
+	save_file << "Used \n";
+	for(uint i = 0; i < used.size(); i++)
+	{
+	    for(uint j = 0; j < used[i].size(); j++)
+	    {
+		save_file << used[i][j] << " ";
+	    }
+	    save_file << "\n";
+	}
+
+	save_file.close();
+    }
 }
 
 void GCFtl::loadNVState(void)
 {
+    if(ENABLE_NV_RESTORE)
+    {
+	ifstream restore_file;
+	restore_file.open(NVDIMM_RESTORE_FILE);
+	if(!restore_file)
+	{
+	    cout << "ERROR: Could not open NVDIMM restore file: " << NVDIMM_RESTORE_FILE << "\n";
+	    abort();
+	}
+
+	cout << "NVDIMM is restoring the system from file \n";
+
+	// restore the data
+	uint doing_used = 0;
+	uint doing_dirty = 0;
+	uint doing_addresses = 0;
+	uint row = 0;
+	uint column = 0;
+	uint first = 0;
+	uint key = 0;
+	uint64_t pAddr = 0;
+	uint64_t vAddr = 0;
+
+	std::unordered_map<uint64_t,uint64_t> tempMap;
+
+	std::string temp;
+	
+	while(!restore_file.eof())
+	{ 
+	    restore_file >> temp;
+
+	    // restore used data
+	    if(doing_used == 1 && row < used.size())
+	    {
+		used[row][column] = convert_uint64_t(temp);
+
+                // this page was used need to issue fake write
+		if(temp.compare("1") == 0 && dirty[row][column] != 1)
+		{
+		    pAddr = (row * BLOCK_SIZE + column * NV_PAGE_SIZE);
+		    vAddr = tempMap[pAddr];
+		    FlashTransaction trans = FlashTransaction(FF_DATA_WRITE, vAddr, NULL);
+		    addFfTransaction(trans);
+		}
+
+		column++;
+		if(column >= PAGES_PER_BLOCK)
+		{
+		    row++;
+		    column = 0;
+		}
+	    }
+	    
+	    if(temp.compare("Used") == 0)
+	    {
+		doing_used = 1;
+		doing_addresses = 0;
+		doing_dirty = 0;
+		
+		row = 0;
+		column = 0;
+	    }
+
+	    // restore dirty data
+	    if(doing_dirty == 1)
+	    {
+		dirty[row][column] = convert_uint64_t(temp);
+		column++;
+		if(column >= PAGES_PER_BLOCK)
+		{
+		    row++;
+		    column = 0;
+		}
+	    }
+
+	    if(temp.compare("Dirty") == 0)
+	    {
+		doing_used = 0;
+		doing_dirty = 1;
+		doing_addresses = 0;
+	    }
+
+	    // restore address map data
+	    if(doing_addresses == 1)
+	    {
+		if(first == 0)
+		{
+		    first = 1;
+		    key = convert_uint64_t(temp);
+		}
+		else
+		{
+		    addressMap[key] = convert_uint64_t(temp);
+		    tempMap[convert_uint64_t(temp)] = key;
+		    first = 0;
+		}
+	    }
+
+	    if(temp.compare("AddressMap") == 0)
+	    {
+		doing_addresses = 1;
+	    }
+
+	}
+	
+	cout << "temp map was \n";
+	std::unordered_map<uint64_t, uint64_t>::iterator it;
+	for (it = tempMap.begin(); it != tempMap.end(); it++)
+	{
+	    cout << (*it).first << " " << (*it).second << " \n";
+	}
+    }
 }

@@ -145,6 +145,7 @@ void Die::update(void){
 			         case FF_WRITE:
 				         planes[currentCommand->plane].write(currentCommand);
 					 parentNVDIMM->numWrites++;
+					 cout << "isued command to page" << currentCommand->page << "\n";
 				         break;
 				 case ERASE:
 					 planes[currentCommand->plane].erase(currentCommand);

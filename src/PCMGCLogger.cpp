@@ -455,7 +455,7 @@ void PCMGCLogger::save_epoch(uint64_t cycle, uint epoch)
 	this_epoch.average_gcwrite_latency -= last_epoch.average_gcwrite_latency;
 	this_epoch.average_queue_latency -= last_epoch.average_queue_latency;
     
-	for(int i = 0; i < NUM_PACKAGES; i++)
+	for(uint i = 0; i < NUM_PACKAGES; i++)
 	{	
 	    this_epoch.idle_energy[i] -= last_epoch.idle_energy[i]; 
 	    this_epoch.access_energy[i] -= last_epoch.access_energy[i]; 

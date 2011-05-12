@@ -299,9 +299,9 @@ void Ftl::saveNVState(void)
 
 	// save the used table
 	save_file << "Used \n";
-	for(int i = 0; i < used.size(); i++)
+	for(uint i = 0; i < used.size(); i++)
 	{
-	    for(int j = 0; j < used[i].size(); j++)
+	    for(uint j = 0; j < used[i].size(); j++)
 	    {
 		save_file << used[i][j] << " ";
 	    }
@@ -327,12 +327,12 @@ void Ftl::loadNVState(void)
 	cout << "NVDIMM is restoring the system from file \n";
 
 	// restore the data
-	int doing_used = 0;
-	int doing_addresses = 0;
-	int row = 0;
-	int column = 0;
-	int first = 0;
-	int key = 0;
+	uint doing_used = 0;
+	uint doing_addresses = 0;
+	uint row = 0;
+	uint column = 0;
+	uint first = 0;
+	uint key = 0;
 	uint64_t pAddr = 0;
 	uint64_t vAddr = 0;
 
@@ -345,15 +345,10 @@ void Ftl::loadNVState(void)
 	    restore_file >> temp;
 
 	    // restore used data
-	    if(doing_used == 1)
+	    // have the row check cause eof sux
+	    if(doing_used == 1 && row < used.size())
 	    {
 		used[row][column] = convert_uint64_t(temp);
-		column++;
-		if(column > PAGES_PER_BLOCK)
-		{
-		    row++;
-		    column = 0;
-		}
 
 		// this page was used need to issue fake write
 		if(temp.compare("1") == 0)
@@ -362,6 +357,13 @@ void Ftl::loadNVState(void)
 		    vAddr = tempMap[pAddr];
 		    FlashTransaction trans = FlashTransaction(FF_DATA_WRITE, vAddr, NULL);
 		    addFfTransaction(trans);
+		}
+
+		column++;
+		if(column >= PAGES_PER_BLOCK)
+		{
+		    row++;
+		    column = 0;
 		}
 	    }
 	    
