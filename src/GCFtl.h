@@ -29,7 +29,7 @@ namespace NVDSim{
 			void loadNVState(void);
 
 		protected:
-			uint gc_status, panic_mode, gc_counter;
+			uint gc_status, panic_mode;
 			uint64_t used_page_count, start_erase;
 			    
 			std::vector<vector<bool>> dirty;

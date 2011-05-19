@@ -257,8 +257,6 @@ void Ftl::saveNVState(void)
 {
     if(ENABLE_NV_SAVE)
     {
-	cout << "got here \n";
-	cout << NVDIMM_SAVE_FILE << "\n";
 	ofstream save_file;
 	save_file.open(NVDIMM_SAVE_FILE, ios_base::out | ios_base::trunc);
 	if(!save_file)
@@ -281,11 +279,12 @@ void Ftl::saveNVState(void)
 	save_file << "Used \n";
 	for(uint i = 0; i < used.size(); i++)
 	{
-	    for(uint j = 0; j < used[i].size(); j++)
+	    save_file << "\n";
+	    for(uint j = 0; j < used[i].size()-1; j++)
 	    {
 		save_file << used[i][j] << " ";
 	    }
-	    save_file << "\n";
+	    save_file << used[i][used[i].size()];
 	}
 
 	save_file.close();
@@ -325,7 +324,7 @@ void Ftl::loadNVState(void)
 
 	    // restore used data
 	    // have the row check cause eof sux
-	    if(doing_used == 1 && row < used.size())
+	    if(doing_used == 1)
 	    {
 		used[row][column] = convert_uint64_t(temp);
 
@@ -336,7 +335,6 @@ void Ftl::loadNVState(void)
 		    vAddr = tempMap[pAddr];
 		    ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
 		    controller->writeToPackage(tempPacket);
-		    // TODO: translate physical address then use the NVDIMM parent to issue a write directly to the appropriate block
 		}
 
 		column++;

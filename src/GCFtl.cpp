@@ -240,6 +240,7 @@ void GCFtl::update(void){
 				// Run the GC.
 				start_erase = parent->numErases;
 				gc_status = 1;
+				cout << "ran the GC \n";
 				runGC();
 			}
 		}
@@ -258,6 +259,8 @@ void GCFtl::update(void){
 		start_erase = parent->numErases;
 		gc_status = 1;
 		panic_mode = 1;
+		cout << (float)(FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE)) << "\n";
+		cout << (float)used_page_count << "\n";
 		for (i = 0 ; i < PLANES_PER_DIE ; i++)
 			runGC();
 	}
@@ -271,7 +274,7 @@ void GCFtl::update(void){
 
 bool GCFtl::checkGC(void){
 	// Return true if more than 70% of blocks are in use and false otherwise.
-  if ((float)used_page_count > ((float)IDLE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE)))
+        if ((float)used_page_count > ((float)IDLE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE)))
 		return true;
 	return false;
 }
@@ -341,8 +344,6 @@ void GCFtl::saveNVState(void)
 {
      if(ENABLE_NV_SAVE)
     {
-	cout << "got here \n";
-	cout << NVDIMM_SAVE_FILE << "\n";
 	ofstream save_file;
 	save_file.open(NVDIMM_SAVE_FILE, ios_base::out | ios_base::trunc);
 	if(!save_file)
@@ -373,14 +374,15 @@ void GCFtl::saveNVState(void)
 	}
 
 	// save the used table
-	save_file << "Used \n";
+	save_file << "Used";
 	for(uint i = 0; i < used.size(); i++)
 	{
-	    for(uint j = 0; j < used[i].size(); j++)
+	    save_file << "\n";
+	    for(uint j = 0; j < used[i].size()-1; j++)
 	    {
 		save_file << used[i][j] << " ";
 	    }
-	    save_file << "\n";
+	    save_file << used[i][used[i].size()];
 	}
 
 	save_file.close();
@@ -421,7 +423,7 @@ void GCFtl::loadNVState(void)
 	    restore_file >> temp;
 
 	    // restore used data
-	    if(doing_used == 1 && row < used.size())
+	    if(doing_used == 1)
 	    {
 		used[row][column] = convert_uint64_t(temp);
 
@@ -429,9 +431,12 @@ void GCFtl::loadNVState(void)
 		if(temp.compare("1") == 0 && dirty[row][column] != 1)
 		{
 		    pAddr = (row * BLOCK_SIZE + column * NV_PAGE_SIZE);
-		    // TODO: translate physical address then use the NVDIMM parent to issue a write directly to the appropriate block
-		    
-		}
+		    vAddr = tempMap[pAddr];
+		    ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
+		    controller->writeToPackage(tempPacket);
+
+		    used_page_count++;
+		}		
 
 		column++;
 		if(column >= PAGES_PER_BLOCK)
@@ -461,7 +466,7 @@ void GCFtl::loadNVState(void)
 		    row++;
 		    column = 0;
 		}
-	    }
+		}
 
 	    if(temp.compare("Dirty") == 0)
 	    {
@@ -491,13 +496,6 @@ void GCFtl::loadNVState(void)
 		doing_addresses = 1;
 	    }
 
-	}
-	
-	cout << "temp map was \n";
-	std::unordered_map<uint64_t, uint64_t>::iterator it;
-	for (it = tempMap.begin(); it != tempMap.end(); it++)
-	{
-	    cout << (*it).first << " " << (*it).second << " \n";
 	}
     }
 }
