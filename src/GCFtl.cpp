@@ -13,6 +13,11 @@ GCFtl::GCFtl(Controller *c, Logger *l, NVDIMM *p)
     : Ftl(c, l, p)
 {	
         int numBlocks = NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * BLOCKS_PER_PLANE;
+
+	used_page_count = 0;
+	gc_status = 0;
+	panic_mode = 0;
+
 	dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
 }
 
@@ -194,25 +199,6 @@ void GCFtl::update(void){
 						die = (die + 1) % DIES_PER_PACKAGE;
 						if (die == 0)
 							plane = (plane + 1) % PLANES_PER_DIE;
-					}
-					break;
-			        case FF_DATA_WRITE:
-				        if (addressMap.find(vAddr) != addressMap.end()){
-					    pAddr = addressMap[vAddr];
-					    dataPacket = Ftl::translate(DATA, vAddr, pAddr);
-					    commandPacket = Ftl::translate(FF_WRITE, vAddr, pAddr);
-					    controller->addPacket(dataPacket);
-					    //cout << "sent command packet for page" << commandPacket->page << "\n";
-					    //cout << "wait status" << wait << "\n";
-					    //cout << "pAddr was" << pAddr << "\n";
-					    //cout << "vAddr was" << vAddr << "\n";
-					    result = controller->addPacket(commandPacket);
-					    //cout << "result was" << result << "\n";
-					}
-					// fast forwarding used and address maps do not match, we have a problem!
-					else
-					{
-					    ERROR("Attempted Fast Forward Write on location not in uploaded address map");
 					}
 					break;
 				case BLOCK_ERASE:
@@ -443,9 +429,8 @@ void GCFtl::loadNVState(void)
 		if(temp.compare("1") == 0 && dirty[row][column] != 1)
 		{
 		    pAddr = (row * BLOCK_SIZE + column * NV_PAGE_SIZE);
-		    vAddr = tempMap[pAddr];
-		    FlashTransaction trans = FlashTransaction(FF_DATA_WRITE, vAddr, NULL);
-		    addFfTransaction(trans);
+		    // TODO: translate physical address then use the NVDIMM parent to issue a write directly to the appropriate block
+		    
 		}
 
 		column++;

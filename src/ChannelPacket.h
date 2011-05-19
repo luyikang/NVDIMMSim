@@ -15,7 +15,6 @@ namespace NVDSim
 		GC_READ,
 		WRITE,
 		GC_WRITE,
-		FF_WRITE,
 		ERASE,
 		DATA
 	};

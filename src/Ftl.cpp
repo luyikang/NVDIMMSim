@@ -32,10 +32,6 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 	
 	transactionQueue = list<FlashTransaction>();
 
-	used_page_count = 0;
-	gc_status = 0;
-	panic_mode = 0;
-
 	controller = c;
 
 	parent = p;
@@ -162,7 +158,6 @@ void Ftl::update(void){
 						if (!used[block][page]){
 						        pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
 							used[block][page] = true;
-							used_page_count++;
 							done = true;
 						}
 					  }
@@ -175,7 +170,6 @@ void Ftl::update(void){
 						if (!used[block][page]){
 							pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
 					  		used[block][page] = true;
-							used_page_count++;
 							done = true;		 
 					        }
 					      }
@@ -200,20 +194,6 @@ void Ftl::update(void){
 						die = (die + 1) % DIES_PER_PACKAGE;
 						if (die == 0)
 							plane = (plane + 1) % PLANES_PER_DIE;
-					}
-					break;
-				 case FF_DATA_WRITE:
-				        if (addressMap.find(vAddr) != addressMap.end()){
-					    pAddr = addressMap[vAddr];
-					    dataPacket = Ftl::translate(DATA, vAddr, pAddr);
-					    commandPacket = Ftl::translate(FF_WRITE, vAddr, pAddr);
-					    controller->addPacket(dataPacket);
-					    result = controller->addPacket(commandPacket);
-					}
-					// fast forwarding used and address maps do not match, we have a problem!
-					else
-					{
-					    ERROR("Attempted Fast Forward Write on location not in uploaded address map");
 					}
 					break;
 				case BLOCK_ERASE:
@@ -333,8 +313,7 @@ void Ftl::loadNVState(void)
 	uint column = 0;
 	uint first = 0;
 	uint key = 0;
-	uint64_t pAddr = 0;
-	uint64_t vAddr = 0;
+	uint64_t pAddr, vAddr = 0;
 
 	std::unordered_map<uint64_t,uint64_t> tempMap;
 
@@ -355,8 +334,9 @@ void Ftl::loadNVState(void)
 		{
 		    pAddr = (row * BLOCK_SIZE + column * NV_PAGE_SIZE);
 		    vAddr = tempMap[pAddr];
-		    FlashTransaction trans = FlashTransaction(FF_DATA_WRITE, vAddr, NULL);
-		    addFfTransaction(trans);
+		    ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
+		    controller->writeToPackage(tempPacket);
+		    // TODO: translate physical address then use the NVDIMM parent to issue a write directly to the appropriate block
 		}
 
 		column++;

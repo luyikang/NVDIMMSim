@@ -158,3 +158,8 @@ void Controller::sendQueueLength(void)
     }
     log->ctrlQueueLength(temp);
 }
+
+void Controller::writeToPackage(ChannelPacket *packet)
+{
+    (*packages)[packet->package].dies[packet->die]->writeToPlane(packet);
+}

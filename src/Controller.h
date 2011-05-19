@@ -46,6 +46,9 @@ namespace NVDSim{
 
 			void sendQueueLength(void);
 
+			// for fast forwarding
+			void writeToPackage(ChannelPacket *packet);
+
 			NVDIMM *parentNVDIMM;
 			Logger *log;
 

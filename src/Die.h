@@ -22,6 +22,10 @@ namespace NVDSim{
 			void receiveFromChannel(ChannelPacket *busPacket);
 			int isDieBusy(uint plane);
 			void update(void);
+
+			// for fast forwarding
+			void writeToPlane(ChannelPacket *packet);
+
 		private:
 			uint id;
 			NVDIMM *parentNVDIMM;

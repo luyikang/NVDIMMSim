@@ -82,9 +82,6 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 			     //update the logger
 			     log->access_process(busPacket->virtualAddress, busPacket->package, GC_WRITE);
 			     break;
-		         case FF_WRITE:
-			     controlCyclesLeft[busPacket->plane]= 1;
-		             break;
 			 case ERASE:
 			     if(DEVICE_TYPE.compare("PCM") == 0)
 			     {
@@ -142,11 +139,6 @@ void Die::update(void){
 					 parentNVDIMM->numWrites++;
 					 log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
 					 break;
-			         case FF_WRITE:
-				         planes[currentCommand->plane].write(currentCommand);
-					 parentNVDIMM->numWrites++;
-					 cout << "isued command to page" << currentCommand->page << "\n";
-				         break;
 				 case ERASE:
 					 planes[currentCommand->plane].erase(currentCommand);
 					 parentNVDIMM->numErases++;
@@ -175,4 +167,11 @@ void Die::update(void){
 			if (channel->obtainChannel(id, DIE, NULL))
 				dataCyclesLeft= DATA_TIME;
 	}
+}
+
+void Die::writeToPlane(ChannelPacket *packet)
+{
+    ChannelPacket *temp = new ChannelPacket(DATA, packet->virtualAddress, packet->physicalAddress, packet->page, packet->block, packet->plane, packet->die, packet->package, NULL);
+    planes[packet->plane].storeInData(temp);
+    planes[packet->plane].write(packet);
 }

@@ -43,9 +43,8 @@ namespace NVDSim{
 		protected:
 			bool gc_flag;
 			uint offset,  pageBitWidth, blockBitWidth, planeBitWidth, dieBitWidth, packageBitWidth;
-			uint channel, die, plane, lookupCounter, gc_status, panic_mode, gc_counter;
+			uint channel, die, plane, lookupCounter;
 			uint64_t max_queue_length;
-			uint64_t used_page_count, start_erase;
 			FlashTransaction currentTransaction;
 			uint busy;
 			std::unordered_map<uint64_t,uint64_t> addressMap;
