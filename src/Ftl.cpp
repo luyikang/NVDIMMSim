@@ -266,6 +266,7 @@ void Ftl::saveNVState(void)
 	}
 	
 	cout << "NVDIMM is saving the used table and address map \n";
+	cout << "save file is" << NVDIMM_SAVE_FILE << "\n";
 
 	// save the address map
 	save_file << "AddressMap \n";

@@ -67,6 +67,7 @@
 // Logging Options
 extern bool WEAR_LEVEL_LOG;
 extern bool RUNTIME_WRITE;
+extern bool PER_PACKAGE;
 
 // Save and Restore Options
 extern bool ENABLE_NV_SAVE;
