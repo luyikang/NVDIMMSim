@@ -21,14 +21,23 @@ namespace NVDSim{
 			void attachController(Controller *c);
 			int obtainChannel(uint s, SenderType t, ChannelPacket *p);
 			int releaseChannel(SenderType t, uint s);
-			int hasChannel(SenderType, uint s);
+			int hasChannel(SenderType t, uint s);
 			void sendToDie(ChannelPacket *busPacket);
 			void sendToController(ChannelPacket *busPacket);
+			void sendPiece(SenderType t);
+			int notBusy(void);
+
+			void update(void);
+			
 			Controller *controller;
 		private:
 			SenderType type;
 			int sender;
+			int busy;
 			std::vector<Die *> dies;
+
+			uint cyclesLeft; //cycles per device or channel beat
+			uint beatsLeft; //beats per page	
 	};
 }
 #endif

@@ -157,15 +157,21 @@ void Die::update(void){
 
 	if (!returnDataPackets.empty()){
 		if (channel->hasChannel(DIE, id)){
-			if (dataCyclesLeft == 0){
+			if (deviceBeatsLeft == 0){
 				channel->sendToController(returnDataPackets.front());
 				channel->releaseChannel(DIE, id);
 				returnDataPackets.pop();
 			}
+			if (dataCyclesLeft <= 0 && channel->notBusy()){
+			        deviceBeatsLeft--;
+				channel->sendPiece(DIE);
+			}
 			dataCyclesLeft--;
 		} else
-			if (channel->obtainChannel(id, DIE, NULL))
-				dataCyclesLeft= DATA_TIME;
+		        if (channel->obtainChannel(id, DIE, NULL)){
+				dataCyclesLeft = DEVICE_CYCLE / CYCLE_TIME;
+				deviceBeatsLeft = NV_PAGE_SIZE / DEVICE_WIDTH;
+			}
 	}
 }
 

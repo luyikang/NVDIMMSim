@@ -57,7 +57,8 @@ namespace NVDSim{
 			std::vector<Package> *packages;
 			std::vector<std::queue <ChannelPacket *> > channelQueues;
 			std::vector<ChannelPacket *> outgoingPackets;
-			std::vector<uint> channelXferCyclesLeft;
+			std::vector<uint> channelXferCyclesLeft; //cycles per channel beat
+			std::vector<uint> channelBeatsLeft; //channel beats per page
 	};
 }
 #endif

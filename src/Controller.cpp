@@ -11,6 +11,7 @@ Controller::Controller(NVDIMM* parent, Logger* l){
 	log = l;
 
 	channelXferCyclesLeft = vector<uint>(NUM_PACKAGES, 0);
+	channelBeatsLeft = vector<uint>(NUM_PACKAGES, 0);
 
 	channelQueues = vector<queue <ChannelPacket *> >(NUM_PACKAGES, queue<ChannelPacket *>());
 	outgoingPackets = vector<ChannelPacket *>(NUM_PACKAGES, NULL);
@@ -113,13 +114,17 @@ void Controller::update(void){
 	//Check for commands/data on a channel. If there is, see if it is done on channel
 	for (i= 0; i < outgoingPackets.size(); i++){
 		if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
-
-			channelXferCyclesLeft[i]--;
-			if (channelXferCyclesLeft[i] == 0){
-				(*packages)[outgoingPackets[i]->package].channel->sendToDie(outgoingPackets[i]);
+			if (channelBeatsLeft[i] == 0){
+			        (*packages)[outgoingPackets[i]->package].channel->sendToDie(outgoingPackets[i]);
 				(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
 				outgoingPackets[i]= NULL;
 			}
+			if (channelXferCyclesLeft[i] <= 0 && (*packages)[outgoingPackets[i]->package].channel->notBusy()){
+			        (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER);
+			        channelBeatsLeft[i]--;
+				channelXferCyclesLeft[i] = CHANNEL_CYCLE / CYCLE_TIME;
+			}
+		        channelXferCyclesLeft[i]--;
 		}
 	}
 	
@@ -132,10 +137,12 @@ void Controller::update(void){
 				channelQueues[i].pop();
 				switch (outgoingPackets[i]->busPacketType){
 					case DATA:
-						channelXferCyclesLeft[i]= DATA_TIME;
+					        channelXferCyclesLeft[i] = CHANNEL_CYCLE / CYCLE_TIME; //system cycles per channel beat
+						channelBeatsLeft[i] = NV_PAGE_SIZE / CHANNEL_WIDTH; //channel pieces per page
 						break;
 					default:
-						channelXferCyclesLeft[i]= COMMAND_TIME;
+						channelXferCyclesLeft[i] = CHANNEL_CYCLE / CYCLE_TIME;
+						channelBeatsLeft[i] = COMMAND_LENGTH / CHANNEL_WIDTH;
 						break;
 				}
 			}
