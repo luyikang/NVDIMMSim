@@ -122,7 +122,7 @@ void Controller::update(void){
 			if (channelXferCyclesLeft[i] <= 0 && (*packages)[outgoingPackets[i]->package].channel->notBusy()){
 			        (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER);
 			        channelBeatsLeft[i]--;
-				channelXferCyclesLeft[i] = CHANNEL_CYCLE / CYCLE_TIME;
+				channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
 			}
 		        channelXferCyclesLeft[i]--;
 		}
@@ -137,12 +137,12 @@ void Controller::update(void){
 				channelQueues[i].pop();
 				switch (outgoingPackets[i]->busPacketType){
 					case DATA:
-					        channelXferCyclesLeft[i] = CHANNEL_CYCLE / CYCLE_TIME; //system cycles per channel beat
-						channelBeatsLeft[i] = NV_PAGE_SIZE / CHANNEL_WIDTH; //channel pieces per page
+					        channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME); //system cycles per channel beat
+					        channelBeatsLeft[i] = divide_params(NV_PAGE_SIZE,CHANNEL_WIDTH); //channel pieces per page
 						break;
 					default:
-						channelXferCyclesLeft[i] = CHANNEL_CYCLE / CYCLE_TIME;
-						channelBeatsLeft[i] = COMMAND_LENGTH / CHANNEL_WIDTH;
+					        channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
+					        channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
 						break;
 				}
 			}

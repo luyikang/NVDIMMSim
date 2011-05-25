@@ -83,8 +83,8 @@ extern uint BLOCKS_PER_PLANE;
 extern uint VIRTUAL_BLOCKS_PER_PLANE;
 extern uint PAGES_PER_BLOCK;
 extern uint NV_PAGE_SIZE;
-extern uint DEVICE_CYCLE;
-extern uint CHANNEL_CYCLE;
+extern float DEVICE_CYCLE;
+extern float CHANNEL_CYCLE;
 extern uint DEVICE_WIDTH;
 extern uint CHANNEL_WIDTH;
 // does the device use garbage collection 

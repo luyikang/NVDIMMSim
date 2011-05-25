@@ -8,6 +8,7 @@
 #include "ChannelPacket.h"
 #include "Plane.h"
 #include "Logger.h"
+#include "Util.h"
 
 namespace NVDSim{
 

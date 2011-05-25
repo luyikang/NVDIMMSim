@@ -6,6 +6,7 @@
 #include "FlashConfiguration.h"
 #include "Die.h"
 #include "ChannelPacket.h"
+#include "Util.h"
 
 namespace NVDSim{
 	enum SenderType{

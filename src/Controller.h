@@ -10,6 +10,7 @@
 #include "Channel.h"
 #include "FlashTransaction.h"
 #include "Logger.h"
+#include "Util.h"
 
 namespace NVDSim{
 	typedef struct {

@@ -169,8 +169,8 @@ void Die::update(void){
 			dataCyclesLeft--;
 		} else
 		        if (channel->obtainChannel(id, DIE, NULL)){
-				dataCyclesLeft = DEVICE_CYCLE / CYCLE_TIME;
-				deviceBeatsLeft = NV_PAGE_SIZE / DEVICE_WIDTH;
+			    dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+			    deviceBeatsLeft = divide_params(NV_PAGE_SIZE,DEVICE_WIDTH);
 			}
 	}
 }

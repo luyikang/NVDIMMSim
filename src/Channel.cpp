@@ -30,11 +30,11 @@ int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
 	return 1;
 	
 	if(t == CONTROLLER){
-	    cyclesLeft = DEVICE_CYCLE / CYCLE_TIME;
-	    beatsLeft = DEVICE_WIDTH / CHANNEL_WIDTH;
+	    cyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+	    beatsLeft = divide_params(DEVICE_WIDTH,CHANNEL_WIDTH);
 	}else{
-	    cyclesLeft = CHANNEL_CYCLE / CYCLE_TIME;
-	    beatsLeft = DEVICE_WIDTH / CHANNEL_WIDTH;
+	    cyclesLeft = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
+	    beatsLeft = divide_params(DEVICE_WIDTH,CHANNEL_WIDTH);
 	}
 }
 
@@ -93,7 +93,7 @@ void Channel::update(void){
 	cyclesLeft--;
 	if(cyclesLeft <= 0){
 	    beatsLeft--;
-	    cyclesLeft = CHANNEL_CYCLE / CYCLE_TIME;
+	    cyclesLeft = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
 	}
 	if(beatsLeft <= 0){
 	    busy = 0;
