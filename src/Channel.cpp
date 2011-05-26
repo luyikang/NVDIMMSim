@@ -11,6 +11,9 @@ Channel::Channel(void){
 	busy = 0;
 	cyclesLeft = 0;
 	beatsLeft = 0;
+	deviceWriting = 0;
+
+	firstCheck = 0;
 }
 
 void Channel::attachDie(Die *d){
@@ -28,14 +31,6 @@ int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
 	type = t;
 	sender = (int) s;
 	return 1;
-	
-	if(t == CONTROLLER){
-	    cyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
-	    beatsLeft = divide_params(DEVICE_WIDTH,CHANNEL_WIDTH);
-	}else{
-	    cyclesLeft = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
-	    beatsLeft = divide_params(DEVICE_WIDTH,CHANNEL_WIDTH);
-	}
 }
 
 int Channel::releaseChannel(SenderType t, uint s){
@@ -65,33 +60,61 @@ void Channel::sendToController(ChannelPacket *busPacket){
 	controller->receiveFromChannel(busPacket);
 }
 
-void Channel::sendPiece(SenderType t){
-        if (t ==  CONTROLLER){
-	    beatsLeft--;
-	    if(beatsLeft == 0)
-	    {
-		busy = 1;
+//TODO: Need to check the type of piece to see if its a command or data
+void Channel::sendPiece(SenderType t, uint type){
+        if(busy == 1){
+	    beatsDone++;
+	}else if(busy == 2){
+	    beatsLeft += divide_params(DEVICE_WIDTH,CHANNEL_WIDTH);
+	}else{
+	    if(t == CONTROLLER){
+		if(type == 0){
+		    beatsLeft = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
+		}else{
+		    beatsLeft = divide_params(COMMAND_LENGTH,DEVICE_WIDTH);
+		}
+		beatsDone = 1;
+	        busy = 1;
+	    }else{
+		cyclesLeft = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
+		beatsLeft = divide_params(DEVICE_WIDTH,CHANNEL_WIDTH);
+		busy = 2;
 	    }
-        }else{
-	    busy = 2;
-        }
+	}
 }
 
 int Channel::notBusy(void){
-    if(busy > 0)
+    if(busy > 0){
 	return 0;
-    return 1;
+    }else{
+	return 1;
+    }
 }
 
 void Channel::update(void){
+    //cout << "updating the channel \n";
     if(busy == 1){
-	cyclesLeft--;
-	if(cyclesLeft <= 0){
+	if(beatsDone >= divide_params(DEVICE_WIDTH,CHANNEL_WIDTH) && deviceWriting == 0)
+	{
+	    cyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+	    deviceWriting = 1;
+	    beatsDone -= divide_params(DEVICE_WIDTH,CHANNEL_WIDTH);
+	}
+	if(deviceWriting == 1)
+	{
+	    cyclesLeft--;
+	    if(cyclesLeft <= 0)
+	    {
+		deviceWriting = 0;
+		beatsLeft--;
+	    }
+	}
+	if(beatsLeft <= 0){
 	    busy = 0;
 	}
     }else if(busy == 2){
 	cyclesLeft--;
-	if(cyclesLeft <= 0){
+	if(cyclesLeft <= 0 && beatsLeft > 0){
 	    beatsLeft--;
 	    cyclesLeft = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
 	}

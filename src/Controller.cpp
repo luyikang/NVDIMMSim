@@ -114,13 +114,18 @@ void Controller::update(void){
 	//Check for commands/data on a channel. If there is, see if it is done on channel
 	for (i= 0; i < outgoingPackets.size(); i++){
 		if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
-			if (channelBeatsLeft[i] == 0){
+		        if (channelBeatsLeft[i] == 0 && (*packages)[outgoingPackets[i]->package].channel->notBusy()){
 			        (*packages)[outgoingPackets[i]->package].channel->sendToDie(outgoingPackets[i]);
 				(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
 				outgoingPackets[i]= NULL;
 			}
-			if (channelXferCyclesLeft[i] <= 0 && (*packages)[outgoingPackets[i]->package].channel->notBusy()){
-			        (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER);
+			if (channelXferCyclesLeft[i] <= 0 && channelBeatsLeft[i] > 0){
+			        if(outgoingPackets[i]->busPacketType == DATA)
+				{
+				    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, 0);
+				}else{
+				    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, 1);
+				}
 			        channelBeatsLeft[i]--;
 				channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
 			}
@@ -138,7 +143,7 @@ void Controller::update(void){
 				switch (outgoingPackets[i]->busPacketType){
 					case DATA:
 					        channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME); //system cycles per channel beat
-					        channelBeatsLeft[i] = divide_params(NV_PAGE_SIZE,CHANNEL_WIDTH); //channel pieces per page
+					        channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); //channel pieces per page
 						break;
 					default:
 					        channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
