@@ -30,11 +30,11 @@ int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
 	}
 	type = t;
 	sender = (int) s;
+	cout << t << " has the channel \n";
 	return 1;
 }
 
-int Channel::releaseChannel(SenderType t, uint s){
-        
+int Channel::releaseChannel(SenderType t, uint s){   
         // these should be zero anyway but clear then just to be safe
         cyclesLeft = 0;
 	beatsLeft = 0;

@@ -54,8 +54,8 @@ namespace NVDSim
 	virtual void update();
 	
 	void access_start(uint64_t addr);
-	virtual void access_process(uint64_t addr, uint package, ChannelPacketType op);
-	virtual void access_stop(uint64_t addr, uint64_t paddr);
+	virtual void access_process(uint64_t addr, uint64_t paddr, uint package, ChannelPacketType op);
+	virtual void access_stop(uint64_t paddr);
 
 	virtual void save_epoch(uint64_t cycle, uint epoch);
 	
@@ -96,6 +96,7 @@ namespace NVDSim
 		uint64_t start; // Starting cycle of access
 		uint64_t process; // Cycle when processing starts
 		uint64_t stop; // Stopping cycle of access
+		uint64_t addr; // Virtual address of access
 		uint64_t package; // package for the power calculations
 		ChannelPacketType op; // what operation is this?
 		AccessMapEntry()
@@ -103,6 +104,7 @@ namespace NVDSim
 			start = 0;
 			process = 0;
 			stop = 0;
+			addr = 0;
 			package = 0;
 			op = READ;
 		}

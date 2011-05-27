@@ -25,8 +25,11 @@ void PCMGCLogger::update()
 }
 
 // Using virtual addresses here right now
-void PCMGCLogger::access_process(uint64_t addr, uint package, ChannelPacketType op)
+void PCMGCLogger::access_process(uint64_t addr, uint64_t paddr, uint package, ChannelPacketType op)
 {
+    //cout << "log started for" << hex << addr << "\n";
+    //cout << "in package " << package << "\n";
+    //cout << "at clock cycle" << currentClockCycle << "\n";
         // Get entry off of the access_queue.
 	uint64_t start_cycle = 0;
 	bool found = false;
@@ -51,9 +54,9 @@ void PCMGCLogger::access_process(uint64_t addr, uint package, ChannelPacketType 
 		abort();
 	}
 
-	if (access_map.count(addr) != 0)
+	if (access_map.count(paddr) != 0)
 	{
-		cerr << "ERROR: NVLogger.access_process() called with address already in access_map. address=0x" << hex << addr << "\n" << dec;
+		cerr << "ERROR: NVLogger.access_process() called with address already in access_map. address=0x" << hex << paddr << "\n" << dec;
 		abort();
 	}
 
@@ -61,23 +64,26 @@ void PCMGCLogger::access_process(uint64_t addr, uint package, ChannelPacketType 
 	a.start = start_cycle;
 	a.op = op;
 	a.process = this->currentClockCycle;
+	a.addr = addr;
 	a.package = package;
-	access_map[addr] = a;	
+	access_map[paddr] = a;	
 
 	this->queue_latency(a.process - a.start);
 }
 
-void PCMGCLogger::access_stop(uint64_t addr, uint64_t paddr)
+void PCMGCLogger::access_stop(uint64_t paddr)
 {
-	if (access_map.count(addr) == 0)
+    //cout << "log stopped for" << hex << paddr << "\n";
+
+	if (access_map.count(paddr) == 0)
 	{
-		cerr << "ERROR: NVLogger.access_stop() called with address not in access_map. address=" << hex << addr << "\n" << dec;
+		cerr << "ERROR: NVLogger.access_stop() called with address not in access_map. address=" << hex << paddr << "\n" << dec;
 		abort();
 	}
 
-	AccessMapEntry a = access_map[addr];
+	AccessMapEntry a = access_map[paddr];
 	a.stop = this->currentClockCycle;
-	access_map[addr] = a;
+	access_map[paddr] = a;
 
 	// Log cache event type.
 	if (a.op == READ)
@@ -148,7 +154,7 @@ void PCMGCLogger::access_stop(uint64_t addr, uint64_t paddr)
 	    }
 	}
 	
-	access_map.erase(addr);
+	access_map.erase(paddr);
 }
 
 void PCMGCLogger::save(uint64_t cycle, uint epoch) 

@@ -37,26 +37,30 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 			 case READ:
 			     if(DEVICE_TYPE.compare("PCM") == 0)
 			     {
-				 controlCyclesLeft[busPacket->plane]= READ_TIME * (NV_PAGE_SIZE / 8);
+				 controlCyclesLeft[busPacket->plane]= READ_TIME * ((NV_PAGE_SIZE*8192) / 8);
+				 cout << dec << READ_TIME * ((NV_PAGE_SIZE*8192) / 8) << "\n";				
 			     }
 			     else
 			     {
 				 controlCyclesLeft[busPacket->plane]= READ_TIME;
 			     }
 			     //update the logger
-			     log->access_process(busPacket->virtualAddress, busPacket->package, READ);
+			     //cout << "doing read for " << busPacket->virtualAddress << "\n";
+			     //cout << "and paddress is " << busPacket->physicalAddress << "\n";
+			     //cout << "on cycle " << currentClockCycle << "\n";
+			     log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, READ);
 			     break;
 			 case GC_READ:
 			     if(DEVICE_TYPE.compare("PCM") == 0)
 			     {
-				 controlCyclesLeft[busPacket->plane]= READ_TIME * (NV_PAGE_SIZE / 8);
+				 controlCyclesLeft[busPacket->plane]= READ_TIME * ((NV_PAGE_SIZE*8192) / 8);
 			     }
 			     else
 			     {
 				 controlCyclesLeft[busPacket->plane]= READ_TIME;
 			     }
 			     //update the logger
-			     log->access_process(busPacket->virtualAddress, busPacket->package, GC_READ);
+			     log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, GC_READ);
 			     break;
 			 case WRITE:
 			     if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
@@ -68,7 +72,10 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 				 controlCyclesLeft[busPacket->plane]= WRITE_TIME;
 			     }
 			     //update the logger
-			     log->access_process(busPacket->virtualAddress, busPacket->package, WRITE);
+			     //cout << "doing write for " << busPacket->virtualAddress << "\n";
+			     //cout << "and paddress is " << busPacket->physicalAddress << "\n";
+			     //cout << "on cycle " << currentClockCycle << "\n";
+			     log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, WRITE);
 			     break;
 			 case GC_WRITE:
 			     if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
@@ -80,7 +87,7 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 				 controlCyclesLeft[busPacket->plane]= WRITE_TIME;
 			     }
 			     //update the logger
-			     log->access_process(busPacket->virtualAddress, busPacket->package, GC_WRITE);
+			     log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, GC_WRITE);
 			     break;
 			 case ERASE:
 			     if(DEVICE_TYPE.compare("PCM") == 0)
@@ -92,7 +99,7 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 				 controlCyclesLeft[busPacket->plane]= ERASE_TIME;
 			     }
 			     //update the logger
-			     log->access_process(busPacket->virtualAddress, busPacket->package, ERASE);
+			     log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, ERASE);
 			     break;
 			 default:
 			     break;
@@ -105,6 +112,7 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 
 int Die::isDieBusy(uint plane){
 	if (currentCommands[plane] == NULL){
+	    //cout << "tested busy and failed \n";
 		return 0;
 	}
 	return 1;
@@ -120,15 +128,16 @@ void Die::update(void){
 		 if (controlCyclesLeft[i] == 0){
 			 switch (currentCommand->busPacketType){
 			         case GC_READ:
-				     log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
-				 case READ:
+				     log->access_stop(currentCommand->physicalAddress);
+				 case READ:	
+				     cout << "got through read control cycles \n";
 					 planes[currentCommand->plane].read(currentCommand);
 					 returnDataPackets.push(planes[currentCommand->plane].readFromData());
 					 break;
-				 case WRITE:
+				 case WRITE:				     
 					 planes[currentCommand->plane].write(currentCommand);
 					 parentNVDIMM->numWrites++;
-					 log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
+					 log->access_stop(currentCommand->physicalAddress);
 					 //call write callback
 					 if (parentNVDIMM->WriteDataDone != NULL){
 						 (*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->virtualAddress, currentClockCycle);
@@ -137,12 +146,12 @@ void Die::update(void){
 				 case GC_WRITE:
 					 planes[currentCommand->plane].write(currentCommand);
 					 parentNVDIMM->numWrites++;
-					 log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
+					 log->access_stop(currentCommand->physicalAddress);
 					 break;
 				 case ERASE:
 					 planes[currentCommand->plane].erase(currentCommand);
 					 parentNVDIMM->numErases++;
-					 log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
+					 log->access_stop(currentCommand->physicalAddress);
 					 break;
 				 default:
 					 break;
@@ -158,6 +167,7 @@ void Die::update(void){
 	if (!returnDataPackets.empty()){
 		if (channel->hasChannel(DIE, id)){
 		        if (deviceBeatsLeft == 0 && channel->notBusy()){
+			    cout << "finished the read \n";
 				channel->sendToController(returnDataPackets.front());
 				channel->releaseChannel(DIE, id);
 				returnDataPackets.pop();
@@ -165,6 +175,8 @@ void Die::update(void){
 			if (dataCyclesLeft <= 0 && deviceBeatsLeft > 0){
 			        deviceBeatsLeft--;
 				channel->sendPiece(DIE, 0);
+				dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+				//cout << "we have " << deviceBeatsLeft << "beats left \n";
 			}
 			dataCyclesLeft--;
 		} else

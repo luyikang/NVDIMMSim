@@ -125,7 +125,7 @@ void Ftl::update(void){
 				case DATA_READ:
 					if (addressMap.find(vAddr) == addressMap.end()){
 					        //update the logger
-					        log->access_process(vAddr, 0, READ);
+					        log->access_process(vAddr, vAddr, 0, READ);
 						log->read_unmapped();
 						
 						//miss, nothing to read so return garbage

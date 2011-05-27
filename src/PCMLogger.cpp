@@ -24,7 +24,7 @@ void PCMLogger::update()
 }
 
 // Using virtual addresses here right now
-void PCMLogger::access_process(uint64_t addr, uint package, ChannelPacketType op)
+void PCMLogger::access_process(uint64_t addr, uint64_t paddr, uint package, ChannelPacketType op)
 {
         // Get entry off of the access_queue.
 	uint64_t start_cycle = 0;
@@ -50,9 +50,9 @@ void PCMLogger::access_process(uint64_t addr, uint package, ChannelPacketType op
 		abort();
 	}
 
-	if (access_map.count(addr) != 0)
+	if (access_map.count(paddr) != 0)
 	{
-		cerr << "ERROR: NVLogger.access_process() called with address already in access_map. address=0x" << hex << addr << "\n" << dec;
+		cerr << "ERROR: NVLogger.access_process() called with address already in access_map. address=0x" << hex << paddr << "\n" << dec;
 		abort();
 	}
 
@@ -60,23 +60,24 @@ void PCMLogger::access_process(uint64_t addr, uint package, ChannelPacketType op
 	a.start = start_cycle;
 	a.op = op;
 	a.process = this->currentClockCycle;
+	a.addr = addr;
 	a.package = package;
-	access_map[addr] = a;
+	access_map[paddr] = a;
 
 	this->queue_latency(a.process - a.start);
 }
 
-void PCMLogger::access_stop(uint64_t addr, uint64_t paddr)
+void PCMLogger::access_stop(uint64_t paddr)
 {
-	if (access_map.count(addr) == 0)
+	if (access_map.count(paddr) == 0)
 	{
-		cerr << "ERROR: NVLogger.access_stop() called with address not in access_map. address=" << hex << addr << "\n" << dec;
+		cerr << "ERROR: NVLogger.access_stop() called with address not in access_map. address=" << hex << paddr << "\n" << dec;
 		abort();
 	}
 
-	AccessMapEntry a = access_map[addr];
+	AccessMapEntry a = access_map[paddr];
 	a.stop = this->currentClockCycle;
-	access_map[addr] = a;
+	access_map[paddr] = a;
 
 	// Log cache event type.
 	if (a.op == READ)
@@ -111,7 +112,7 @@ void PCMLogger::access_stop(uint64_t addr, uint64_t paddr)
 	    }
 	}
 		
-	access_map.erase(addr);
+	access_map.erase(paddr);
 }
 
 void PCMLogger::save(uint64_t cycle, uint epoch) 

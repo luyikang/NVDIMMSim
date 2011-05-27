@@ -24,7 +24,7 @@ void Controller::attachPackages(vector<Package> *packages){
 }
 
 void Controller::returnReadData(const FlashTransaction  &trans){
-    log->access_stop(trans.address, trans.address);
+        log->access_stop(trans.address);
 	if(parentNVDIMM->ReturnReadData!=NULL){
 		(*parentNVDIMM->ReturnReadData)(parentNVDIMM->systemID, trans.address, currentClockCycle);
 	}
@@ -90,9 +90,9 @@ void Controller::returnPowerData(vector<double> idle_energy, vector<double> acce
 
 void Controller::receiveFromChannel(ChannelPacket *busPacket){
 	if (busPacket->busPacketType == READ)
-		returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->virtualAddress, busPacket->data));
+		returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->physicalAddress, busPacket->data));
 	else
-		returnTransaction.push_back(FlashTransaction(GC_DATA, busPacket->virtualAddress, busPacket->data));
+		returnTransaction.push_back(FlashTransaction(GC_DATA, busPacket->physicalAddress, busPacket->data));
 	delete(busPacket);
 }
 
@@ -110,7 +110,28 @@ bool Controller::addPacket(ChannelPacket *p){
 
 void Controller::update(void){
 	uint i;
-	
+		
+        //Look through queues and send oldest packets to the appropriate channel
+	for (i= 0; i < channelQueues.size(); i++){
+		if (!channelQueues[i].empty() && outgoingPackets[i]==NULL){
+			//if we can get the channel (channel contention not implemented yet)
+			if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
+				outgoingPackets[i]= channelQueues[i].front();
+				channelQueues[i].pop();
+				switch (outgoingPackets[i]->busPacketType){
+					case DATA:
+					        channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME); //system cycles per channel beat
+					        channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); //channel pieces per page
+						break;
+					default:
+					        channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
+					        channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
+						break;
+				}
+			}
+		}
+	}
+
 	//Check for commands/data on a channel. If there is, see if it is done on channel
 	for (i= 0; i < outgoingPackets.size(); i++){
 		if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
@@ -133,26 +154,7 @@ void Controller::update(void){
 		}
 	}
 	
-	//Look through queues and send oldest packets to the appropriate channel
-	for (i= 0; i < channelQueues.size(); i++){
-		if (!channelQueues[i].empty() && outgoingPackets[i]==NULL){
-			//if we can get the channel (channel contention not implemented yet)
-			if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
-				outgoingPackets[i]= channelQueues[i].front();
-				channelQueues[i].pop();
-				switch (outgoingPackets[i]->busPacketType){
-					case DATA:
-					        channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME); //system cycles per channel beat
-					        channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); //channel pieces per page
-						break;
-					default:
-					        channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
-					        channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
-						break;
-				}
-			}
-		}
-	}
+
 	//See if any read data is ready to return
 	while (!returnTransaction.empty()){
 		//call return callback
