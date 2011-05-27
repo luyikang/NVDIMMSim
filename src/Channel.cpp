@@ -13,6 +13,10 @@ Channel::Channel(void){
 	beatsLeft = 0;
 	deviceWriting = 0;
 
+	cyclesLeft = vector<uint>(PLANES_PER_DIE, 0);
+	beatsLeft = vector<uint>(PLANES_PER_DIE, 0);
+	beatsDone = vector<uint>(PLANES_PER_DIE, 0);
+
 	firstCheck = 0;
 }
 
@@ -30,7 +34,6 @@ int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
 	}
 	type = t;
 	sender = (int) s;
-	cout << t << " has the channel \n";
 	return 1;
 }
 
@@ -92,7 +95,6 @@ int Channel::notBusy(void){
 }
 
 void Channel::update(void){
-    //cout << "updating the channel \n";
     if(busy == 1){
 	if(beatsDone >= divide_params(DEVICE_WIDTH,CHANNEL_WIDTH) && deviceWriting == 0)
 	{

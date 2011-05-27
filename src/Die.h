@@ -32,8 +32,8 @@ namespace NVDSim{
 			NVDIMM *parentNVDIMM;
 			Channel *channel;
 			Logger *log;
-			uint dataCyclesLeft; //cycles per device beat
-			uint deviceBeatsLeft; //device beats per page			
+			std::vector<uint> dataCyclesLeft; //cycles per device beat
+			std::vector<uint> deviceBeatsLeft; //device beats per page			
 			std::queue<ChannelPacket *> returnDataPackets;
 			std::vector<Plane> planes;
 			std::vector<ChannelPacket *> currentCommands;

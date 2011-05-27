@@ -27,9 +27,6 @@ void PCMGCLogger::update()
 // Using virtual addresses here right now
 void PCMGCLogger::access_process(uint64_t addr, uint64_t paddr, uint package, ChannelPacketType op)
 {
-    //cout << "log started for" << hex << addr << "\n";
-    //cout << "in package " << package << "\n";
-    //cout << "at clock cycle" << currentClockCycle << "\n";
         // Get entry off of the access_queue.
 	uint64_t start_cycle = 0;
 	bool found = false;
