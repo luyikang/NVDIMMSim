@@ -15,6 +15,7 @@ Controller::Controller(NVDIMM* parent, Logger* l){
 
 	channelQueues = vector<queue <ChannelPacket *> >(NUM_PACKAGES, queue<ChannelPacket *>());
 	outgoingPackets = vector<ChannelPacket *>(NUM_PACKAGES, NULL);
+	pendingPackets = vector<ChannelPacket *>(NUM_PACKAGES, NULL);
 
 	currentClockCycle = 0;
 }
@@ -112,7 +113,7 @@ void Controller::update(void){
 	uint i;
 		
         //Look through queues and send oldest packets to the appropriate channel
-	for (i= 0; i < channelQueues.size(); i++){
+	for (i = 0; i < channelQueues.size(); i++){
 		if (!channelQueues[i].empty() && outgoingPackets[i]==NULL){
 			//if we can get the channel (channel contention not implemented yet)
 			if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
@@ -135,17 +136,18 @@ void Controller::update(void){
 	//Check for commands/data on a channel. If there is, see if it is done on channel
 	for (i= 0; i < outgoingPackets.size(); i++){
 		if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
-		        if (channelBeatsLeft[i] == 0 && (*packages)[outgoingPackets[i]->package].channel->notBusy()){
-			        (*packages)[outgoingPackets[i]->package].channel->sendToDie(outgoingPackets[i]);
+		        if (channelBeatsLeft[i] == 0 && (*packages)[outgoingPackets[i]->package].channel->notBusy() 
+			    && pendingPackets[i] == NULL){
 				(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
-				outgoingPackets[i]= NULL;
+				pendingPackets[i] = outgoingPackets[i];
+				outgoingPackets[i] = NULL;
 			}
 			if (channelXferCyclesLeft[i] <= 0 && channelBeatsLeft[i] > 0){
 			        if(outgoingPackets[i]->busPacketType == DATA)
 				{
-				    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, 0);
+				    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, 0, outgoingPackets[i]->plane, outgoingPackets[i]->die);
 				}else{
-				    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, 1);
+				    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, 1, outgoingPackets[i]->plane, outgoingPackets[i]->die);
 				}
 			        channelBeatsLeft[i]--;
 				channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
@@ -176,4 +178,14 @@ void Controller::sendQueueLength(void)
 void Controller::writeToPackage(ChannelPacket *packet)
 {
     (*packages)[packet->package].dies[packet->die]->writeToPlane(packet);
+}
+
+void Controller::channelDone(uint die, uint plane)
+{
+    for (uint i = 0; i < outgoingPackets.size(); i++){
+	if (pendingPackets[i] != NULL && pendingPackets[i]->die == die && pendingPackets[i]->plane == plane){
+	    (*packages)[pendingPackets[i]->package].channel->sendToDie(pendingPackets[i]);
+	    pendingPackets[i] = NULL;
+	}
+    }
 }

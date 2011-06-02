@@ -18,9 +18,9 @@ Die::Die(NVDIMM *parent, Logger *l, uint idNum){
 
 	currentCommands= vector<ChannelPacket *>(PLANES_PER_DIE, NULL);
 
-	dataCyclesLeft= vector<uint>(PLANES_PER_DIE, 0);
-	deviceBeatsLeft= vector<uint>(PLANES_PER_DIE, 0);
-	controlCyclesLeft= vector<uint>(PLANES_PER_DIE, 0);
+	dataCyclesLeft= 0;
+	deviceBeatsLeft= 0;
+	controlCyclesLeft= new uint[PLANES_PER_DIE];
 
 	currentClockCycle= 0;
 }
@@ -165,7 +165,7 @@ void Die::update(void){
 			}
 			if (dataCyclesLeft <= 0 && deviceBeatsLeft > 0){
 			        deviceBeatsLeft--;
-				channel->sendPiece(DIE, 0);
+				channel->sendPiece(DIE, 0, id, returnDataPackets.front()->plane);
 				dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 			}
 			dataCyclesLeft--;

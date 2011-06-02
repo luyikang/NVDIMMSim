@@ -32,12 +32,12 @@ namespace NVDSim{
 			NVDIMM *parentNVDIMM;
 			Channel *channel;
 			Logger *log;
-			std::vector<uint> dataCyclesLeft; //cycles per device beat
-			std::vector<uint> deviceBeatsLeft; //device beats per page			
+			uint dataCyclesLeft; //cycles per device beat
+			uint deviceBeatsLeft; //device beats per page			
 			std::queue<ChannelPacket *> returnDataPackets;
 			std::vector<Plane> planes;
 			std::vector<ChannelPacket *> currentCommands;
-			std::vector<uint> controlCyclesLeft;
+			uint *controlCyclesLeft;
 	};
 }
 #endif

@@ -47,6 +47,8 @@ namespace NVDSim{
 
 			void sendQueueLength(void);
 
+			void channelDone(uint die, uint plane);
+
 			// for fast forwarding
 			void writeToPackage(ChannelPacket *packet);
 
@@ -58,6 +60,7 @@ namespace NVDSim{
 			std::vector<Package> *packages;
 			std::vector<std::queue <ChannelPacket *> > channelQueues;
 			std::vector<ChannelPacket *> outgoingPackets;
+			std::vector<ChannelPacket *> pendingPackets;
 			std::vector<uint> channelXferCyclesLeft; //cycles per channel beat
 			std::vector<uint> channelBeatsLeft; //channel beats per page
 	};

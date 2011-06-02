@@ -25,7 +25,7 @@ namespace NVDSim{
 			int hasChannel(SenderType t, uint s);
 			void sendToDie(ChannelPacket *busPacket);
 			void sendToController(ChannelPacket *busPacket);
-			void sendPiece(SenderType t, uint type);
+			void sendPiece(SenderType t, uint type, uint die, uint plane);
 			int notBusy(void);
 
 			void update(void);
@@ -36,12 +36,13 @@ namespace NVDSim{
 			int sender;
 			int busy;
 			int firstCheck;
-			int deviceWriting;
 			std::vector<Die *> dies;
 
-			std::vector<uint> cyclesLeft; //cycles per device or channel beat
-			std::vector<uint> beatsLeft; //beats per page
-			std::vector<uint> beatsDone; //beats sent
+			uint** cyclesLeft; //cycles per device or channel beat
+			uint** beatsLeft; //beats per page
+			uint** beatsDone; //beats sent
+			uint** deviceWriting;
+			uint** writePending;
 	};
 }
 #endif
