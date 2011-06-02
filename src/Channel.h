@@ -28,6 +28,8 @@ namespace NVDSim{
 			void sendPiece(SenderType t, uint type, uint die, uint plane);
 			int notBusy(void);
 
+			void acknowledge(uint die, uint plane);
+
 			void update(void);
 			
 			Controller *controller;
@@ -40,9 +42,10 @@ namespace NVDSim{
 
 			uint** cyclesLeft; //cycles per device or channel beat
 			uint** beatsLeft; //beats per page
-			uint** beatsDone; //beats sent
+			uint** beatsDone; //beats processed
 			uint** deviceWriting;
 			uint** writePending;
+			uint** packetType;
 	};
 }
 #endif

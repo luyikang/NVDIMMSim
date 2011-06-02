@@ -31,6 +31,7 @@ void Die::attachToChannel(Channel *chan){
 
 void Die::receiveFromChannel(ChannelPacket *busPacket){
 	 if (busPacket->busPacketType == DATA){
+	     cout << "we store in the data \n";
 		 planes[busPacket->plane].storeInData(busPacket);
 	 } else if (currentCommands[busPacket->plane] == NULL) {
 		 currentCommands[busPacket->plane] = busPacket;
@@ -60,6 +61,7 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 			     log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, GC_READ);
 			     break;
 			 case WRITE:
+			     cout << "die recieves the command \n";
 			     if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
 			     {
 			         controlCyclesLeft[busPacket->plane]= ERASE_TIME;

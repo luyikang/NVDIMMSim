@@ -139,14 +139,20 @@ void Controller::update(void){
 		        if (channelBeatsLeft[i] == 0 && (*packages)[outgoingPackets[i]->package].channel->notBusy() 
 			    && pendingPackets[i] == NULL){
 				(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
+				cout << "the setting outgoing die is " << outgoingPackets[i]->die << " the setting outgoing plane is " << outgoingPackets[i]->plane << "\n";
+				cout << "outgoing packet type is " << outgoingPackets[i]->busPacketType << "\n";
 				pendingPackets[i] = outgoingPackets[i];
+				cout << "the set pending die is " << pendingPackets[i]->die << " the set pending plane is " << pendingPackets[i]->plane << "\n";
 				outgoingPackets[i] = NULL;
+				cout << "the post pending die is " << pendingPackets[i]->die << " the post pending plane is " << pendingPackets[i]->plane << "\n";
 			}
 			if (channelXferCyclesLeft[i] <= 0 && channelBeatsLeft[i] > 0){
 			        if(outgoingPackets[i]->busPacketType == DATA)
 				{
 				    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, 0, outgoingPackets[i]->plane, outgoingPackets[i]->die);
+				    // cout << "the send piece outgoing die is " << outgoingPackets[i]->die << " the setting outgoing plane is " << outgoingPackets[i]->plane << "\n";
 				}else{
+				    cout << "sending the command \n";
 				    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, 1, outgoingPackets[i]->plane, outgoingPackets[i]->die);
 				}
 			        channelBeatsLeft[i]--;
@@ -182,9 +188,16 @@ void Controller::writeToPackage(ChannelPacket *packet)
 
 void Controller::channelDone(uint die, uint plane)
 {
-    for (uint i = 0; i < outgoingPackets.size(); i++){
-	if (pendingPackets[i] != NULL && pendingPackets[i]->die == die && pendingPackets[i]->plane == plane){
+    cout << "got to the controller's channel done \n";
+    cout << "the sent die is " << die << " the sent plane is " << plane << "\n";
+    for (uint i = 0; i < pendingPackets.size(); i++){
+	if (pendingPackets[i] != NULL){
+	    cout << "the pending die is " << pendingPackets[i]->die << "the pending plane is " << pendingPackets[i]->plane << "\n";
+	}
+	if (pendingPackets[i] != NULL) && pendingPackets[i]->die == die && pendingPackets[i]->plane == plane){
+	    cout << "okay so we're sending \n";
 	    (*packages)[pendingPackets[i]->package].channel->sendToDie(pendingPackets[i]);
+	    (*packages)[pendingPackets[i]->package].channel->acknowledge(die, plane);
 	    pendingPackets[i] = NULL;
 	}
     }
