@@ -56,8 +56,6 @@ int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
 		return 0;
 	}
 	type = t;
-	cout << t << " has the channel now \n";
-	cout << "obtained channel on clock cycle " << dies[0]->currentClockCycle << "\n";
 	sender = (int) s;
 	return 1;
 }
@@ -78,12 +76,10 @@ int Channel::hasChannel(SenderType t, uint s){
 }
 
 void Channel::sendToDie(ChannelPacket *busPacket){
-    //cout << "we're sending to die \n";
 	dies[busPacket->die]->receiveFromChannel(busPacket);
 }
 
 void Channel::sendToController(ChannelPacket *busPacket){
-        cout << "sent virtual address was " << busPacket->virtualAddress << "\n";
         controller->receiveFromChannel(busPacket);
 }
 
@@ -105,14 +101,11 @@ void Channel::sendPiece(SenderType t, uint type, uint die, uint plane){
 		    busy = 1;
 	    }
 	}else if(t == DIE){
-	    //cout << "die reading has the channel \n";
 	    if(beatsDone[die][plane][3] > 0){
 		beatsLeft[die][plane][3] += divide_params(DEVICE_WIDTH,CHANNEL_WIDTH);
-		//cout << "Die now has " << beatsLeft[die][plane][0] << "beats left\n";
 		beatsDone[die][plane][3]++;
 	    }else{
 		cyclesLeft[die][plane][3] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
-		cout << "Die has " << cyclesLeft[die][plane] << "cycles left\n";
 		beatsLeft[die][plane][3] = divide_params(DEVICE_WIDTH,CHANNEL_WIDTH);
 		beatsDone[die][plane][3] = 1;
 		busy = 1;
@@ -163,28 +156,18 @@ void Channel::update(void){
 	       (beatsDone[i][j][0] == divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH) || 
 	        beatsDone[i][j][1] == divide_params(COMMAND_LENGTH,CHANNEL_WIDTH)))
 	        {
-	           cout << "current clock cycle is " << dies[0]->currentClockCycle << "\n";
-		   cout << "beatsDone is " << beatsDone[i][j][packetType[i][j]] << "it should be " << divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH) << "\n";
-		   cout << "beatsLeft is " << beatsLeft[i][j][packetType[i][j]] << "\n";
-		   cout << "busy is " << busy << "\n";
 		   writePending[i][j] = 1;
 		   busy = 0;
 	        }
 		    
 	    if(beatsLeft[i][j][packetType[i][j]] <= 0 && writePending[i][j] == 1){
-	       //cout << "shouldn't see this more than a few times \n";
-	       //cout << "beatsDone is " << beatsDone[i][j][packetType[i][j]] << "\n";
-	       //cout << "channel done for packet of type " << packetType[i][j] << "\n";
 	       controller->channelDone(i,j);
 	    }	    
 
 	    if(cyclesLeft[i][j][3] > 0){
-	        //cout << "Die has " << cyclesLeft[i][j] << " cycles left in update \n";
-	        //cout << "Die has " << beatsLeft[i][j][0] << " beats left\n";
 	        cyclesLeft[i][j][3]--;
 	    }
 	    if(cyclesLeft[i][j][3] <= 0 && beatsLeft[i][j][3] > 0){
-	        //cout << "Die has " << beatsLeft[i][j][0] << " beats left\n";
 	        beatsLeft[i][j][3]--;
 	        cyclesLeft[i][j][3] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
 	    }
@@ -192,7 +175,6 @@ void Channel::update(void){
 		dies[i]->channelDone();
 		beatsDone[i][j][3] = 0;
 	        busy = 0;
-	       //controller->channelDone(i,j);
 	    }
 	}
     }
