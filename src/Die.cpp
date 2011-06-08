@@ -37,6 +37,7 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 		 currentCommands[busPacket->plane] = busPacket;
 		 switch (busPacket->busPacketType){
 			 case READ:
+			     cout << "die is trying to read \n";
 			     if(DEVICE_TYPE.compare("PCM") == 0)
 			     {
 				 controlCyclesLeft[busPacket->plane]= READ_TIME * ((NV_PAGE_SIZE*8192) / 8);			
@@ -61,7 +62,7 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 			     log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, GC_READ);
 			     break;
 			 case WRITE:
-			     cout << "die recieves the command \n";
+			     cout << "die recieves the write command \n";
 			     if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
 			     {
 			         controlCyclesLeft[busPacket->plane]= ERASE_TIME;
@@ -101,6 +102,9 @@ void Die::receiveFromChannel(ChannelPacket *busPacket){
 			     break;
 		 }
 	 } else{
+	     cout << "plane was " << busPacket->plane << "\n";
+	     cout << "command was " << busPacket->busPacketType << "\n";
+	     cout << "command ongoing was " << currentCommands[busPacket->plane]->busPacketType << "\n";
 		 ERROR("Die is busy");
 		 exit(1);
 	 }
@@ -125,6 +129,8 @@ void Die::update(void){
 			         case GC_READ:
 				     log->access_stop(currentCommand->physicalAddress);
 				 case READ:	
+				         cout << "actually did the read \n";
+					 cout << "vritual address was " << currentCommand->virtualAddress << "\n";
 					 planes[currentCommand->plane].read(currentCommand);
 					 returnDataPackets.push(planes[currentCommand->plane].readFromData());
 					 break;
@@ -160,23 +166,28 @@ void Die::update(void){
 
 	if (!returnDataPackets.empty()){
 		if (channel->hasChannel(DIE, id)){
-		        if (deviceBeatsLeft == 0 && channel->notBusy()){
-				channel->sendToController(returnDataPackets.front());
-				channel->releaseChannel(DIE, id);
-				returnDataPackets.pop();
-			}
 			if (dataCyclesLeft <= 0 && deviceBeatsLeft > 0){
 			        deviceBeatsLeft--;
 				channel->sendPiece(DIE, 0, id, returnDataPackets.front()->plane);
 				dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 			}
-			dataCyclesLeft--;
+			if(dataCyclesLeft > 0){
+			    dataCyclesLeft--;
+			}
 		} else
 		        if (channel->obtainChannel(id, DIE, NULL)){
 			    dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 			    deviceBeatsLeft = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
 			}
 	}
+}
+
+void Die::channelDone()
+{
+    cout << "Finished the read \n";
+    channel->sendToController(returnDataPackets.front());
+    channel->releaseChannel(DIE, id);
+    returnDataPackets.pop();
 }
 
 void Die::writeToPlane(ChannelPacket *packet)

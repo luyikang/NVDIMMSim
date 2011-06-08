@@ -40,9 +40,9 @@ namespace NVDSim{
 			int firstCheck;
 			std::vector<Die *> dies;
 
-			uint** cyclesLeft; //cycles per device or channel beat
-			uint** beatsLeft; //beats per page
-			uint** beatsDone; //beats processed
+			uint*** cyclesLeft; //cycles per device or channel beat
+			uint*** beatsLeft; //beats per page
+			uint*** beatsDone; //beats processed
 			uint** deviceWriting;
 			uint** writePending;
 			uint** packetType;

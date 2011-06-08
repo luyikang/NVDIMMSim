@@ -59,10 +59,12 @@ namespace NVDSim{
 			std::list<FlashTransaction> returnTransaction;
 			std::vector<Package> *packages;
 			std::vector<std::queue <ChannelPacket *> > channelQueues;
-			std::vector<ChannelPacket *> outgoingPackets;
-			std::vector<ChannelPacket *> pendingPackets;
+			std::vector<ChannelPacket *> outgoingPackets; //there can only ever be one outgoing packet per channel
+			std::vector<std::list <ChannelPacket *> > pendingPackets; //there can be a pending package for each plane of each die of each package
 			std::vector<uint> channelXferCyclesLeft; //cycles per channel beat
 			std::vector<uint> channelBeatsLeft; //channel beats per page
+
+			uint*** busyPlanes;
 	};
 }
 #endif

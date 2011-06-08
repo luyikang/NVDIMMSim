@@ -24,6 +24,8 @@ namespace NVDSim{
 			int isDieBusy(uint plane);
 			void update(void);
 
+			void channelDone(void);
+
 			// for fast forwarding
 			void writeToPlane(ChannelPacket *packet);
 

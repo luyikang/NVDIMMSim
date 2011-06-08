@@ -14,10 +14,22 @@ Controller::Controller(NVDIMM* parent, Logger* l){
 	channelBeatsLeft = vector<uint>(NUM_PACKAGES, 0);
 
 	channelQueues = vector<queue <ChannelPacket *> >(NUM_PACKAGES, queue<ChannelPacket *>());
-	outgoingPackets = vector<ChannelPacket *>(NUM_PACKAGES, NULL);
-	pendingPackets = vector<ChannelPacket *>(NUM_PACKAGES, NULL);
+	outgoingPackets = vector<ChannelPacket *>(NUM_PACKAGES, 0);
+	
+	pendingPackets = vector<list <ChannelPacket *> >(NUM_PACKAGES, list<ChannelPacket *>());
 
 	currentClockCycle = 0;
+
+	busyPlanes = new uint **[NUM_PACKAGES];
+	for(uint i = 0; i < NUM_PACKAGES; i++){
+	    busyPlanes[i] = new uint *[DIES_PER_PACKAGE];
+	    for(uint j = 0; j < DIES_PER_PACKAGE; j++){
+		busyPlanes[i][j] = new uint[PLANES_PER_DIE];
+		for(uint k = 0; k < PLANES_PER_DIE; k++){
+		    busyPlanes[i][j][k] = 0;
+		}
+	    }
+	}
 }
 
 void Controller::attachPackages(vector<Package> *packages){
@@ -25,7 +37,6 @@ void Controller::attachPackages(vector<Package> *packages){
 }
 
 void Controller::returnReadData(const FlashTransaction  &trans){
-        log->access_stop(trans.address);
 	if(parentNVDIMM->ReturnReadData!=NULL){
 		(*parentNVDIMM->ReturnReadData)(parentNVDIMM->systemID, trans.address, currentClockCycle);
 	}
@@ -90,10 +101,11 @@ void Controller::returnPowerData(vector<double> idle_energy, vector<double> acce
 }
 
 void Controller::receiveFromChannel(ChannelPacket *busPacket){
+        log->access_stop(busPacket->physicalAddress);
 	if (busPacket->busPacketType == READ)
-		returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->physicalAddress, busPacket->data));
+		returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->virtualAddress, busPacket->data));
 	else
-		returnTransaction.push_back(FlashTransaction(GC_DATA, busPacket->physicalAddress, busPacket->data));
+		returnTransaction.push_back(FlashTransaction(GC_DATA, busPacket->virtualAddress, busPacket->data));
 	delete(busPacket);
 }
 
@@ -115,10 +127,17 @@ void Controller::update(void){
         //Look through queues and send oldest packets to the appropriate channel
 	for (i = 0; i < channelQueues.size(); i++){
 		if (!channelQueues[i].empty() && outgoingPackets[i]==NULL){
-			//if we can get the channel (channel contention not implemented yet)
+		    // don't send to busy planes
+		    //cout << "we have stuff to send \n";
+		    
+		    //cout << "the busyPlane entry for that is " << busyPlanes[channelQueues[i].front()->package][channelQueues[i].front()->die][channelQueues[i].front()->plane] << "\n";
+		    if(busyPlanes[channelQueues[i].front()->package][channelQueues[i].front()->die][channelQueues[i].front()->plane] != 1){
+			//cout << "and we should be sending it \n";
+		        //if we can get the channel
 			if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
 				outgoingPackets[i]= channelQueues[i].front();
-				channelQueues[i].pop();
+			        cout << "next packet is for " << channelQueues[i].front()->package << channelQueues[i].front()->die << channelQueues[i].front()->plane << "\n";
+				channelQueues[i].pop();				
 				switch (outgoingPackets[i]->busPacketType){
 					case DATA:
 					        channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME); //system cycles per channel beat
@@ -130,35 +149,34 @@ void Controller::update(void){
 						break;
 				}
 			}
+		    }
 		}
 	}
 
 	//Check for commands/data on a channel. If there is, see if it is done on channel
 	for (i= 0; i < outgoingPackets.size(); i++){
 		if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
-		        if (channelBeatsLeft[i] == 0 && (*packages)[outgoingPackets[i]->package].channel->notBusy() 
-			    && pendingPackets[i] == NULL){
+		        if (channelBeatsLeft[i] == 0 && (*packages)[outgoingPackets[i]->package].channel->notBusy()){
 				(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
-				cout << "the setting outgoing die is " << outgoingPackets[i]->die << " the setting outgoing plane is " << outgoingPackets[i]->plane << "\n";
-				cout << "outgoing packet type is " << outgoingPackets[i]->busPacketType << "\n";
-				pendingPackets[i] = outgoingPackets[i];
-				cout << "the set pending die is " << pendingPackets[i]->die << " the set pending plane is " << pendingPackets[i]->plane << "\n";
+				//cout << "the setting outgoing die is " << outgoingPackets[i]->die << " the setting outgoing plane is " << outgoingPackets[i]->plane << "\n";
+				//cout << "outgoing packet type is " << outgoingPackets[i]->busPacketType << "\n";
+				pendingPackets[i].push_back(outgoingPackets[i]);
+				busyPlanes[outgoingPackets[i]->package][outgoingPackets[i]->die][outgoingPackets[i]->plane] = 1;
+				//cout << "the set pending die is " << pendingPackets[i].back()->die << " the set pending plane is " << pendingPackets[i].back()->plane << "\n";
 				outgoingPackets[i] = NULL;
-				cout << "the post pending die is " << pendingPackets[i]->die << " the post pending plane is " << pendingPackets[i]->plane << "\n";
+				//cout << "the post pending die is " << pendingPackets[i].back()->die << " the post pending plane is " << pendingPackets[i].back()->plane << "\n";
 			}
 			if (channelXferCyclesLeft[i] <= 0 && channelBeatsLeft[i] > 0){
-			        if(outgoingPackets[i]->busPacketType == DATA)
-				{
-				    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, 0, outgoingPackets[i]->plane, outgoingPackets[i]->die);
-				    // cout << "the send piece outgoing die is " << outgoingPackets[i]->die << " the setting outgoing plane is " << outgoingPackets[i]->plane << "\n";
-				}else{
-				    cout << "sending the command \n";
-				    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, 1, outgoingPackets[i]->plane, outgoingPackets[i]->die);
-				}
-			        channelBeatsLeft[i]--;
-				channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
+			    //cout << "sending the command \n";
+			    if(outgoingPackets[i]->busPacketType != 5){
+				cout << "the packet type was " << outgoingPackets[i]->busPacketType << "\n";
+			    }
+			    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, outgoingPackets[i]->busPacketType, 
+											    outgoingPackets[i]->die, outgoingPackets[i]->plane);
+			    channelBeatsLeft[i]--;
+			    channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
 			}
-		        channelXferCyclesLeft[i]--;
+			channelXferCyclesLeft[i]--;
 		}
 	}
 	
@@ -188,17 +206,34 @@ void Controller::writeToPackage(ChannelPacket *packet)
 
 void Controller::channelDone(uint die, uint plane)
 {
-    cout << "got to the controller's channel done \n";
-    cout << "the sent die is " << die << " the sent plane is " << plane << "\n";
-    for (uint i = 0; i < pendingPackets.size(); i++){
-	if (pendingPackets[i] != NULL){
-	    cout << "the pending die is " << pendingPackets[i]->die << "the pending plane is " << pendingPackets[i]->plane << "\n";
+    //cout << "got to the controller's channel done \n";
+    //cout << "the sent die is " << die << " the sent plane is " << plane << "\n";
+    for(uint i = 0; i < NUM_PACKAGES; i++){
+	for(uint j = 0; j < DIES_PER_PACKAGE; j++){
+	    for(uint k = 0; k < PLANES_PER_DIE; k++){
+		if( busyPlanes[i][j][k] == 1){
+		    cout << "busy package is " << i << " die is " << j << " plane is " << k << "\n";
+		}
+	    }
 	}
-	if (pendingPackets[i] != NULL) && pendingPackets[i]->die == die && pendingPackets[i]->plane == plane){
-	    cout << "okay so we're sending \n";
-	    (*packages)[pendingPackets[i]->package].channel->sendToDie(pendingPackets[i]);
-	    (*packages)[pendingPackets[i]->package].channel->acknowledge(die, plane);
-	    pendingPackets[i] = NULL;
+    }
+
+    for (uint i = 0; i < pendingPackets.size(); i++){
+	std::list<ChannelPacket *>::iterator it;
+	for(it = pendingPackets[i].begin(); it != pendingPackets[i].end(); it++){
+	    if ((*it) != NULL){
+		//cout << "the pending die is " << (*it)->die << "the pending plane is " << (*it)->plane << "\n";
+	    }
+	    if ((*it) != NULL && (*it)->die == die && (*it)->plane == plane){
+	        //cout << "okay so we're sending \n";
+		cout << "sending packet of type " << (*it)->busPacketType << " to die \n";
+		(*packages)[(*it)->package].channel->sendToDie((*it));
+		(*packages)[(*it)->package].channel->acknowledge(die, plane);
+		busyPlanes[(*it)->package][(*it)->die][(*it)->plane] = 0;
+		cout << "freed package is " << (*it)->package << " die is " << (*it)->die << " plane is " << (*it)->plane << "\n";
+		pendingPackets[i].erase(it);
+		break;
+	    }
 	}
     }
 }
