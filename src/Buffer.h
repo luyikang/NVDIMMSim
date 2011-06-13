@@ -15,8 +15,12 @@ namespace NVDSim{
 	    Buffer(void);
 	    attachDie(Die *d);
 	    channelDone(uint Plane);
+
+	    bool notBusy(void);
 	    
 	    void update(void);
+
+	    void acknowledge(uint die, uint plane);
         private:
 	    std::vector<Die *> dies;
 	    

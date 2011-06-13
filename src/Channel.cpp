@@ -9,8 +9,6 @@ using namespace NVDSim;
 Channel::Channel(void){
 	sender = -1;
 	busy = 0;
-	cyclesLeft = 0;
-	beatsLeft = 0;
 
 	cyclesLeft = new uint **[DIES_PER_PACKAGE];
 	beatsLeft = new uint **[DIES_PER_PACKAGE];
@@ -87,7 +85,6 @@ void Channel::sendToController(ChannelPacket *busPacket){
         controller->receiveFromChannel(busPacket);
 }
 
-//TODO: Need to check the type of piece to see if its a command or data
 void Channel::sendPiece(SenderType t, uint type, uint die, uint plane){
         if(t == CONTROLLER){
 	    if(type == 5 && beatsLeft[die][plane][0] > 0){
@@ -163,28 +160,18 @@ void Channel::update(void){
 	       (beatsDone[i][j][0] == divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH) || 
 	        beatsDone[i][j][1] == divide_params(COMMAND_LENGTH,CHANNEL_WIDTH)))
 	        {
-	           cout << "current clock cycle is " << dies[0]->currentClockCycle << "\n";
-		   cout << "beatsDone is " << beatsDone[i][j][packetType[i][j]] << "it should be " << divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH) << "\n";
-		   cout << "beatsLeft is " << beatsLeft[i][j][packetType[i][j]] << "\n";
-		   cout << "busy is " << busy << "\n";
 		   writePending[i][j] = 1;
 		   busy = 0;
 	        }
 		    
 	    if(beatsLeft[i][j][packetType[i][j]] <= 0 && writePending[i][j] == 1){
-	       //cout << "shouldn't see this more than a few times \n";
-	       //cout << "beatsDone is " << beatsDone[i][j][packetType[i][j]] << "\n";
-	       //cout << "channel done for packet of type " << packetType[i][j] << "\n";
 	       controller->channelDone(i,j);
 	    }	    
 
 	    if(cyclesLeft[i][j][3] > 0){
-	        //cout << "Die has " << cyclesLeft[i][j] << " cycles left in update \n";
-	        //cout << "Die has " << beatsLeft[i][j][0] << " beats left\n";
 	        cyclesLeft[i][j][3]--;
 	    }
 	    if(cyclesLeft[i][j][3] <= 0 && beatsLeft[i][j][3] > 0){
-	        //cout << "Die has " << beatsLeft[i][j][0] << " beats left\n";
 	        beatsLeft[i][j][3]--;
 	        cyclesLeft[i][j][3] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
 	    }
@@ -192,7 +179,6 @@ void Channel::update(void){
 		dies[i]->channelDone();
 		beatsDone[i][j][3] = 0;
 	        busy = 0;
-	       //controller->channelDone(i,j);
 	    }
 	}
     }
