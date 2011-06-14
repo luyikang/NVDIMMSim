@@ -25,6 +25,9 @@ Logger::Logger()
 	ftl_queue_length = 0;
 	ctrl_queue_length = vector<uint64_t>(NUM_PACKAGES, 0);
 
+	max_ftl_queue_length = 0;
+	max_ctrl_queue_length = vector<uint64_t>(NUM_PACKAGES, 0);
+
 	idle_energy = vector<double>(NUM_PACKAGES, 0.0); 
 	access_energy = vector<double>(NUM_PACKAGES, 0.0); 
 }
@@ -237,6 +240,9 @@ void Logger::ftlQueueLength(uint64_t length)
     if(length > ftl_queue_length){
 	ftl_queue_length = length;
     }
+    if(length > max_ftl_queue_length){
+	max_ftl_queue_length = length;
+    }
 }
 
 void Logger::ctrlQueueLength(vector<uint64_t> length)
@@ -246,6 +252,10 @@ void Logger::ctrlQueueLength(vector<uint64_t> length)
 	if(length[i] > ctrl_queue_length[i])
 	{
 	    ctrl_queue_length[i] = length[i];
+	}
+	if(length[i] > max_ctrl_queue_length[i])
+	{
+	    max_ctrl_queue_length[i] = length[i];
 	}
     }
 }
@@ -340,10 +350,10 @@ void Logger::save(uint64_t cycle, uint epoch)
 
 	savefile<<"\nQueue Length Data: \n";
 	savefile<<"========================\n";
-	savefile<<"Length of Ftl Queue: " <<ftl_queue_length<<"\n";
-	for(uint i = 0; i < ctrl_queue_length.size(); i++)
+	savefile<<"Maximum Length of Ftl Queue: " <<max_ftl_queue_length<<"\n";
+	for(uint i = 0; i < max_ctrl_queue_length.size(); i++)
 	{
-	    savefile<<"Length of Controller Queue for Package " << i << ": "<<ctrl_queue_length[i]<<"\n";
+	    savefile<<"Maximum Length of Controller Queue for Package " << i << ": "<<max_ctrl_queue_length[i]<<"\n";
 	}
 
 	if(WEAR_LEVEL_LOG)

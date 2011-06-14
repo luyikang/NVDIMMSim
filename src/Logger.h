@@ -85,6 +85,9 @@ namespace NVDSim
 	uint64_t ftl_queue_length;
 	std::vector<uint64_t> ctrl_queue_length;
 
+	uint64_t max_ftl_queue_length;
+	std::vector<uint64_t> max_ctrl_queue_length;
+
 	std::unordered_map<uint64_t, uint64_t> writes_per_address;
 
 	// Power Stuff

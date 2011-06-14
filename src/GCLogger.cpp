@@ -268,10 +268,10 @@ void GCLogger::save(uint64_t cycle, uint epoch)
 
 	savefile<<"\nQueue Length Data: \n";
 	savefile<<"========================\n";
-	savefile<<"Length of Ftl Queue: " <<ftl_queue_length<<"\n";
+	savefile<<"Maximum Length of Ftl Queue: " <<max_ftl_queue_length<<"\n";
 	for(uint i = 0; i < ctrl_queue_length.size(); i++)
 	{
-	    savefile<<"Length of Controller Queue for Package " << i << ": "<<ctrl_queue_length[i]<<"\n";
+	    savefile<<"Maximum Length of Controller Queue for Package " << i << ": "<<max_ctrl_queue_length[i]<<"\n";
 	}
 
 	if(WEAR_LEVEL_LOG)
