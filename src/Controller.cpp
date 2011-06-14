@@ -128,15 +128,10 @@ void Controller::update(void){
 	for (i = 0; i < channelQueues.size(); i++){
 		if (!channelQueues[i].empty() && outgoingPackets[i]==NULL){
 		    // don't send to busy planes
-		    //cout << "we have stuff to send \n";
-		    
-		    //cout << "the busyPlane entry for that is " << busyPlanes[channelQueues[i].front()->package][channelQueues[i].front()->die][channelQueues[i].front()->plane] << "\n";
 		    if(busyPlanes[channelQueues[i].front()->package][channelQueues[i].front()->die][channelQueues[i].front()->plane] != 1){
-			//cout << "and we should be sending it \n";
 		        //if we can get the channel
 			if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
 				outgoingPackets[i]= channelQueues[i].front();
-			        cout << "next packet is for " << channelQueues[i].front()->package << channelQueues[i].front()->die << channelQueues[i].front()->plane << "\n";
 				channelQueues[i].pop();				
 				switch (outgoingPackets[i]->busPacketType){
 					case DATA:
@@ -158,19 +153,11 @@ void Controller::update(void){
 		if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
 		        if (channelBeatsLeft[i] == 0 && (*packages)[outgoingPackets[i]->package].channel->notBusy()){
 				(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
-				//cout << "the setting outgoing die is " << outgoingPackets[i]->die << " the setting outgoing plane is " << outgoingPackets[i]->plane << "\n";
-				//cout << "outgoing packet type is " << outgoingPackets[i]->busPacketType << "\n";
 				pendingPackets[i].push_back(outgoingPackets[i]);
 				busyPlanes[outgoingPackets[i]->package][outgoingPackets[i]->die][outgoingPackets[i]->plane] = 1;
-				//cout << "the set pending die is " << pendingPackets[i].back()->die << " the set pending plane is " << pendingPackets[i].back()->plane << "\n";
 				outgoingPackets[i] = NULL;
-				//cout << "the post pending die is " << pendingPackets[i].back()->die << " the post pending plane is " << pendingPackets[i].back()->plane << "\n";
 			}
 			if (channelXferCyclesLeft[i] <= 0 && channelBeatsLeft[i] > 0){
-			    //cout << "sending the command \n";
-			    if(outgoingPackets[i]->busPacketType != 5){
-				cout << "the packet type was " << outgoingPackets[i]->busPacketType << "\n";
-			    }
 			    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, outgoingPackets[i]->busPacketType, 
 											    outgoingPackets[i]->die, outgoingPackets[i]->plane);
 			    channelBeatsLeft[i]--;
@@ -206,8 +193,6 @@ void Controller::writeToPackage(ChannelPacket *packet)
 
 void Controller::channelDone(uint die, uint plane)
 {
-    //cout << "got to the controller's channel done \n";
-    //cout << "the sent die is " << die << " the sent plane is " << plane << "\n";
     for(uint i = 0; i < NUM_PACKAGES; i++){
 	for(uint j = 0; j < DIES_PER_PACKAGE; j++){
 	    for(uint k = 0; k < PLANES_PER_DIE; k++){

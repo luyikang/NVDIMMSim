@@ -7,30 +7,16 @@ using namespace std;
 using namespace NVDSim;
 
 Buffer::Buffer(void){
-    cyclesLeft = new uint **[DIES_PER_PACKAGE];
-    beatsLeft = new uint **[DIES_PER_PACKAGE];
 
+    outPackets = vector<vector<queue <BufferPacket *> > >(DIES_PER_PACKAGE, vector<queue <BufferPacket *> >(PLANES_PER_DIE, queue<BufferPacket *>()));
+    inPackets = vector<vector<queue <BufferPacket *> > >(DIES_PER_PACKAGE, vector<queue <BufferPacket *> >(PLANES_PER_DIE, queue<BufferPacket *>()));
+
+    cyclesLeft = new uint *[DIES_PER_PACKAGE];
     deviceWriting = new uint *[DIES_PER_PACKAGE];
-    writePending = new uint *[DIES_PER_PACKAGE];
-    packetType = new uint *[DIES_PER_PACKAGE];
 
     for(uint i = 0; i < DIES_PER_PACKAGE; i++){
-	cyclesLeft[i] = new uint *[PLANES_PER_DIE];
-	beatsLeft[i] = new uint *[PLANES_PER_DIE];
+	cyclesLeft[i] = new uint [PLANES_PER_DIE];
 	deviceWriting[i] = new uint[PLANES_PER_DIE];
-	writePending[i] = new uint[PLANES_PER_DIE];
-	packetType[i] = new uint[PLANES_PER_DIE];
-
-        for(uint j = 0; j < PLANES_PER_DIE; j++){
-	    cyclesLeft[i][j] = new uint[2];
-	    beatsLeft[i][j] = new uint[2];
-	    packetType[i][j] = 0;
-
-	    for(uint k = 0; k < 2; k++){
-		cyclesLeft[i][j][k] = 0;
-		beatsLeft[i][j][k] = 0;
-	    }
-	}
    }
 }
 
@@ -43,12 +29,22 @@ Buffer::channelDone(uint Plane){
 }
 
 Buffer::sendPiece(SenderType t, uint type, uint die, uint plane){
-    if(beatsLeft[i][j][type] > 0){
-	beatsLeft[i][j][type]++;
-    }else{
-	beatsLeft[i][j][type] = 1;
+    if(t == CONTROLLER){
+	if(!inPackets.empty()){
+	    if(inPackets.back()->type == type){
+	    }else if(inPackets.back()->number == divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) ||
+		     inPackets.back()->number == divide_params(COMMAND_LENGTH,DEVICE_WIDTH)){
+		
+	    }else{
+		
+	    }
+	}else{
+	    BufferPacket* myPacket = new BufferPacket();
+	    myPacket->type = type;
+	    inPackets.push(myPacket);
+	}
+    }else if(t == DIE){
     }
-    packetType[i][j] = type;
 }
 	    
 Buffer::void update(void){

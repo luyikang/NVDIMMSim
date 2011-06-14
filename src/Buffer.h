@@ -24,12 +24,23 @@ namespace NVDSim{
         private:
 	    std::vector<Die *> dies;
 	    
-	    uint** cyclesLeft;
-	    uint** beatsLeft;
-	    
+	    uint** cyclesLeft;	    
 	    uint** deviceWriting;
-	    uint** writePending;
-	    uint** packetType;
+
+	    std::vector<std::vector<std::queue<BufferPacket *> > > outPackets;
+	    std::vector<std::vector<std::queue<BufferPacket *> > > inPackets;
+
+	    class BufferPacket{
+		// type of packet that this is part of
+		uint type;
+		// what part of the packet this is
+		uint number;
+		
+		BufferPacket(){
+		    type = 0;
+		    number = 0;
+		}
+	    };
     };
 } 
 
