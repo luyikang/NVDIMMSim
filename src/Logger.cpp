@@ -234,12 +234,33 @@ double Logger::divide(double num, double denom)
 
 void Logger::ftlQueueLength(uint64_t length)
 {
-    ftl_queue_length = length;
+    if(length > ftl_queue_length){
+	ftl_queue_length = length;
+    }
 }
 
 void Logger::ctrlQueueLength(vector<uint64_t> length)
 {
-    ctrl_queue_length = length;
+    for(int i = 0; i < length.size(); i++)
+    {
+	if(length[i] > ctrl_queue_length[i])
+	{
+	    ctrl_queue_length[i] = length[i];
+	}
+    }
+}
+
+void Logger::ftlQueueReset()
+{
+    ftl_queue_length = 0;
+}
+
+void Logger::ctrlQueueReset()
+{
+    for(int i = 0; i < ctrl_queue_length.size(); i++)
+    {
+	ctrl_queue_length[i] = 0;
+    }
 }
 
 void Logger::save(uint64_t cycle, uint epoch) 

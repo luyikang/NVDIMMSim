@@ -222,11 +222,13 @@ void NVDIMM::update(void){
 	//saving stats at the end of each epoch
 	if(USE_EPOCHS)
 	{
+	    ftl->sendQueueLength();
+	    controller->sendQueueLength();
 	    if(epoch_cycles >= EPOCH_TIME)
 	    {
-		ftl->sendQueueLength();
-		controller->sendQueueLength();
 		log->save_epoch(currentClockCycle, epoch_count);
+		log->ftlQueueReset();
+		log->ctrlQueueReset();
 		epoch_count++;
 		epoch_cycles = 0;		
 	    }

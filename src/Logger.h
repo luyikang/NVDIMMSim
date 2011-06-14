@@ -44,6 +44,9 @@ namespace NVDSim
 	void ftlQueueLength(uint64_t length);
 	void ctrlQueueLength(std::vector<uint64_t> length);
 
+	void ftlQueueReset();
+	void ctrlQueueReset();
+
 	//Accessor for power data
 	//Writing correct object oriented code up in this piece, what now?
 	virtual std::vector<std::vector<double>> getEnergyData(void);
