@@ -6,31 +6,28 @@
 #include "SimObj.h"
 #include "FlashConfiguration.h"
 #include "ChannelPacket.h"
-#include "Channel.h"
 #include "Die.h"
+#include "Channel.h"
 
 namespace NVDSim{
     class Buffer : public SimObj{
         public:
-	    Buffer(void);
-	    attachDie(Die *d);
-	    channelDone(uint Plane);
+	    Buffer(uint id);
+	    void attachDie(Die *d);
+	    void attachChannel(Channel *c);
+	    void sendToDie(ChannelPacket *busPacket);
+	    void sendToController(ChannelPacket *busPacket);
 
-	    bool notBusy(void);
+	    void sendPiece(SenderType t, uint type, uint die, uint plane);
 	    
 	    void update(void);
 
-	    void acknowledge(uint die, uint plane);
-        private:
+	    Channel *channel;
 	    std::vector<Die *> dies;
-	    
-	    uint** cyclesLeft;	    
-	    uint** deviceWriting;
 
-	    std::vector<std::vector<std::queue<BufferPacket *> > > outPackets;
-	    std::vector<std::vector<std::queue<BufferPacket *> > > inPackets;
-
+        private:
 	    class BufferPacket{
+	        public:
 		// type of packet that this is part of
 		uint type;
 		// what part of the packet this is
@@ -41,6 +38,20 @@ namespace NVDSim{
 		    number = 0;
 		}
 	    };
+	    uint id;
+	    
+	    std::list<BufferPacket *>::iterator it3;
+	    int** reading_busy;
+	    int** writing_busy;
+	    
+	    uint** cyclesLeft;	    
+	    uint** deviceWriting;
+	    uint** beatsLeft;
+
+	    std::vector<std::vector<std::list<BufferPacket *> > > outPackets;
+	    std::vector<std::vector<std::list<BufferPacket *> > > inPackets;
+
+	   
     };
 } 
 

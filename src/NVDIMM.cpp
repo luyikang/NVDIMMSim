@@ -141,13 +141,15 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	
 
 	for (i= 0; i < NUM_PACKAGES; i++){
-		Package pack = {new Channel(), vector<Die *>()};
+	    Package pack = {new Channel(), new Buffer(i), vector<Die *>()};
 		//pack.channel= new Channel();
 		pack.channel->attachController(controller);
+		pack.channel->attachBuffer(pack.buffer);
+		pack.buffer->attachChannel(pack.channel);
 		for (j= 0; j < DIES_PER_PACKAGE; j++){
 		        Die *die= new Die(this, log, j);
-			die->attachToChannel(pack.channel);
-			pack.channel->attachDie(die);
+			die->attachToBuffer(pack.buffer);
+			pack.buffer->attachDie(die);
 			pack.dies.push_back(die);
 		}
 		packages->push_back(pack);
@@ -205,6 +207,7 @@ void NVDIMM::update(void){
 	for (i= 0; i < packages->size(); i++){
 		package= (*packages)[i];
 		package.channel->update();
+		package.buffer->update();
 		for (j= 0; j < package.dies.size() ; j++){
 			package.dies[j]->update();
 			package.dies[j]->step();

@@ -6,6 +6,7 @@
 #include "SimObj.h"
 #include "FlashConfiguration.h"
 #include "Die.h"
+#include "Buffer.h"
 #include "Ftl.h"
 #include "Channel.h"
 #include "FlashTransaction.h"
@@ -15,6 +16,7 @@
 namespace NVDSim{
 	typedef struct {
 		Channel *channel;
+	        Buffer *buffer;
 		std::vector<Die *> dies;
 	} Package;
 
@@ -47,7 +49,7 @@ namespace NVDSim{
 
 			void sendQueueLength(void);
 
-			void channelDone(uint die, uint plane);
+			void bufferDone(uint die, uint plane);
 
 			// for fast forwarding
 			void writeToPackage(ChannelPacket *packet);
