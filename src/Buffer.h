@@ -39,8 +39,7 @@ namespace NVDSim{
 		}
 	    };
 	    uint id;
-	    
-	    std::list<BufferPacket *>::iterator it3;
+
 	    int** reading_busy;
 	    int** writing_busy;
 	    

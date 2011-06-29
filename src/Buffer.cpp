@@ -54,35 +54,34 @@ void Buffer::sendToController(ChannelPacket *busPacket){
 
 void Buffer::sendPiece(SenderType t, uint type, uint die, uint plane){
     if(t == CONTROLLER){
-	if(!inPackets[die][plane].empty() && inPackets[die][plane].back()->type == type){
-	    BufferPacket* myPacket = new BufferPacket();
-	    myPacket->type = type;
-	    myPacket->number = inPackets[die][plane].back()->number + 1;
-	    inPackets[die][plane].push_back(myPacket);
-	    cout << "got an in packet \n";
-	    cout << "we now have " << inPackets[die][plane].size() << " packets \n";
+	if(!inPackets[die][plane].empty() && inPackets[die][plane].back()->type == type && 
+	   inPackets[die][plane].back()->number < divide_params(DEVICE_WIDTH,CHANNEL_WIDTH)){
+	    inPackets[die][plane].back()->number = inPackets[die][plane].back()->number + 1;
+	    //cout << "got an in packet \n";
+	    //cout << "got a first in packet for die " << die << " and plane " << plane << " \n";
+	    //cout << "this packet now has a count of " << inPackets[die][plane].back()->number << "\n";
+	    //cout << "we now have " << inPackets[die][plane].size() << " packets \n";
 	}else{
 	    BufferPacket* myPacket = new BufferPacket();
 	    myPacket->type = type;
+	    myPacket->number = 1;
 	    inPackets[die][plane].push_back(myPacket);
-	    cout << "got a first in packet \n";
-	    cout << "we now have " << inPackets[die][plane].size() << " packets \n";
-	    cout << "and the number of our new packet is " << inPackets[die][plane].back()->number << "\n";
+	    //cout << "got a first in packet for die" << die << " and plane " << plane << " \n";
+	    //cout << "we now have " << inPackets[die][plane].size() << " packets \n";
 	}
     }else if(t == BUFFER){
-	if(!outPackets[die][plane].empty() && outPackets[die][plane].back()->type == type){
-	    BufferPacket* myPacket = new BufferPacket();
-	    myPacket->type = type;
-	    myPacket->number = outPackets[die][plane].back()->number + 1;
-	    outPackets[die][plane].push_back(myPacket);
-	    cout << "got an out packet \n";
-	    cout << "we now have " << inPackets[die][plane].size() << " packets \n";
+	if(!outPackets[die][plane].empty() && outPackets[die][plane].back()->type == type &&
+	   outPackets[die][plane].back()->number < divide_params(CHANNEL_WIDTH, DEVICE_WIDTH)){
+	    outPackets[die][plane].back()->number = outPackets[die][plane].back()->number + 1;
+	    //cout << "got an out packet \n";
+	    //cout << "we now have " << outPackets[die][plane].size() << " packets \n";
 	}else{
 	    BufferPacket* myPacket = new BufferPacket();
 	    myPacket->type = type;
+	    myPacket->number = 1;
 	    outPackets[die][plane].push_back(myPacket);
-	    cout << "got a first out packet \n";
-	    cout << "we now have " << inPackets[die][plane].size() << " packets \n";
+	    //cout << "got a first out packet \n";
+	    //cout << "we now have " << outPackets[die][plane].size() << " packets \n";
 	}
     }
 }
@@ -93,42 +92,29 @@ void Buffer::update(void){
 	    // moving data into a die
 	    //==================================================================================
 	    // if we're not already busy writing stuff
-	    std::list<BufferPacket *>::iterator it;
-	    if(deviceWriting[i][j] == 0)
+	    if(deviceWriting[i][j] == 0 && !inPackets[i][j].empty())
 	    {
-		// scaning through the incoming queue to see if we've got a whole packet
-		// starting with the oldest packets first		
-		for(it = inPackets[i][j].begin(); it != inPackets[i][j].end(); it++)
-		{
-		    if((*it)->number > 0 && (*it)->number%divide_params(DEVICE_WIDTH,CHANNEL_WIDTH) == 0)
-		    {
+	        if(inPackets[i][j].front()->number == divide_params(DEVICE_WIDTH,CHANNEL_WIDTH))
+	        {
 			writing_busy[i][j] = 1;
-			break;
-		    }
-		}
 
-		// clear out those packets from the incoming queue
-		// and beging the process of writing them into the device
-		if(writing_busy[i][j] == 1)
-		{
-		    // create a second iterator to mark the beginning of the erase range
-		    std::list<BufferPacket *>::iterator it2;
-		    it2 = it;
-		    advance(it2, -divide_params(DEVICE_WIDTH,CHANNEL_WIDTH)+1);
+			// clear out those packets from the incoming queue
+			// and beging the process of writing them into the device
 
-		    // if it is a command, set the number of beats if we've not set them yet
-		    if((*it)->type != 5 && beatsLeft[i][j] == 0)
-		    {
-			beatsLeft[i][j] = divide_params(COMMAND_LENGTH,DEVICE_WIDTH);
-		    }
-		    else if(beatsLeft[i][j] == 0)
-		    {
-			beatsLeft[i][j] = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
-		    }
-		
-		    inPackets[i][j].erase(it2, it);
-		    deviceWriting[i][j] = 1;
-		    cyclesLeft[i][j] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+			// if it is a command, set the number of beats if we've not set them yet
+			if(inPackets[i][j].front()->type != 5 && beatsLeft[i][j] == 0)
+			{
+			    beatsLeft[i][j] = divide_params(COMMAND_LENGTH,DEVICE_WIDTH);
+			}
+			else if(beatsLeft[i][j] == 0)
+			{
+			    beatsLeft[i][j] = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
+			}
+			
+			inPackets[i][j].pop_front();
+			//cout << "popped a packet \n";
+			deviceWriting[i][j] = 1;
+			cyclesLeft[i][j] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 		}
 	    }
 	    
@@ -158,16 +144,12 @@ void Buffer::update(void){
 	    // moving data away from die
 	    //====================================================================================
 	    // first scan through to see if we have stuff to send if we're not busy
-	    if(reading_busy[i][j] == 0)
+	    if(reading_busy[i][j] == 0 && !outPackets[i][j].empty())
 	    {
-		// right now I'm going to wait until we have a full read complete to send the data		
-		for(it3 = outPackets[i][j].begin(); it3 != outPackets[i][j].end(); it3++)
+	        if(outPackets[i][j].front()->number == divide_params(CHANNEL_WIDTH, DEVICE_WIDTH))
 		{
-		    if((*it3)->number%divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH) == 0)
-		    {
 			reading_busy[i][j] = 1;
-			break;
-		    }
+			outPackets[i][j].pop_front();
 		}
 	    }
 
@@ -178,24 +160,19 @@ void Buffer::update(void){
 		// then see if we have control of the channel
 		if (channel->hasChannel(BUFFER, id)){
 		    if(beatsLeft[i][j] > 0 && channel->notBusy()){
-			channel->sendPiece(BUFFER,(*it3)->type,i,j);
+			channel->sendPiece(BUFFER,outPackets[i][j].front()->type,i,j);
 			beatsLeft[i][j]--;
 		    }
 		}
 		else if (channel->obtainChannel(id, BUFFER, NULL)){
-		    beatsLeft[i][j] = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
+		    beatsLeft[i][j] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH);
 		}
 
 		if(beatsLeft[i][j] == 0)
 		{
 		    reading_busy[i][j] = 0;
-		    dies[i][j].bufferDone();
+		    dies[i]->bufferDone();
 		    channel->releaseChannel(BUFFER,id);
-		    // create a second iterator to mark the beginning of the erase range
-		    std::list<BufferPacket *>::iterator it2;
-		    it2 = it3;
-		    advance(it2, -divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH));		    
-		    outPackets[i][j].erase(it2, it3);
 		}
 	    }
 	}
