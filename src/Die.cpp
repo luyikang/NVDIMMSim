@@ -14,6 +14,8 @@ Die::Die(NVDIMM *parent, Logger *l, uint idNum){
 	parentNVDIMM = parent;
 	log = l;
 
+	sending = false;
+
 	planes= vector<Plane>(PLANES_PER_DIE, Plane());
 
 	currentCommands= vector<ChannelPacket *>(PLANES_PER_DIE, NULL);
@@ -25,11 +27,11 @@ Die::Die(NVDIMM *parent, Logger *l, uint idNum){
 	currentClockCycle= 0;
 }
 
-void Die::attachToChannel(Channel *chan){
-	channel= chan;
+void Die::attachToBuffer(Buffer *buff){
+	buffer = buff;
 }
 
-void Die::receiveFromChannel(ChannelPacket *busPacket){
+void Die::receiveFromBuffer(ChannelPacket *busPacket){
 	 if (busPacket->busPacketType == DATA){
 		 planes[busPacket->plane].storeInData(busPacket);
 	 } else if (currentCommands[busPacket->plane] == NULL) {
@@ -121,7 +123,7 @@ void Die::update(void){
 		 if (controlCyclesLeft[i] == 0){
 			 switch (currentCommand->busPacketType){
 			         case GC_READ:
-				     log->access_stop(currentCommand->physicalAddress);
+				         log->access_stop(currentCommand->physicalAddress);
 				 case READ:	
 					 planes[currentCommand->plane].read(currentCommand);
 					 returnDataPackets.push(planes[currentCommand->plane].readFromData());
@@ -149,7 +151,6 @@ void Die::update(void){
 					 break;
 			 }
 			 //sim output
-			 //currentCommand->print(currentClockCycle);
 			 currentCommands[i]= NULL;
 		 }
 		 controlCyclesLeft[i]--;
@@ -157,28 +158,29 @@ void Die::update(void){
 	}
 
 	if (!returnDataPackets.empty()){
-		if (channel->hasChannel(DIE, id)){
-			if (dataCyclesLeft <= 0 && deviceBeatsLeft > 0){
-			        deviceBeatsLeft--;
-				channel->sendPiece(DIE, 0, id, returnDataPackets.front()->plane);
-				dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
-			}
-			if(dataCyclesLeft > 0){
-			    dataCyclesLeft--;
-			}
-		} else
-		        if (channel->obtainChannel(id, DIE, NULL)){
-			    dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
-			    deviceBeatsLeft = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
-			}
+	        if(dataCyclesLeft == 0 && deviceBeatsLeft > 0){
+		    deviceBeatsLeft--;
+		    buffer->sendPiece(BUFFER, 0, id, returnDataPackets.front()->plane);
+		    dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+	        }
+
+		if(dataCyclesLeft > 0){
+		    dataCyclesLeft--;
+		}
+		
+		if(deviceBeatsLeft == 0 && sending == false){
+		    dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+		    deviceBeatsLeft = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
+		    sending = true;
+		}
 	}
 }
 
-void Die::channelDone()
+void Die::bufferDone()
 {
-    channel->sendToController(returnDataPackets.front());
-    channel->releaseChannel(DIE, id);
-    returnDataPackets.pop();
+    buffer->sendToController(returnDataPackets.front());
+    returnDataPackets.pop();			
+    sending = false;
 }
 
 void Die::writeToPlane(ChannelPacket *packet)

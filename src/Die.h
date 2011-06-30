@@ -12,19 +12,20 @@
 
 namespace NVDSim{
 
-	class Channel;
+	class Buffer;
 	class Controller;
 	class NVDIMM;
 	class Ftl;
 	class Die : public SimObj{
 		public:
 	                Die(NVDIMM *parent, Logger *l, uint id);
-			void attachToChannel(Channel *chan);
-			void receiveFromChannel(ChannelPacket *busPacket);
+			void attachToBuffer(Buffer *buff);
+			void receiveFromBuffer(ChannelPacket *busPacket);
 			int isDieBusy(uint plane);
 			void update(void);
 
 			void channelDone(void);
+			void bufferDone(void);
 
 			// for fast forwarding
 			void writeToPlane(ChannelPacket *packet);
@@ -32,8 +33,9 @@ namespace NVDSim{
 		private:
 			uint id;
 			NVDIMM *parentNVDIMM;
-			Channel *channel;
+			Buffer *buffer;
 			Logger *log;
+			bool sending;
 			uint dataCyclesLeft; //cycles per device beat
 			uint deviceBeatsLeft; //device beats per page			
 			std::queue<ChannelPacket *> returnDataPackets;

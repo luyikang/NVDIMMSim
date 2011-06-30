@@ -4,48 +4,46 @@
 //header file for the Package class
 
 #include "FlashConfiguration.h"
-#include "Die.h"
 #include "ChannelPacket.h"
 #include "Util.h"
 
 namespace NVDSim{
 	enum SenderType{
 		CONTROLLER,
-		DIE
+		BUFFER
 	};
 
 	class Controller;
+	class Buffer;
 	class Channel{
 		public:
 			Channel(void);
-			void attachDie(Die *d);
+			void attachBuffer(Buffer *b);
 			void attachController(Controller *c);
 			int obtainChannel(uint s, SenderType t, ChannelPacket *p);
 			int releaseChannel(SenderType t, uint s);
-			int hasChannel(SenderType t, uint s);
-			void sendToDie(ChannelPacket *busPacket);
+			int hasChannel(SenderType t, uint s);		
+			void sendToBuffer(ChannelPacket *busPacket);
 			void sendToController(ChannelPacket *busPacket);
 			void sendPiece(SenderType t, uint type, uint die, uint plane);
 			int notBusy(void);
 
-			void acknowledge(uint die, uint plane);
-
 			void update(void);
+
+			void bufferDone(uint die, uint plane);
 			
 			Controller *controller;
 		private:
-			SenderType type;
+			SenderType sType;
+			uint packetType;
 			int sender;
 			int busy;
 			int firstCheck;
-			std::vector<Die *> dies;
+			Buffer *buffer;
 
-			uint*** cyclesLeft; //cycles per device or channel beat
-			uint*** beatsLeft; //beats per page
-			uint*** beatsDone; //beats processed
-			uint** deviceWriting;
-			uint** writePending;
-			uint** packetType;
+			uint cyclesLeft; //cycles per device or channel beat
+			uint currentDie;
+			uint currentPlane;
 	};
 }
 #endif

@@ -10,7 +10,6 @@ Controller::Controller(NVDIMM* parent, Logger* l){
 	parentNVDIMM = parent;
 	log = l;
 
-	channelXferCyclesLeft = vector<uint>(NUM_PACKAGES, 0);
 	channelBeatsLeft = vector<uint>(NUM_PACKAGES, 0);
 
 	channelQueues = vector<queue <ChannelPacket *> >(NUM_PACKAGES, queue<ChannelPacket *>());
@@ -135,11 +134,9 @@ void Controller::update(void){
 				channelQueues[i].pop();				
 				switch (outgoingPackets[i]->busPacketType){
 					case DATA:
-					        channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME); //system cycles per channel beat
 					        channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); //channel pieces per page
 						break;
 					default:
-					        channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
 					        channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
 						break;
 				}
@@ -151,19 +148,16 @@ void Controller::update(void){
 	//Check for commands/data on a channel. If there is, see if it is done on channel
 	for (i= 0; i < outgoingPackets.size(); i++){
 		if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
-		        if (channelBeatsLeft[i] == 0 && (*packages)[outgoingPackets[i]->package].channel->notBusy()){
+		        if (channelBeatsLeft[i] == 0){
 				(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
 				pendingPackets[i].push_back(outgoingPackets[i]);
 				busyPlanes[outgoingPackets[i]->package][outgoingPackets[i]->die][outgoingPackets[i]->plane] = 1;
 				outgoingPackets[i] = NULL;
-			}
-			if (channelXferCyclesLeft[i] <= 0 && channelBeatsLeft[i] > 0){
+			}else if ((*packages)[outgoingPackets[i]->package].channel->notBusy()){
 			    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, outgoingPackets[i]->busPacketType, 
 											    outgoingPackets[i]->die, outgoingPackets[i]->plane);
 			    channelBeatsLeft[i]--;
-			    channelXferCyclesLeft[i] = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
 			}
-			channelXferCyclesLeft[i]--;
 		}
 	}
 	
@@ -191,14 +185,13 @@ void Controller::writeToPackage(ChannelPacket *packet)
     (*packages)[packet->package].dies[packet->die]->writeToPlane(packet);
 }
 
-void Controller::channelDone(uint die, uint plane)
+void Controller::bufferDone(uint die, uint plane)
 {
     for (uint i = 0; i < pendingPackets.size(); i++){
 	std::list<ChannelPacket *>::iterator it;
 	for(it = pendingPackets[i].begin(); it != pendingPackets[i].end(); it++){
 	    if ((*it) != NULL && (*it)->die == die && (*it)->plane == plane){
-		(*packages)[(*it)->package].channel->sendToDie((*it));
-		(*packages)[(*it)->package].channel->acknowledge(die, plane);
+		(*packages)[(*it)->package].channel->sendToBuffer((*it));
 		busyPlanes[(*it)->package][(*it)->die][(*it)->plane] = 0;
 		pendingPackets[i].erase(it);
 		break;
