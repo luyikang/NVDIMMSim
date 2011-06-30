@@ -57,31 +57,21 @@ void Buffer::sendPiece(SenderType t, uint type, uint die, uint plane){
 	if(!inPackets[die][plane].empty() && inPackets[die][plane].back()->type == type && 
 	   inPackets[die][plane].back()->number < divide_params(DEVICE_WIDTH,CHANNEL_WIDTH)){
 	    inPackets[die][plane].back()->number = inPackets[die][plane].back()->number + 1;
-	    //cout << "got an in packet \n";
-	    //cout << "got a first in packet for die " << die << " and plane " << plane << " \n";
-	    //cout << "this packet now has a count of " << inPackets[die][plane].back()->number << "\n";
-	    //cout << "we now have " << inPackets[die][plane].size() << " packets \n";
 	}else{
 	    BufferPacket* myPacket = new BufferPacket();
 	    myPacket->type = type;
 	    myPacket->number = 1;
 	    inPackets[die][plane].push_back(myPacket);
-	    //cout << "got a first in packet for die" << die << " and plane " << plane << " \n";
-	    //cout << "we now have " << inPackets[die][plane].size() << " packets \n";
 	}
     }else if(t == BUFFER){
 	if(!outPackets[die][plane].empty() && outPackets[die][plane].back()->type == type &&
 	   outPackets[die][plane].back()->number < divide_params(CHANNEL_WIDTH, DEVICE_WIDTH)){
 	    outPackets[die][plane].back()->number = outPackets[die][plane].back()->number + 1;
-	    //cout << "got an out packet \n";
-	    //cout << "we now have " << outPackets[die][plane].size() << " packets \n";
 	}else{
 	    BufferPacket* myPacket = new BufferPacket();
 	    myPacket->type = type;
 	    myPacket->number = 1;
 	    outPackets[die][plane].push_back(myPacket);
-	    //cout << "got a first out packet \n";
-	    //cout << "we now have " << outPackets[die][plane].size() << " packets \n";
 	}
     }
 }
@@ -112,7 +102,6 @@ void Buffer::update(void){
 			}
 			
 			inPackets[i][j].pop_front();
-			//cout << "popped a packet \n";
 			deviceWriting[i][j] = 1;
 			cyclesLeft[i][j] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 		}

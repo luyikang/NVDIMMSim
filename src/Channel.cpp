@@ -30,7 +30,6 @@ int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
 	}
 	sType = t;
 	sender = (int) s;
-	//cout << "channel is held by " << t << "\n";
 	
 	return 1;
 }
