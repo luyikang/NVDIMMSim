@@ -40,17 +40,20 @@ namespace NVDSim{
 	    };
 	    uint id;
 
-	    int** reading_busy;
 	    int** writing_busy;
 	    
 	    uint** cyclesLeft;	    
 	    uint** deviceWriting;
-	    uint** beatsLeft;
+	    uint** outBeatsLeft;
+	    uint** inBeatsLeft;
+
+	    uint sendingDie;
+	    uint sendingPlane;
 
 	    std::vector<std::vector<std::list<BufferPacket *> > > outPackets;
 	    std::vector<std::vector<std::list<BufferPacket *> > > inPackets;
 
-	   
+	    int count;
     };
 } 
 

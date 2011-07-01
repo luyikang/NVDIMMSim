@@ -15,25 +15,30 @@ Buffer::Buffer(uint id){
 
     cyclesLeft = new uint *[DIES_PER_PACKAGE];
     deviceWriting = new uint *[DIES_PER_PACKAGE];
-    beatsLeft = new uint *[DIES_PER_PACKAGE];
-    reading_busy = new int *[DIES_PER_PACKAGE];
+    outBeatsLeft = new uint *[DIES_PER_PACKAGE];
+    inBeatsLeft = new uint *[DIES_PER_PACKAGE];
     writing_busy = new int *[DIES_PER_PACKAGE];
 
     for(uint i = 0; i < DIES_PER_PACKAGE; i++){
 	cyclesLeft[i] = new uint [PLANES_PER_DIE];
 	deviceWriting[i] = new uint[PLANES_PER_DIE];
-	beatsLeft[i] = new uint [PLANES_PER_DIE];
-	reading_busy[i] = new int [PLANES_PER_DIE];
+	outBeatsLeft[i] = new uint [PLANES_PER_DIE];
+	inBeatsLeft[i] = new uint [PLANES_PER_DIE];
 	writing_busy[i] = new int [PLANES_PER_DIE];
 	
 	for(uint j = 0; j < PLANES_PER_DIE; j++){
 	    cyclesLeft[i][j] = 0;
 	    deviceWriting[i][j] = 0;
-	    beatsLeft[i][j] = 0;
-	    reading_busy[i][j] = 0;
+	    outBeatsLeft[i][j] = 0;
+	    inBeatsLeft[i][j] = 0;
 	    writing_busy[i][j] = 0;
 	}
    }
+
+    count = 0;
+
+    sendingDie = 0;
+    sendingPlane = 0;
 }
 
 void Buffer::attachDie(Die *d){
@@ -64,14 +69,18 @@ void Buffer::sendPiece(SenderType t, uint type, uint die, uint plane){
 	    inPackets[die][plane].push_back(myPacket);
 	}
     }else if(t == BUFFER){
-	if(!outPackets[die][plane].empty() && outPackets[die][plane].back()->type == type &&
-	   outPackets[die][plane].back()->number < divide_params(CHANNEL_WIDTH, DEVICE_WIDTH)){
-	    outPackets[die][plane].back()->number = outPackets[die][plane].back()->number + 1;
-	}else{
-	    BufferPacket* myPacket = new BufferPacket();
-	    myPacket->type = type;
-	    myPacket->number = 1;
-	    outPackets[die][plane].push_back(myPacket);
+	for(uint i = 0; i < divide_params(DEVICE_WIDTH, CHANNEL_WIDTH); i++)
+	{
+	    if(!outPackets[die][plane].empty() && outPackets[die][plane].back()->type == type &&
+	        outPackets[die][plane].back()->number < divide_params(CHANNEL_WIDTH, DEVICE_WIDTH)){
+		outPackets[die][plane].back()->number = outPackets[die][plane].back()->number + 1;
+	    }else{
+		BufferPacket* myPacket = new BufferPacket();
+		myPacket->type = type;
+		myPacket->number = 1;
+		outPackets[die][plane].push_back(myPacket);
+		count++;
+	    }
 	}
     }
 }
@@ -82,86 +91,73 @@ void Buffer::update(void){
 	    // moving data into a die
 	    //==================================================================================
 	    // if we're not already busy writing stuff
-	    if(deviceWriting[i][j] == 0 && !inPackets[i][j].empty())
+	    if(!inPackets[i][j].empty())
 	    {
 	        if(inPackets[i][j].front()->number == divide_params(DEVICE_WIDTH,CHANNEL_WIDTH))
 	        {
-			writing_busy[i][j] = 1;
-
 			// clear out those packets from the incoming queue
 			// and beging the process of writing them into the device
 
 			// if it is a command, set the number of beats if we've not set them yet
-			if(inPackets[i][j].front()->type != 5 && beatsLeft[i][j] == 0)
+			if(inPackets[i][j].front()->type != 5 && inBeatsLeft[i][j] == 0)
 			{
-			    beatsLeft[i][j] = divide_params(COMMAND_LENGTH,DEVICE_WIDTH);
+			    inBeatsLeft[i][j] = divide_params(COMMAND_LENGTH,DEVICE_WIDTH);
+			    cyclesLeft[i][j] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 			}
-			else if(beatsLeft[i][j] == 0)
+			else if(inBeatsLeft[i][j] == 0)
 			{
-			    beatsLeft[i][j] = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
+			    inBeatsLeft[i][j] = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
+			    cyclesLeft[i][j] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+			}
+
+			if(cyclesLeft[i][j] > 0)
+			{
+			    cyclesLeft[i][j]--;
+			}
+			if(cyclesLeft[i][j] == 0)
+			{	    
+			    if(inBeatsLeft[i][j] > 0)
+			    {
+				cyclesLeft[i][j] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+				inBeatsLeft[i][j]--;
+				inPackets[i][j].pop_front();
+			    }
 			}
 			
-			inPackets[i][j].pop_front();
-			deviceWriting[i][j] = 1;
-			cyclesLeft[i][j] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+			if(inBeatsLeft[i][j] == 0)
+			{	    
+			    channel->bufferDone(i,j);
+			}
 		}
-	    }
+	    }	    
 	    
-	    // if we have a full device beat, write it into the device
-	    if(deviceWriting[i][j] == 1)
-	    {
-		if(cyclesLeft[i][j] > 0)
-		{
-		    cyclesLeft[i][j]--;
-		}
-		if(cyclesLeft[i][j] <= 0)
-		{
-		    if(beatsLeft[i][j] > 0)
-		    {
-			beatsLeft[i][j]--;
-			deviceWriting[i][j] = 0;
-		    }
-		}
-	    }
-	   
-	    if(beatsLeft[i][j] == 0 && writing_busy[i][j] == 1)
-	    {	    
-		    channel->bufferDone(i,j);
-		    writing_busy[i][j] = 0;
-	    }
 	    
 	    // moving data away from die
 	    //====================================================================================
 	    // first scan through to see if we have stuff to send if we're not busy
-	    if(reading_busy[i][j] == 0 && !outPackets[i][j].empty())
+	    if(!outPackets[i][j].empty())
 	    {
-	        if(outPackets[i][j].front()->number == divide_params(CHANNEL_WIDTH, DEVICE_WIDTH))
+		if(outPackets[i][j].front()->number == divide_params(CHANNEL_WIDTH, DEVICE_WIDTH))
 		{
-			reading_busy[i][j] = 1;
-			outPackets[i][j].pop_front();
-		}
-	    }
+		    // then see if we have control of the channel
+		    if (channel->hasChannel(BUFFER, id) && sendingDie == i && sendingPlane == j){
+			if(outBeatsLeft[i][j] > 0 && channel->notBusy()){
+			    channel->sendPiece(BUFFER,outPackets[i][j].front()->type,i,j);
+			    outPackets[i][j].pop_front();
+			    outBeatsLeft[i][j]--;
+			}
 
-	    // clear out those packets from the outcoming queue
-	    // and beging the process of sending them onto the channel
-	    if(reading_busy[i][j] == 1)
-	    {
-		// then see if we have control of the channel
-		if (channel->hasChannel(BUFFER, id)){
-		    if(beatsLeft[i][j] > 0 && channel->notBusy()){
-			channel->sendPiece(BUFFER,outPackets[i][j].front()->type,i,j);
-			beatsLeft[i][j]--;
+			if(outBeatsLeft[i][j] == 0)
+			{
+			    dies[i]->bufferDone();
+			    channel->releaseChannel(BUFFER,id);
+			}
+		    }		
+		    else if (channel->obtainChannel(id, BUFFER, NULL)){
+			outBeatsLeft[i][j] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH);
+			sendingDie = i;
+			sendingPlane = j;
 		    }
-		}
-		else if (channel->obtainChannel(id, BUFFER, NULL)){
-		    beatsLeft[i][j] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH);
-		}
-
-		if(beatsLeft[i][j] == 0)
-		{
-		    reading_busy[i][j] = 0;
-		    dies[i]->bufferDone();
-		    channel->releaseChannel(BUFFER,id);
 		}
 	    }
 	}

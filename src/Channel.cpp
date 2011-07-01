@@ -25,7 +25,7 @@ void Channel::attachController(Controller *c){
 }
 
 int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
-	if (sender != -1 || (t == CONTROLLER && buffer->dies[p->die]->isDieBusy(p->plane))){
+    if (sender != -1 || (t == CONTROLLER && buffer->dies[p->die]->isDieBusy(p->plane)) || busy == 1){
 		return 0;
 	}
 	sType = t;
