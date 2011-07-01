@@ -25,7 +25,7 @@ uint64_t convert_uint64_t(string value)
 //used to divide the ini parameters so that they don't result in a zero
 uint divide_params(uint num, uint denom)
 {
-    uint temp = (uint)((num / denom) + 0.99f);
+    uint temp = (uint)(((float)num / (float)denom) + 0.99f);
     if(temp <= 0)
     {
 	return 1;
