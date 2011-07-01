@@ -59,14 +59,17 @@ void Buffer::sendToController(ChannelPacket *busPacket){
 
 void Buffer::sendPiece(SenderType t, uint type, uint die, uint plane){
     if(t == CONTROLLER){
-	if(!inPackets[die][plane].empty() && inPackets[die][plane].back()->type == type && 
-	   inPackets[die][plane].back()->number < divide_params(DEVICE_WIDTH,CHANNEL_WIDTH)){
-	    inPackets[die][plane].back()->number = inPackets[die][plane].back()->number + 1;
-	}else{
-	    BufferPacket* myPacket = new BufferPacket();
-	    myPacket->type = type;
-	    myPacket->number = 1;
-	    inPackets[die][plane].push_back(myPacket);
+	for(uint i = 0; i < divide_params(CHANNEL_WIDTH, DEVICE_WIDTH); i++)
+	{
+	    if(!inPackets[die][plane].empty() && inPackets[die][plane].back()->type == type && 
+	        inPackets[die][plane].back()->number < divide_params(DEVICE_WIDTH,CHANNEL_WIDTH)){
+		inPackets[die][plane].back()->number = inPackets[die][plane].back()->number + 1;
+	    }else{
+		BufferPacket* myPacket = new BufferPacket();
+		myPacket->type = type;
+		myPacket->number = 1;
+		inPackets[die][plane].push_back(myPacket);
+	    }
 	}
     }else if(t == BUFFER){
 	for(uint i = 0; i < divide_params(DEVICE_WIDTH, CHANNEL_WIDTH); i++)
