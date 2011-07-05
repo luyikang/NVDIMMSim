@@ -10,27 +10,27 @@ Buffer::Buffer(uint id){
 
     id = id;
 
-    outPackets = vector<vector<list <BufferPacket *> > >(DIES_PER_PACKAGE, vector<list <BufferPacket *> >(PLANES_PER_DIE, list<BufferPacket *>()));
-    inPackets = vector<vector<list <BufferPacket *> > >(DIES_PER_PACKAGE, vector<list <BufferPacket *> >(PLANES_PER_DIE, list<BufferPacket *>()));
+    outData = vector<vector<list <BufferPacket *> > >(DIES_PER_PACKAGE, vector<list <BufferPacket *> >(PLANES_PER_DIE, list<BufferPacket *>()));
+    inData = vector<vector<list <BufferPacket *> > >(DIES_PER_PACKAGE, vector<list <BufferPacket *> >(PLANES_PER_DIE, list<BufferPacket *>()));
 
     cyclesLeft = new uint *[DIES_PER_PACKAGE];
     deviceWriting = new uint *[DIES_PER_PACKAGE];
-    outBeatsLeft = new uint *[DIES_PER_PACKAGE];
-    inBeatsLeft = new uint *[DIES_PER_PACKAGE];
+    outDataLeft = new uint *[DIES_PER_PACKAGE];
+    inDataLeft = new uint *[DIES_PER_PACKAGE];
     writing_busy = new int *[DIES_PER_PACKAGE];
 
     for(uint i = 0; i < DIES_PER_PACKAGE; i++){
 	cyclesLeft[i] = new uint [PLANES_PER_DIE];
 	deviceWriting[i] = new uint[PLANES_PER_DIE];
-	outBeatsLeft[i] = new uint [PLANES_PER_DIE];
-	inBeatsLeft[i] = new uint [PLANES_PER_DIE];
+	outDataLeft[i] = new uint [PLANES_PER_DIE];
+	inDataLeft[i] = new uint [PLANES_PER_DIE];
 	writing_busy[i] = new int [PLANES_PER_DIE];
 	
 	for(uint j = 0; j < PLANES_PER_DIE; j++){
 	    cyclesLeft[i][j] = 0;
 	    deviceWriting[i][j] = 0;
-	    outBeatsLeft[i][j] = 0;
-	    inBeatsLeft[i][j] = 0;
+	    outDataLeft[i][j] = 0;
+	    inDataLeft[i][j] = 0;
 	    writing_busy[i][j] = 0;
 	}
    }
@@ -59,30 +59,30 @@ void Buffer::sendToController(ChannelPacket *busPacket){
 
 void Buffer::sendPiece(SenderType t, uint type, uint die, uint plane){
     if(t == CONTROLLER){
-	if(!inPackets[die][plane].empty() && inPackets[die][plane].back()->type == type && type == 5 &&
-	   inPackets[die][plane].back()->number < (NV_PAGE_SIZE*8192)){
-	    inPackets[die][plane].back()->number = inPackets[die][plane].back()->number + CHANNEL_WIDTH;
+	if(!inData[die][plane].empty() && inData[die][plane].back()->type == type && type == 5 &&
+	   inData[die][plane].back()->number < (NV_PAGE_SIZE*8192)){
+	    inData[die][plane].back()->number = inData[die][plane].back()->number + CHANNEL_WIDTH;
 	    count++;
-	}else if(!inPackets[die][plane].empty() && inPackets[die][plane].back()->type == type && type != 5 &&
-	          inPackets[die][plane].back()->number < COMMAND_LENGTH){
-	    inPackets[die][plane].back()->number = inPackets[die][plane].back()->number + CHANNEL_WIDTH;
+	}else if(!inData[die][plane].empty() && inData[die][plane].back()->type == type && type != 5 &&
+	          inData[die][plane].back()->number < COMMAND_LENGTH){
+	    inData[die][plane].back()->number = inData[die][plane].back()->number + CHANNEL_WIDTH;
 	    count++;
 	}else{
 	    BufferPacket* myPacket = new BufferPacket();
 	    myPacket->type = type;
 	    myPacket->number = CHANNEL_WIDTH;
-	    inPackets[die][plane].push_back(myPacket);
+	    inData[die][plane].push_back(myPacket);
 	    count++;
 	}
     }else if(t == BUFFER){
-	if(!outPackets[die][plane].empty() && outPackets[die][plane].back()->type == type &&
-	   outPackets[die][plane].back()->number < (NV_PAGE_SIZE*8192)){
-	    outPackets[die][plane].back()->number = outPackets[die][plane].back()->number + DEVICE_WIDTH;
+	if(!outData[die][plane].empty() && outData[die][plane].back()->type == type &&
+	   outData[die][plane].back()->number < (NV_PAGE_SIZE*8192)){
+	    outData[die][plane].back()->number = outData[die][plane].back()->number + DEVICE_WIDTH;
 	}else{
 	    BufferPacket* myPacket = new BufferPacket();
 	    myPacket->type = type;
 	    myPacket->number = DEVICE_WIDTH;
-	    outPackets[die][plane].push_back(myPacket);
+	    outData[die][plane].push_back(myPacket);
 	   
 	}
     }
@@ -94,23 +94,23 @@ void Buffer::update(void){
 	    // moving data into a die
 	    //==================================================================================
 	    // if we're not already busy writing stuff
-	    if(!inPackets[i][j].empty())
+	    if(!inData[i][j].empty())
 	    {
-	        if(inPackets[i][j].front()->number >= DEVICE_WIDTH || 
-		   (inBeatsLeft[i][j] < DEVICE_WIDTH && inPackets[i][j].front()->number == inBeatsLeft[i][j]))
+	        if(inData[i][j].front()->number >= DEVICE_WIDTH || 
+		   (inDataLeft[i][j] < DEVICE_WIDTH && inData[i][j].front()->number == inDataLeft[i][j]))
 	        {
 			// clear out those packets from the incoming queue
 			// and beging the process of writing them into the device
 
 			// if it is a command, set the number of beats if we've not set them yet
-			if(inPackets[i][j].front()->type != 5 && inBeatsLeft[i][j] == 0)
+			if(inData[i][j].front()->type != 5 && inDataLeft[i][j] == 0)
 			{
-			    inBeatsLeft[i][j] = COMMAND_LENGTH;
+			    inDataLeft[i][j] = COMMAND_LENGTH;
 			    cyclesLeft[i][j] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 			}
-			else if(inBeatsLeft[i][j] == 0)
+			else if(inDataLeft[i][j] == 0)
 			{
-			    inBeatsLeft[i][j] = (NV_PAGE_SIZE*8192);
+			    inDataLeft[i][j] = (NV_PAGE_SIZE*8192);
 			    cyclesLeft[i][j] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 			}
 
@@ -120,25 +120,25 @@ void Buffer::update(void){
 			}
 			if(cyclesLeft[i][j] == 0)
 			{	    
-			    if(inBeatsLeft[i][j] > 0)
+			    if(inDataLeft[i][j] > 0)
 			    {
 				cyclesLeft[i][j] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
-				if(inBeatsLeft[i][j] >= DEVICE_WIDTH)
+				if(inDataLeft[i][j] >= DEVICE_WIDTH)
 				{
-				    inBeatsLeft[i][j] = inBeatsLeft[i][j] - DEVICE_WIDTH;
+				    inDataLeft[i][j] = inDataLeft[i][j] - DEVICE_WIDTH;
 				}
 				else
 				{
-				    inBeatsLeft[i][j] = 0;
+				    inDataLeft[i][j] = 0;
 				}
-				inPackets[i][j].front()->number = inPackets[i][j].front()->number - DEVICE_WIDTH;
+				inData[i][j].front()->number = inData[i][j].front()->number - DEVICE_WIDTH;
 			    }
 			}
 			
-			if(inBeatsLeft[i][j] == 0)
+			if(inDataLeft[i][j] == 0)
 			{	    
 			    channel->bufferDone(i,j);
-			    inPackets[i][j].pop_front();
+			    inData[i][j].pop_front();
 			}
 		}
 	    }	    
@@ -147,35 +147,35 @@ void Buffer::update(void){
 	    // moving data away from die
 	    //====================================================================================
 	    // first scan through to see if we have stuff to send if we're not busy
-	    if(!outPackets[i][j].empty())
+	    if(!outData[i][j].empty())
 	    {
-		if(outPackets[i][j].front()->number >= CHANNEL_WIDTH ||
-		    (outBeatsLeft[i][j] < CHANNEL_WIDTH && outPackets[i][j].front()->number == outBeatsLeft[i][j]))
+		if(outData[i][j].front()->number >= CHANNEL_WIDTH ||
+		    (outDataLeft[i][j] < CHANNEL_WIDTH && outData[i][j].front()->number == outDataLeft[i][j]))
 		{
 		    // then see if we have control of the channel
 		    if (channel->hasChannel(BUFFER, id) && sendingDie == i && sendingPlane == j){
-			if(outBeatsLeft[i][j] > 0 && channel->notBusy()){
-			    channel->sendPiece(BUFFER,outPackets[i][j].front()->type,i,j);
-			    outPackets[i][j].front()->number = outPackets[i][j].front()->number - CHANNEL_WIDTH;
-			    if(outBeatsLeft[i][j] >= CHANNEL_WIDTH)
+			if(outDataLeft[i][j] > 0 && channel->notBusy()){
+			    channel->sendPiece(BUFFER,outData[i][j].front()->type,i,j);
+			    outData[i][j].front()->number = outData[i][j].front()->number - CHANNEL_WIDTH;
+			    if(outDataLeft[i][j] >= CHANNEL_WIDTH)
 			    {
-				outBeatsLeft[i][j] = outBeatsLeft[i][j] - CHANNEL_WIDTH;
+				outDataLeft[i][j] = outDataLeft[i][j] - CHANNEL_WIDTH;
 			    }
 			    else
 			    {
-				outBeatsLeft[i][j] = 0;
+				outDataLeft[i][j] = 0;
 			    }
 			}
 
-			if(outBeatsLeft[i][j] == 0)
+			if(outDataLeft[i][j] == 0)
 			{
 			    dies[i]->bufferDone();
 			    channel->releaseChannel(BUFFER,id);
-			    outPackets[i][j].pop_front();
+			    outData[i][j].pop_front();
 			}
 		    }		
 		    else if (channel->obtainChannel(id, BUFFER, NULL)){
-			outBeatsLeft[i][j] = (NV_PAGE_SIZE*8192);
+			outDataLeft[i][j] = (NV_PAGE_SIZE*8192);
 			sendingDie = i;
 			sendingPlane = j;
 		    }

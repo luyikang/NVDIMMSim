@@ -44,14 +44,14 @@ namespace NVDSim{
 	    
 	    uint** cyclesLeft;	    
 	    uint** deviceWriting;
-	    uint** outBeatsLeft;
-	    uint** inBeatsLeft;
+	    uint** outDataLeft;
+	    uint** inDataLeft;
 
 	    uint sendingDie;
 	    uint sendingPlane;
 
-	    std::vector<std::vector<std::list<BufferPacket *> > > outPackets;
-	    std::vector<std::vector<std::list<BufferPacket *> > > inPackets;
+	    std::vector<std::vector<std::list<BufferPacket *> > > outData;
+	    std::vector<std::vector<std::list<BufferPacket *> > > inData;
 
 	    int count;
     };
