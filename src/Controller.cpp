@@ -121,10 +121,12 @@ bool Controller::addPacket(ChannelPacket *p){
 }
 
 void Controller::update(void){
-	uint i;
-		
-        //Look through queues and send oldest packets to the appropriate channel
-	for (i = 0; i < channelQueues.size(); i++){
+        //Use the buffer code for the NVDIMMS to calculate the actual transfer time
+        if(BUFFERED == true)
+	{
+	    uint i;	
+	    //Look through queues and send oldest packets to the appropriate channel
+	    for (i = 0; i < channelQueues.size(); i++){
 		if (!channelQueues[i].empty() && outgoingPackets[i]==NULL){
 		    // don't send to busy planes
 		    if(busyPlanes[channelQueues[i].front()->package][channelQueues[i].front()->die][channelQueues[i].front()->plane] != 1){
@@ -143,10 +145,10 @@ void Controller::update(void){
 			}
 		    }
 		}
-	}
+	    }
 
-	//Check for commands/data on a channel. If there is, see if it is done on channel
-	for (i= 0; i < outgoingPackets.size(); i++){
+	    //Check for commands/data on a channel. If there is, see if it is done on channel
+	    for (i= 0; i < outgoingPackets.size(); i++){
 		if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
 		        if (channelBeatsLeft[i] == 0){
 				(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
@@ -159,6 +161,40 @@ void Controller::update(void){
 			    channelBeatsLeft[i]--;
 			}
 		}
+	    }
+	//Directly calculate the expected transfer time 
+	}else{
+	    uint i;
+	    //Check for commands/data on a channel. If there is, see if it is done on channel
+	    for (i= 0; i < outgoingPackets.size(); i++){
+		if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
+		        channelBeatsLeft[i]--;
+		        if (channelBeatsLeft[i] == 0){
+			        (*packages)[outgoingPackets[i]->package].channel->sendToBuffer(outgoingPackets[i]);
+				(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
+				outgoingPackets[i] = NULL;
+			}
+		}
+	    }
+
+	    //Look through queues and send oldest packets to the appropriate channel
+	    for (i = 0; i < channelQueues.size(); i++){
+		if (!channelQueues[i].empty() && outgoingPackets[i]==NULL){
+		    //if we can get the channel
+		    if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
+			outgoingPackets[i] = channelQueues[i].front();
+			channelQueues[i].pop();				
+			switch (outgoingPackets[i]->busPacketType){
+				case DATA:
+				        channelBeatsLeft[i] = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
+					break;
+				default:
+				        channelBeatsLeft[i] = (divide_params(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
+					break;
+			}
+		    }
+		}
+	    }
 	}
 	
 

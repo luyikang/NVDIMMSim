@@ -5,6 +5,8 @@ using namespace std;
 // these are the values that are extern'd in FlashConfiguration.h so that they
 // have global scope even though they are set by Init
 
+bool BUFFERED;
+
 bool WEAR_LEVEL_LOG;
 bool RUNTIME_WRITE;
 bool PER_PACKAGE;
@@ -66,6 +68,7 @@ namespace NVDSim
 	//Map the string names to the variables they set
 	static ConfigMap configMap[] = {
 		//DEFINE_UINT_PARAM -- see Init.h
+	        DEFINE_BOOL_PARAM(BUFFERED, DEV_PARAM),
 	        DEFINE_BOOL_PARAM(WEAR_LEVEL_LOG, DEV_PARAM),
 		DEFINE_BOOL_PARAM(RUNTIME_WRITE, DEV_PARAM),
 		DEFINE_BOOL_PARAM(PER_PACKAGE, DEV_PARAM),

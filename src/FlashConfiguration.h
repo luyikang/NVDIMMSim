@@ -64,6 +64,9 @@
 #define Power_Callback 1
 #define Verbose_Power_Callback 0
 
+// Buffering Options
+extern bool BUFFERED;
+
 // Logging Options
 extern bool WEAR_LEVEL_LOG;
 extern bool RUNTIME_WRITE;
@@ -107,7 +110,6 @@ extern float PBLOCKS_PER_VBLOCK;
 #define VIRTUAL_PACKAGE_SIZE (NV_PAGE_SIZE * DIES_PER_PACKAGE * PLANES_PER_DIE * VIRTUAL_BLOCKS_PER_PLANE PAGES_PER_BLOCK)
 #define VIRTUAL_TOTAL_SIZE (NV_PAGE_SIZE * NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * VIRTUAL_BLOCKS_PER_PLANE * PAGES_PER_BLOCK)
 
-// TODO: Expand this to use the timing values from datasheets
 extern uint READ_TIME;
 extern uint WRITE_TIME;
 extern uint ERASE_TIME;

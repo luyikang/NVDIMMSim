@@ -158,6 +158,8 @@ void Die::update(void){
 	}
 
 	if (!returnDataPackets.empty()){
+	    if( BUFFERED == true)
+	    {
 	        if(dataCyclesLeft == 0 && deviceBeatsLeft > 0){
 		    deviceBeatsLeft--;
 		    buffer->sendPiece(BUFFER, 0, id, returnDataPackets.front()->plane);
@@ -173,6 +175,22 @@ void Die::update(void){
 		    deviceBeatsLeft = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
 		    sending = true;
 		}
+	    }else{
+		if(buffer->channel->hasChannel(BUFFER, id)){
+		    if(dataCyclesLeft == 0){
+			buffer->channel->sendToController(returnDataPackets.front());
+			buffer->channel->releaseChannel(BUFFER, id);
+			returnDataPackets.pop();
+		    }
+
+		    dataCyclesLeft--;
+		}else{
+		    if(buffer->channel->obtainChannel(id, BUFFER, NULL))
+		    {
+			dataCyclesLeft = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
+		    }
+		}
+	    }
 	}
 }
 

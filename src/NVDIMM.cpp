@@ -16,6 +16,8 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	{
 	uint i, j;
 	systemID = id;
+
+	cout << "okay we at least sort've ran \n";
 	
 	 if (cDirectory.length() > 0)
 	 {
@@ -52,10 +54,14 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	if(GARBAGE_COLLECT == 1)
 	{
 	  PRINT("Device is using garbage collection");
-	}
-	else
-	{
+	}else{
 	  PRINT("Device is not using garbage collection");
+	}
+	if(BUFFERED == 1)
+	{
+	  PRINT("Memory is using a buffer between the channel and dies");
+	}else{
+	  PRINT("Memory channels are directly connected to dies");
 	}
 	PRINT("\nTiming Info:\n");
 	PRINT("Read time: "<<READ_TIME);

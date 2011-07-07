@@ -61,29 +61,28 @@ void Buffer::sendPiece(SenderType t, uint type, uint die, uint plane){
     if(t == CONTROLLER){
 	if(!inData[die][plane].empty() && inData[die][plane].back()->type == type && type == 5 &&
 	   inData[die][plane].back()->number < (NV_PAGE_SIZE*8192)){
-	    inData[die][plane].back()->number = inData[die][plane].back()->number + CHANNEL_WIDTH;
-	    count++;
+	   inData[die][plane].back()->number = inData[die][plane].back()->number + CHANNEL_WIDTH;
+	   count++;
 	}else if(!inData[die][plane].empty() && inData[die][plane].back()->type == type && type != 5 &&
-	          inData[die][plane].back()->number < COMMAND_LENGTH){
-	    inData[die][plane].back()->number = inData[die][plane].back()->number + CHANNEL_WIDTH;
-	    count++;
+	   inData[die][plane].back()->number < COMMAND_LENGTH){
+	   inData[die][plane].back()->number = inData[die][plane].back()->number + CHANNEL_WIDTH;
+	   count++;
 	}else{
-	    BufferPacket* myPacket = new BufferPacket();
-	    myPacket->type = type;
-	    myPacket->number = CHANNEL_WIDTH;
-	    inData[die][plane].push_back(myPacket);
-	    count++;
+	   BufferPacket* myPacket = new BufferPacket();
+	   myPacket->type = type;
+	   myPacket->number = CHANNEL_WIDTH;
+	   inData[die][plane].push_back(myPacket);
+	   count++;
 	}
     }else if(t == BUFFER){
 	if(!outData[die][plane].empty() && outData[die][plane].back()->type == type &&
 	   outData[die][plane].back()->number < (NV_PAGE_SIZE*8192)){
-	    outData[die][plane].back()->number = outData[die][plane].back()->number + DEVICE_WIDTH;
+	   outData[die][plane].back()->number = outData[die][plane].back()->number + DEVICE_WIDTH;
 	}else{
-	    BufferPacket* myPacket = new BufferPacket();
-	    myPacket->type = type;
-	    myPacket->number = DEVICE_WIDTH;
-	    outData[die][plane].push_back(myPacket);
-	   
+	   BufferPacket* myPacket = new BufferPacket();
+	   myPacket->type = type;
+	   myPacket->number = DEVICE_WIDTH;
+	   outData[die][plane].push_back(myPacket);
 	}
     }
 }
