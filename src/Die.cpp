@@ -46,8 +46,11 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 			     {
 				 controlCyclesLeft[busPacket->plane]= READ_TIME;
 			     }
-			     //update the logger
-			     log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, READ);
+			     if(LOGGING == true)
+			     {
+				 //update the logger
+				 log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, READ);
+			     }
 			     break;
 			 case GC_READ:
 			     if(DEVICE_TYPE.compare("PCM") == 0)
@@ -58,8 +61,11 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 			     {
 				 controlCyclesLeft[busPacket->plane]= READ_TIME;
 			     }
-			     //update the logger
-			     log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, GC_READ);
+			     if(LOGGING == true)
+			     {
+				 //update the logger
+				 log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, GC_READ);
+			     }
 			     break;
 			 case WRITE:
 			     if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
@@ -70,8 +76,11 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 			     {
 				 controlCyclesLeft[busPacket->plane]= WRITE_TIME;
 			     }
-			     //update the logger
-			     log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, WRITE);
+			     if(LOGGING == true)
+			     {
+				 //update the logger
+				 log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, WRITE);
+			     }
 			     break;
 			 case GC_WRITE:
 			     if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
@@ -82,8 +91,11 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 			     {
 				 controlCyclesLeft[busPacket->plane]= WRITE_TIME;
 			     }
-			     //update the logger
-			     log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, GC_WRITE);
+			     if(LOGGING == true)
+			     {
+				 //update the logger
+				 log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, GC_WRITE);
+			     }
 			     break;
 			 case ERASE:
 			     if(DEVICE_TYPE.compare("PCM") == 0)
@@ -94,8 +106,11 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 			     {
 				 controlCyclesLeft[busPacket->plane]= ERASE_TIME;
 			     }
-			     //update the logger
-			     log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, ERASE);
+			     if(LOGGING == true)
+			     {
+				 //update the logger
+				 log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, ERASE);
+			     }
 			     break;
 			 default:
 			     break;
@@ -123,7 +138,10 @@ void Die::update(void){
 		 if (controlCyclesLeft[i] == 0){
 			 switch (currentCommand->busPacketType){
 			         case GC_READ:
-				         log->access_stop(currentCommand->physicalAddress);
+				         if(LOGGING == true)
+					 {
+					     log->access_stop(currentCommand->physicalAddress);
+					 }
 				 case READ:	
 					 planes[currentCommand->plane].read(currentCommand);
 					 returnDataPackets.push(planes[currentCommand->plane].readFromData());
@@ -131,7 +149,10 @@ void Die::update(void){
 				 case WRITE:				     
 					 planes[currentCommand->plane].write(currentCommand);
 					 parentNVDIMM->numWrites++;
-					 log->access_stop(currentCommand->physicalAddress);
+					 if(LOGGING == true)
+					 {
+					     log->access_stop(currentCommand->physicalAddress);
+					 }
 					 //call write callback
 					 if (parentNVDIMM->WriteDataDone != NULL){
 						 (*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->virtualAddress, currentClockCycle);
@@ -140,12 +161,18 @@ void Die::update(void){
 				 case GC_WRITE:
 					 planes[currentCommand->plane].write(currentCommand);
 					 parentNVDIMM->numWrites++;
-					 log->access_stop(currentCommand->physicalAddress);
+					 if(LOGGING == true)
+					 {
+					     log->access_stop(currentCommand->physicalAddress);
+					 }
 					 break;
 				 case ERASE:
 					 planes[currentCommand->plane].erase(currentCommand);
 					 parentNVDIMM->numErases++;
-					 log->access_stop(currentCommand->physicalAddress);
+					 if(LOGGING == true)
+					 {
+					     log->access_stop(currentCommand->physicalAddress);
+					 }
 					 break;
 				 default:
 					 break;

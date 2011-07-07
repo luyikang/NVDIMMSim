@@ -16,8 +16,6 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	{
 	uint i, j;
 	systemID = id;
-
-	cout << "okay we at least sort've ran \n";
 	
 	 if (cDirectory.length() > 0)
 	 {
@@ -41,6 +39,12 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	 }
 	
 	BLOCKS_PER_PLANE = (uint) VIRTUAL_BLOCKS_PER_PLANE * PBLOCKS_PER_VBLOCK;
+	if(LOGGING == 1)
+	{
+	    PRINT("Logs are being generated");
+	}else{
+	    PRINT("Logs are not being generated");
+	}
 	PRINT("\nDevice Information:\n");
 	PRINT("Device Type: "<<DEVICE_TYPE);
 	PRINT("Size (GB): "<<TOTAL_SIZE/(1024*1024));
@@ -197,12 +201,17 @@ void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback
 }
 
 void NVDIMM::printStats(void){
-
-       log->print(currentClockCycle);
+       if(LOGGING == true)
+       {
+	   log->print(currentClockCycle);
+       }
 }
 
 void NVDIMM::saveStats(void){
-       log->save(currentClockCycle, epoch_count);
+       if(LOGGING == true)
+       {
+	   log->save(currentClockCycle, epoch_count);
+       }
        ftl->saveNVState();
 }
 
@@ -224,7 +233,10 @@ void NVDIMM::update(void){
 	ftl->step();
 	controller->update();
 	controller->step();
-	log->update();
+	if(LOGGING == true)
+	{
+	    log->update();
+	}
 
 	step();
 
@@ -235,9 +247,12 @@ void NVDIMM::update(void){
 	    controller->sendQueueLength();
 	    if(epoch_cycles >= EPOCH_TIME)
 	    {
-		log->save_epoch(currentClockCycle, epoch_count);
-		log->ftlQueueReset();
-		log->ctrlQueueReset();
+		if(LOGGING == true)
+		{
+		    log->save_epoch(currentClockCycle, epoch_count);
+		    log->ftlQueueReset();
+		    log->ctrlQueueReset();
+		}
 		epoch_count++;
 		epoch_cycles = 0;		
 	    }

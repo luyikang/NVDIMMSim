@@ -31,8 +31,11 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 	    if (!panic_mode)
 	    {
 		transactionQueue.push_back(t);
-		// Start the logging for this access.
-		log->access_start(t.address);
+		if(LOGGING == true)
+		{
+		    // Start the logging for this access.
+		    log->access_start(t.address);
+		}
 		return true;
 	    }
 	    
@@ -44,8 +47,11 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 void GCFtl::addGcTransaction(FlashTransaction &t){ 
 	transactionQueue.push_back(t);
 
-	// Start the logging for this access.
-	log->access_start(t.address);
+	if(LOGGING == true)
+	{
+	    // Start the logging for this access.
+	    log->access_start(t.address);
+	}
 }
 
 void GCFtl::update(void){
@@ -62,16 +68,22 @@ void GCFtl::update(void){
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
 					if (addressMap.find(vAddr) == addressMap.end()){
-						//update the logger
-					        log->access_process(vAddr, vAddr, 0, READ);
-						log->read_unmapped();
+					        if(LOGGING == true)
+						{
+						    //update the logger
+						    log->access_process(vAddr, vAddr, 0, READ);
+						    log->read_unmapped();
+						}
 
 						//miss, nothing to read so return garbage
 						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
 					} else {	
 					        commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
-						//update the logger
-					        log->read_mapped();
+						if(LOGGING == true)
+						{
+						    //update the logger
+						    log->read_mapped();
+						}
 						//send the read to the controller
 						result = controller->addPacket(commandPacket);
 					}
@@ -79,11 +91,17 @@ void GCFtl::update(void){
 				case DATA_WRITE:
 				        if (addressMap.find(vAddr) != addressMap.end()){
 					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
-					    log->write_mapped();
+					    if(LOGGING == true)
+					    {
+						log->write_mapped();
+					    }
 					}
 					else
 					{
-					    log->write_unmapped();
+					    if(LOGGING == true)
+					    {
+						log->write_unmapped();
+					    }
 					}
 					//look for first free physical page starting at the write pointer
 	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));

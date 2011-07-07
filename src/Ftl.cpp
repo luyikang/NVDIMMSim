@@ -101,9 +101,11 @@ bool Ftl::addTransaction(FlashTransaction &t){
     {
 	transactionQueue.push_back(t);
 
-	// Start the logging for this access.
-	log->access_start(t.address);
-
+	if(LOGGING == true)
+	{
+	    // Start the logging for this access.
+	    log->access_start(t.address);
+	}
 	return true;
     }
 }
@@ -124,17 +126,23 @@ void Ftl::update(void){
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
 					if (addressMap.find(vAddr) == addressMap.end()){
-					        //update the logger
-					        log->access_process(vAddr, vAddr, 0, READ);
-						log->read_unmapped();
+					        if(LOGGING == true)
+						{
+						    //update the logger
+						    log->access_process(vAddr, vAddr, 0, READ);
+						    log->read_unmapped();
+						}
 						
 						//miss, nothing to read so return garbage
 						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
 					} else {					       
 						commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
 						
-						//update the logger
-						log->read_mapped();
+						if(LOGGING == true)
+						{
+						    //update the logger
+						    log->read_mapped();
+						}
 						//send the read to the controller
 						result = controller->addPacket(commandPacket);
 					}
@@ -144,11 +152,17 @@ void Ftl::update(void){
 					    // we're going to write this data somewhere else for wear-leveling purposes however we will probably 
 					    // want to reuse this block for something at some later time so mark it as unused because it is
 					    used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = false;
-					    log->write_mapped();
+					    if(LOGGING == true)
+					    {
+						log->write_mapped();
+					    }
 					}
 					else
 					{
-					    log->write_unmapped();
+					    if(LOGGING == true)
+					    {
+						log->write_unmapped();
+					    }
 					}
 					//look for first free physical page starting at the write pointer
 	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
@@ -250,7 +264,10 @@ void Ftl::powerCallback(void)
 
 void Ftl::sendQueueLength(void)
 {
-    log->ftlQueueLength(transactionQueue.size());
+    if(LOGGING == true)
+    {
+	log->ftlQueueLength(transactionQueue.size());
+    }
 }
 
 void Ftl::saveNVState(void)

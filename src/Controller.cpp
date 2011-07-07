@@ -100,7 +100,10 @@ void Controller::returnPowerData(vector<double> idle_energy, vector<double> acce
 }
 
 void Controller::receiveFromChannel(ChannelPacket *busPacket){
-        log->access_stop(busPacket->physicalAddress);
+        if(LOGGING == true)
+	{
+	    log->access_stop(busPacket->physicalAddress);
+	}
 	if (busPacket->busPacketType == READ)
 		returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->virtualAddress, busPacket->data));
 	else
@@ -213,7 +216,10 @@ void Controller::sendQueueLength(void)
     {
 	temp[i] = channelQueues[i].size();
     }
-    log->ctrlQueueLength(temp);
+    if(LOGGING == true)
+    {
+	log->ctrlQueueLength(temp);
+    }
 }
 
 void Controller::writeToPackage(ChannelPacket *packet)

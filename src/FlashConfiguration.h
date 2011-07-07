@@ -68,6 +68,7 @@
 extern bool BUFFERED;
 
 // Logging Options
+extern bool LOGGING;
 extern bool WEAR_LEVEL_LOG;
 extern bool RUNTIME_WRITE;
 extern bool PER_PACKAGE;
