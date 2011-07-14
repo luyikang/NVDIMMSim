@@ -115,13 +115,12 @@ void Ftl::addFfTransaction(FlashTransaction &t){
 }
 
 void Ftl::update(void){
-	uint64_t block, page, start;
-	bool result;
+	uint64_t start;
 	if (busy) {
 		if (lookupCounter == 0){
 			uint64_t vAddr = currentTransaction.address, pAddr;
 			bool done = false;
-			ChannelPacket *commandPacket, *dataPacket;
+			ChannelPacket *commandPacket;
 			
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
@@ -144,7 +143,12 @@ void Ftl::update(void){
 						    log->read_mapped();
 						}
 						//send the read to the controller
-						result = controller->addPacket(commandPacket);
+						bool result = controller->addPacket(commandPacket);
+						if(result == true)
+						{
+						    transactionQueue.pop_front();
+						    busy = 0;
+						}
 					}
 					break;
 				case DATA_WRITE:
@@ -166,28 +170,12 @@ void Ftl::update(void){
 					}
 					//look for first free physical page starting at the write pointer
 	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
-
-					for (block = start ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++){
-					  for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
-						if (!used[block][page]){
-						        pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
-							used[block][page] = true;
-							done = true;
-						}
-					  }
-					}
+					attemptWrite(start, &vAddr, &pAddr, &done);
+					
 
 					//if we didn't find a free page after scanning til the end, check the beginning
 				        if (!done){
-					  for (block = 0 ; block < start / BLOCK_SIZE && !done ; block++){
-					      for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++){
-						if (!used[block][page]){
-							pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
-					  		used[block][page] = true;
-							done = true;		 
-					        }
-					      }
-					  }								
+					    attemptWrite(0, &vAddr, &pAddr, &done);							
 					}
 
 					if (!done){
@@ -197,29 +185,13 @@ void Ftl::update(void){
 					} else {
 						addressMap[vAddr] = pAddr;
 					}
-					//send write to controller
-					dataPacket = Ftl::translate(DATA, vAddr, pAddr);
-					commandPacket = Ftl::translate(WRITE, vAddr, pAddr);
-					controller->addPacket(dataPacket);
-					result = controller->addPacket(commandPacket);
-					//update "write pointer"
-					channel = (channel + 1) % NUM_PACKAGES;
-					if (channel == 0){
-						die = (die + 1) % DIES_PER_PACKAGE;
-						if (die == 0)
-							plane = (plane + 1) % PLANES_PER_DIE;
-					}
+					
 					break;
 				case BLOCK_ERASE:
 				        ERROR("Called Block erase on memory which does not need this");
 					break;					
 				default:
 					break;
-			}
-			if(result == true)
-			{
-			    transactionQueue.pop_front();
-			    busy = 0;
 			}
 		} //if lookupCounter is not 0
 		else
@@ -233,6 +205,39 @@ void Ftl::update(void){
 			lookupCounter = LOOKUP_TIME;
 		}
 	}
+}
+
+void Ftl::attemptWrite(uint64_t start, uint64_t *vAddr, uint64_t *pAddr, bool *done){
+    uint64_t block, page;
+    bool result;
+    ChannelPacket *commandPacket, *dataPacket;
+
+    for (block = start ; block < TOTAL_SIZE / BLOCK_SIZE && !*done; block++){
+	for (page = 0 ; page < PAGES_PER_BLOCK  && !*done ; page++){
+	    if (!used[block][page]){
+		*pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
+		//send write to controller
+		dataPacket = Ftl::translate(DATA, *vAddr, *pAddr);
+		commandPacket = Ftl::translate(WRITE, *vAddr, *pAddr);
+		controller->addPacket(dataPacket);
+		result = controller->addPacket(commandPacket);
+		if(result == true)
+		{
+		    //update "write pointer"
+		    channel = (channel + 1) % NUM_PACKAGES;
+		    if (channel == 0){
+			die = (die + 1) % DIES_PER_PACKAGE;
+			if (die == 0)
+			    plane = (plane + 1) % PLANES_PER_DIE;
+		    }
+		    used[block][page] = true;
+		    *done = true;
+		    transactionQueue.pop_front();
+		    busy = 0;
+		}
+	    }
+	}
+    }
 }
 
 uint64_t Ftl::get_ptr(void) {

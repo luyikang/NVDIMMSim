@@ -55,15 +55,15 @@ void GCFtl::addGcTransaction(FlashTransaction &t){
 }
 
 void GCFtl::update(void){
-        uint64_t block, page, start;
+        uint64_t start;
 	uint i;
-	bool result = true; 
 	bool wait = false;
 	if (busy) {
-		if (lookupCounter == 0){
+		if (lookupCounter <= 0 && !gc_status){
 			uint64_t vAddr = currentTransaction.address, pAddr;
 			bool done = false;
-			ChannelPacket *commandPacket, *dataPacket;
+			bool result = false;
+			ChannelPacket *commandPacket;
 			
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
@@ -86,6 +86,11 @@ void GCFtl::update(void){
 						}
 						//send the read to the controller
 						result = controller->addPacket(commandPacket);
+						if(result == true && wait == false)
+						{
+						    transactionQueue.pop_front();
+						    busy = 0;
+						}
 					}
 					break;
 				case DATA_WRITE:
@@ -105,32 +110,11 @@ void GCFtl::update(void){
 					}
 					//look for first free physical page starting at the write pointer
 	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
-
-					for (block = start ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++){
-					  for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
-						if (!used[block][page]){
-						        pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
-							used[block][page] = true;
-							used_page_count++;
-							done = true;
-						}
-					  }
-					}
-					
-
+					attemptWrite(start, &vAddr, &pAddr, &done);
 
 					//if we didn't find a free page after scanning til the end, check the beginning
 				        if (!done){
-					  for (block = 0 ; block < start / BLOCK_SIZE && !done ; block++){
-					      for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++){
-						if (!used[block][page]){
-							pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
-					  		used[block][page] = true;
-							used_page_count++;
-							done = true;		 
-					        }
-					      }
-					  }								
+					    attemptWrite(0, &vAddr, &pAddr, &done);
 					}
 
 					if (!done){
@@ -142,18 +126,6 @@ void GCFtl::update(void){
 					} else {
 						addressMap[vAddr] = pAddr;
 					}
-					//send write to controller
-					dataPacket = Ftl::translate(DATA, vAddr, pAddr);
-					commandPacket = Ftl::translate(WRITE, vAddr, pAddr);
-					controller->addPacket(dataPacket);
-					result = controller->addPacket(commandPacket);
-					//update "write pointer"
-					channel = (channel + 1) % NUM_PACKAGES;
-					if (channel == 0){
-						die = (die + 1) % DIES_PER_PACKAGE;
-						if (die == 0)
-							plane = (plane + 1) % PLANES_PER_DIE;
-					}
 					break;
 			        case GC_DATA_READ:
 				    	if (addressMap.find(vAddr) == addressMap.end()){
@@ -163,6 +135,11 @@ void GCFtl::update(void){
 					        commandPacket = Ftl::translate(GC_READ, vAddr, addressMap[vAddr]);
 						//send the read to the controller
 						result = controller->addPacket(commandPacket);
+						if(result == true && wait == false)
+						{
+						    transactionQueue.pop_front();
+						    busy = 0;
+						}
 					}
 					break;
 			        case GC_DATA_WRITE:
@@ -171,30 +148,11 @@ void GCFtl::update(void){
 					}			          
 					//look for first free physical page starting at the write pointer
 	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
-
-					for (block = start ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++){
-					  for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++){
-						if (!used[block][page]){
-						        pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
-							used[block][page] = true;
-							used_page_count++;
-							done = true;
-						}
-					  }
-					}
+					attemptWrite(start, &vAddr, &pAddr, &done);
 
 					//if we didn't find a free page after scanning til the end, check the beginning
 				        if (!done){
-					  for (block = 0 ; block < start / BLOCK_SIZE && !done ; block++){
-					      for (page = 0 ; page < PAGES_PER_BLOCK && !done ; page++){
-						if (!used[block][page]){
-							pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
-					  		used[block][page] = true;
-							used_page_count++;
-							done = true;		 
-					        }
-					      }
-					  }								
+					    attemptWrite(0, &vAddr, &pAddr, &done);
 					}
 
 					if (!done){
@@ -206,39 +164,27 @@ void GCFtl::update(void){
 					} else {
 						addressMap[vAddr] = pAddr;
 					}
-					//send write to controller
-					dataPacket = Ftl::translate(DATA, vAddr, pAddr);
-					commandPacket = Ftl::translate(WRITE, vAddr, pAddr);
-					controller->addPacket(dataPacket);
-					result = controller->addPacket(commandPacket);
-					//update "write pointer"
-					channel = (channel + 1) % NUM_PACKAGES;
-					if (channel == 0){
-						die = (die + 1) % DIES_PER_PACKAGE;
-						if (die == 0)
-							plane = (plane + 1) % PLANES_PER_DIE;
-					}
 					break;
-				case BLOCK_ERASE:
-				        for (i = 0 ; i < PAGES_PER_BLOCK ; i++){
+				case BLOCK_ERASE:	        
+					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
+					result = controller->addPacket(commandPacket);
+					if(result == true && wait == false)
+					{
+					    for (i = 0 ; i < PAGES_PER_BLOCK ; i++){
 						dirty[vAddr / BLOCK_SIZE][i] = false;
 						if (used[vAddr / BLOCK_SIZE][i]){
 							used[vAddr / BLOCK_SIZE][i] = false;
 							used_page_count--;
 						}
+					    }
+					    transactionQueue.pop_front();
+					    busy = 0;
 					}
-					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
-					result = controller->addPacket(commandPacket);
 					break;		
 				default:
 					ERROR("Transaction in Ftl that isn't a read or write... What?");
 					exit(1);
 					break;
-			}
-			if( result == true && wait == false)
-			{
-			    transactionQueue.pop_front();
-			    busy = 0;
 			}
 		} 
 		else
