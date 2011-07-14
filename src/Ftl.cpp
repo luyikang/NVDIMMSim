@@ -134,6 +134,8 @@ void Ftl::update(void){
 						
 						//miss, nothing to read so return garbage
 						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
+						transactionQueue.pop_front();
+						busy = 0;
 					} else {					       
 						commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
 						
