@@ -59,7 +59,7 @@ void GCFtl::update(void){
 	uint i;
 	bool wait = false;
 	if (busy) {
-		if (lookupCounter <= 0 && !gc_status){
+		if (lookupCounter <= 0){
 			uint64_t vAddr = currentTransaction.address, pAddr;
 			bool done = false;
 			bool result = false;
