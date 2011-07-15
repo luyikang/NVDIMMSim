@@ -21,7 +21,7 @@ namespace NVDSim
 	void update();
 
 	void access_process(uint64_t addr, uint64_t paddr, uint package, ChannelPacketType op);
-	void access_stop(uint64_t paddr);
+	void access_stop(uint64_t addr);
 
 	//Accessors for power data
 	//Writing correct object oriented code up in this piece, what now?

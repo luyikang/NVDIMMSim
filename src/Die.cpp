@@ -140,7 +140,7 @@ void Die::update(void){
 			         case GC_READ:
 				         if(LOGGING == true)
 					 {
-					     log->access_stop(currentCommand->physicalAddress);
+					     log->access_stop(currentCommand->virtualAddress);
 					 }
 				 case READ:	
 					 planes[currentCommand->plane].read(currentCommand);
@@ -151,7 +151,7 @@ void Die::update(void){
 					 parentNVDIMM->numWrites++;
 					 if(LOGGING == true)
 					 {
-					     log->access_stop(currentCommand->physicalAddress);
+					     log->access_stop(currentCommand->virtualAddress);
 					 }
 					 //call write callback
 					 if (parentNVDIMM->WriteDataDone != NULL){
@@ -163,7 +163,7 @@ void Die::update(void){
 					 parentNVDIMM->numWrites++;
 					 if(LOGGING == true)
 					 {
-					     log->access_stop(currentCommand->physicalAddress);
+					     log->access_stop(currentCommand->virtualAddress);
 					 }
 					 break;
 				 case ERASE:
@@ -171,7 +171,7 @@ void Die::update(void){
 					 parentNVDIMM->numErases++;
 					 if(LOGGING == true)
 					 {
-					     log->access_stop(currentCommand->physicalAddress);
+					     log->access_stop(currentCommand->virtualAddress);
 					 }
 					 break;
 				 default:

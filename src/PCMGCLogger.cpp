@@ -51,9 +51,9 @@ void PCMGCLogger::access_process(uint64_t addr, uint64_t paddr, uint package, Ch
 		abort();
 	}
 
-	if (access_map.count(paddr) != 0)
+	if (access_map.count(addr) != 0)
 	{
-		cerr << "ERROR: NVLogger.access_process() called with address already in access_map. address=0x" << hex << paddr << "\n" << dec;
+		cerr << "ERROR: NVLogger.access_process() called with address already in access_map. address=0x" << hex << addr << "\n" << dec;
 		abort();
 	}
 
@@ -61,26 +61,26 @@ void PCMGCLogger::access_process(uint64_t addr, uint64_t paddr, uint package, Ch
 	a.start = start_cycle;
 	a.op = op;
 	a.process = this->currentClockCycle;
-	a.addr = addr;
+	a.pAddr = paddr;
 	a.package = package;
-	access_map[paddr] = a;	
+	access_map[addr] = a;	
 
 	this->queue_latency(a.process - a.start);
 }
 
-void PCMGCLogger::access_stop(uint64_t paddr)
+void PCMGCLogger::access_stop(uint64_t addr)
 {
     //cout << "log stopped for" << hex << paddr << "\n";
 
-	if (access_map.count(paddr) == 0)
+	if (access_map.count(addr) == 0)
 	{
-		cerr << "ERROR: NVLogger.access_stop() called with address not in access_map. address=" << hex << paddr << "\n" << dec;
+		cerr << "ERROR: NVLogger.access_stop() called with address not in access_map. address=" << hex << addr << "\n" << dec;
 		abort();
 	}
 
-	AccessMapEntry a = access_map[paddr];
+	AccessMapEntry a = access_map[addr];
 	a.stop = this->currentClockCycle;
-	access_map[paddr] = a;
+	access_map[addr] = a;
 
 	// Log cache event type.
 	if (a.op == READ)
@@ -102,13 +102,13 @@ void PCMGCLogger::access_stop(uint64_t paddr)
 	    this->write_latency(a.stop - a.start);
 	    if(WEAR_LEVEL_LOG)
 	    {
-		if(writes_per_address.count(paddr) == 0)
+		if(writes_per_address.count(a.pAddr) == 0)
 		{
-		    writes_per_address[paddr] = 1;
+		    writes_per_address[a.pAddr] = 1;
 		}
 		else
 		{
-		    writes_per_address[paddr]++;
+		    writes_per_address[a.pAddr]++;
 		}
 	    }
 	}
@@ -140,18 +140,18 @@ void PCMGCLogger::access_stop(uint64_t paddr)
 	    this->gcwrite_latency(a.stop - a.start);
 	    if(WEAR_LEVEL_LOG)
 	    {
-		if(writes_per_address.count(paddr) == 0)
+		if(writes_per_address.count(a.pAddr) == 0)
 		{
-		    writes_per_address[paddr] = 1;
+		    writes_per_address[a.pAddr] = 1;
 		}
 		else
 		{
-		    writes_per_address[paddr]++;
+		    writes_per_address[a.pAddr]++;
 		}
 	    }
 	}
 	
-	access_map.erase(paddr);
+	access_map.erase(addr);
 }
 
 void PCMGCLogger::save(uint64_t cycle, uint epoch) 
