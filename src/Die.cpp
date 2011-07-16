@@ -145,6 +145,10 @@ void Die::update(void){
 				 case READ:	
 					 planes[currentCommand->plane].read(currentCommand);
 					 returnDataPackets.push(planes[currentCommand->plane].readFromData());
+					 if(LOGGING == true)
+					 {
+					     log->access_stop(currentCommand->virtualAddress);
+					 }
 					 break;
 				 case WRITE:				     
 					 planes[currentCommand->plane].write(currentCommand);
