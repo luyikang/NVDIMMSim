@@ -193,6 +193,7 @@ void Ftl::update(void){
 					ERROR("Called Block erase on memory which does not need this");
 					break;					
 				default:
+					ERROR("FTL received an illegal transaction type.");
 					break;
 			}
 		} //if lookupCounter is not 0
