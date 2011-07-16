@@ -139,15 +139,15 @@ void Ftl::update(void){
 					} else {					       
 						commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
 
-						if(LOGGING == true)
-						{
-							//update the logger
-							log->read_mapped();
-						}
 						//send the read to the controller
 						bool result = controller->addPacket(commandPacket);
 						if(result == true)
 						{
+							if(LOGGING == true)
+							{
+								//update the logger
+								log->read_mapped();
+							}
 							transactionQueue.pop_front();
 							busy = 0;
 						}
