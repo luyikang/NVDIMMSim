@@ -41,6 +41,8 @@ namespace NVDSim{
 
 			Logger *log;
 
+			uint64_t write_counter;
+
 		protected:
 			bool gc_flag;
 			uint offset,  pageBitWidth, blockBitWidth, planeBitWidth, dieBitWidth, packageBitWidth;

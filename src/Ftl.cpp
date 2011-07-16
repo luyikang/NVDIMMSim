@@ -37,6 +37,9 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 	parent = p;
 
 	log = l;
+
+	// Counter to keep track of succesful writes.
+	write_counter = 0;
 }
 
 ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr){
@@ -183,8 +186,11 @@ void Ftl::update(void){
 					if (!done){
 						//bad news
 						ERROR("FLASH DIMM IS COMPLETELY FULL - If you see this, something has gone horribly wrong.");
+						cout << "WRITE COUNTER IS " << write_counter << "\n";
 						exit(9001);
 					} else {
+						write_counter++;
+						cout << "WRITE COUNTER IS " << write_counter << "\n";
 						addressMap[vAddr] = pAddr;
 					}
 
@@ -237,6 +243,7 @@ void Ftl::attemptWrite(uint64_t start, uint64_t *vAddr, uint64_t *pAddr, bool *d
 					*done = true;
 					transactionQueue.pop_front();
 					busy = 0;
+					//cout << "DONE MARKED FOR " << *vAddr << " / " << *pAddr << "\n";
 				}
 			}
 		}
