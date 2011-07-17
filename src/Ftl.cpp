@@ -154,6 +154,11 @@ void Ftl::update(void){
 							transactionQueue.pop_front();
 							busy = 0;
 						}
+						else
+						{
+							// Delete the packet if it is not being used to prevent memory leaks.
+							delete commandPacket;
+						}
 					}
 					break;
 
@@ -226,9 +231,17 @@ void Ftl::update(void){
 							commandPacket = Ftl::translate(WRITE, vAddr, pAddr);
 
 							// Check to see if there is enough room for both packets in the queue (need two open spots).
-							bool result = controller->checkQueueWrite(dataPacket);
+							bool queue_open = controller->checkQueueWrite(dataPacket);
 
-							if (result)
+							if (!queue_open)
+							{
+								// These packets are not being used. Since they were dynamically allocated, we must delete them to prevent
+								// memory leaks.
+								delete dataPacket;
+								delete commandPacket;
+							}
+
+							if (queue_open)
 							{
 								// Add the packets to the controller queue.
 								// Do not need to check the return values for these since checkQueueWrite() was called.
