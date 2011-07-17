@@ -44,6 +44,7 @@ namespace NVDSim{
 					 vector<double> access_energy);
 			void attachChannel(Channel *channel);
 			void receiveFromChannel(ChannelPacket *busPacket);
+			bool checkQueueWrite(ChannelPacket *p);
 			bool addPacket(ChannelPacket *p);
 			void update(void);
 

@@ -111,16 +111,22 @@ void Controller::receiveFromChannel(ChannelPacket *busPacket){
 	delete(busPacket);
 }
 
+bool Controller::checkQueueWrite(ChannelPacket *p)
+{
+    if (!((channelQueues[p->package].size() + 1 < CTRL_QUEUE_LENGTH) || (CTRL_QUEUE_LENGTH == 0)))
+		return false;
+	else
+		return true;
+}
+
 bool Controller::addPacket(ChannelPacket *p){
-    if (channelQueues[p->package].size() >= CTRL_QUEUE_LENGTH && CTRL_QUEUE_LENGTH != 0)
-    {
-	return false;
-    }
-    else
-    {
+	// If there is not room in the command queue for this packet, then return false.
+	// If CTRL_QUEUE_LENGTH is 0, then infinite queues are allowed.
+    if (!((channelQueues[p->package].size() < CTRL_QUEUE_LENGTH) || (CTRL_QUEUE_LENGTH == 0)))
+		return false;
+
 	channelQueues[p->package].push(p);
 	return true;
-    }
 }
 
 void Controller::update(void){
@@ -139,7 +145,9 @@ void Controller::update(void){
 				channelQueues[i].pop();				
 				switch (outgoingPackets[i]->busPacketType){
 					case DATA:
-					        channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); //channel pieces per page
+							// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
+							// are in 1 KB (1024 * 8).
+					        channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
 						break;
 					default:
 					        channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
@@ -189,6 +197,8 @@ void Controller::update(void){
 			channelQueues[i].pop();				
 			switch (outgoingPackets[i]->busPacketType){
 				case DATA:
+						// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
+						// are in 1 KB (1024 * 8).
 				        channelBeatsLeft[i] = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
 					break;
 				default:
