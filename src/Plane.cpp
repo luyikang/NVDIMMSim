@@ -19,8 +19,6 @@ void Plane::read(ChannelPacket *busPacket){
 		DEBUG("Invalid read: Block "<<busPacket->block<<" hasn't been written to");
 	}
 
-	//busPacket->busPacketType= DATA;
-
 	// Put this packet on the data register to send it back (it will eventually end up in Controller::receieveFromChannel).
 	dataReg= busPacket;
 }
