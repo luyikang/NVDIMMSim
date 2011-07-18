@@ -132,11 +132,12 @@ void Die::update(void){
 						break;
 				}
 
-				if ((currentCommand->busPacketType != READ) && (currentCommand->busPacketType != DATA))
+				ChannelPacketType bpt = currentCommand->busPacketType;
+				if ((bpt == WRITE) || (bpt == GC_WRITE) || (bpt == ERASE))
 				{
-					// For everything but READ and DATA, the access is done at this point.
-					// Note: for READ, this is handled in Controller::receiveFromChannel().
-					// For DATA, this is handled as part of the WRITE.
+					// For everything but READ/GC_READ, and DATA, the access is done at this point.
+					// Note: for READ/GC_READ, this is handled in Controller::receiveFromChannel().
+					// For DATA, this is handled as part of the WRITE in Plane.
 
 					// Tell the logger the access is done.
 					if (LOGGING)

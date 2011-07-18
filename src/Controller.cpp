@@ -109,8 +109,10 @@ void Controller::returnPowerData(vector<double> idle_energy, vector<double> acce
 		// Put in the returnTransaction queue 
 		if (busPacket->busPacketType == READ)
 			returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->virtualAddress, busPacket->data));
-		else
+		else if (busPacket->busPacketType == GC_READ)
 			returnTransaction.push_back(FlashTransaction(GC_DATA, busPacket->virtualAddress, busPacket->data));
+		else
+			ERROR("Illegal busPacketType " << busPacket->busPacketType << " in Controller::receiveFromChannel\n");
 
 		// Delete the ChannelPacket since READ is done. This must be done to prevent memory leaks.
 		delete(busPacket);
