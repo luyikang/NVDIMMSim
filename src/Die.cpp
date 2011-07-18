@@ -38,15 +38,6 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 		currentCommands[busPacket->plane] = busPacket;
 		switch (busPacket->busPacketType){
 			case READ:
-				if(DEVICE_TYPE.compare("PCM") == 0)
-				{
-					controlCyclesLeft[busPacket->plane]= READ_TIME * ((NV_PAGE_SIZE*8192) / 8);			
-				}
-				else
-				{
-					controlCyclesLeft[busPacket->plane]= READ_TIME;
-				}
-				break;
 			case GC_READ:
 				if(DEVICE_TYPE.compare("PCM") == 0)
 				{
@@ -58,15 +49,6 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				}
 				break;
 			case WRITE:
-				if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
-				{
-					controlCyclesLeft[busPacket->plane]= ERASE_TIME;
-				}
-				else
-				{
-					controlCyclesLeft[busPacket->plane]= WRITE_TIME;
-				}
-				break;
 			case GC_WRITE:
 				if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
 				{
