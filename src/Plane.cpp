@@ -30,7 +30,8 @@ void Plane::write(ChannelPacket *busPacket){
 
 	blocks[busPacket->block].write(busPacket->page, dataReg->data);
 
-	delete busPacket;
+	// The data packet is now done being used, so it can be deleted.
+	delete dataReg;
 }
 
 // should only ever erase blocks
@@ -39,8 +40,6 @@ void Plane::erase(ChannelPacket *busPacket){
 		blocks[busPacket->block].erase();
 		blocks.erase(busPacket->block);
 	}
-
-	delete busPacket;
 }
 
 
@@ -50,6 +49,4 @@ void Plane::storeInData(ChannelPacket *busPacket){
 
 ChannelPacket *Plane::readFromData(void){
 	return dataReg;
-
-	delete dataReg;
 }

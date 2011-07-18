@@ -38,20 +38,6 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 		currentCommands[busPacket->plane] = busPacket;
 		switch (busPacket->busPacketType){
 			case READ:
-				if(DEVICE_TYPE.compare("PCM") == 0)
-				{
-					controlCyclesLeft[busPacket->plane]= READ_TIME * ((NV_PAGE_SIZE*8192) / 8);			
-				}
-				else
-				{
-					controlCyclesLeft[busPacket->plane]= READ_TIME;
-				}
-				if(LOGGING == true)
-				{
-					//update the logger
-					log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, READ);
-				}
-				break;
 			case GC_READ:
 				if(DEVICE_TYPE.compare("PCM") == 0)
 				{
@@ -61,27 +47,8 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				{
 					controlCyclesLeft[busPacket->plane]= READ_TIME;
 				}
-				if(LOGGING == true)
-				{
-					//update the logger
-					log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, GC_READ);
-				}
 				break;
 			case WRITE:
-				if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
-				{
-					controlCyclesLeft[busPacket->plane]= ERASE_TIME;
-				}
-				else
-				{
-					controlCyclesLeft[busPacket->plane]= WRITE_TIME;
-				}
-				if(LOGGING == true)
-				{
-					//update the logger
-					log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, WRITE);
-				}
-				break;
 			case GC_WRITE:
 				if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
 				{
@@ -90,11 +57,6 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				else
 				{
 					controlCyclesLeft[busPacket->plane]= WRITE_TIME;
-				}
-				if(LOGGING == true)
-				{
-					//update the logger
-					log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, GC_WRITE);
 				}
 				break;
 			case ERASE:
@@ -106,14 +68,17 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				{
 					controlCyclesLeft[busPacket->plane]= ERASE_TIME;
 				}
-				if(LOGGING == true)
-				{
-					//update the logger
-					log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, ERASE);
-				}
 				break;
 			default:
 				break;
+
+
+			if (LOGGING)
+			{
+				// Tell the logger the access has now been processed.
+				log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, busPacket->busPacketType);
+			}
+				
 		}
 	} else{
 		ERROR("Die is busy");
@@ -136,30 +101,18 @@ void Die::update(void){
 		currentCommand = currentCommands[i];
 		if (currentCommand != NULL){
 			if (controlCyclesLeft[i] == 0){
+
+				// Process each command based on the packet type.
 				switch (currentCommand->busPacketType){
 					case GC_READ:
-					        planes[currentCommand->plane].read(currentCommand);
-						returnDataPackets.push(planes[currentCommand->plane].readFromData());
-						if(LOGGING == true)
-						{
-							log->access_stop(currentCommand->virtualAddress);
-						}
-						break;
 					case READ:	
 						planes[currentCommand->plane].read(currentCommand);
 						returnDataPackets.push(planes[currentCommand->plane].readFromData());
-						if(LOGGING == true)
-						{
-							log->access_stop(currentCommand->virtualAddress);
-						}
 						break;
 					case WRITE:				     
 						planes[currentCommand->plane].write(currentCommand);
 						parentNVDIMM->numWrites++;
-						if(LOGGING == true)
-						{
-							log->access_stop(currentCommand->virtualAddress);
-						}
+
 						//call write callback
 						if (parentNVDIMM->WriteDataDone != NULL){
 							(*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->virtualAddress, currentClockCycle);
@@ -168,22 +121,33 @@ void Die::update(void){
 					case GC_WRITE:
 						planes[currentCommand->plane].write(currentCommand);
 						parentNVDIMM->numWrites++;
-						if(LOGGING == true)
-						{
-							log->access_stop(currentCommand->virtualAddress);
-						}
 						break;
 					case ERASE:
 						planes[currentCommand->plane].erase(currentCommand);
 						parentNVDIMM->numErases++;
-						if(LOGGING == true)
-						{
-							log->access_stop(currentCommand->virtualAddress);
-						}
 						break;
+					case DATA:
+						// Nothing to do.
 					default:
 						break;
 				}
+
+				if ((currentCommand->busPacketType != READ) && (currentCommand->busPacketType != DATA))
+				{
+					// For everything but READ and DATA, the access is done at this point.
+					// Note: for READ, this is handled in Controller::receiveFromChannel().
+					// For DATA, this is handled as part of the WRITE.
+
+					// Tell the logger the access is done.
+					if (LOGGING)
+					{
+						log->access_stop(currentCommand->virtualAddress);
+					}
+
+					// Delete the memory allocated for the current command to prevent memory leaks.
+					delete currentCommand;
+				}
+
 				//sim output
 				currentCommands[i]= NULL;
 			}
