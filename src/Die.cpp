@@ -136,27 +136,18 @@ void Die::update(void){
 		currentCommand = currentCommands[i];
 		if (currentCommand != NULL){
 			if (controlCyclesLeft[i] == 0){
+
+				// Process each command based on the packet type.
 				switch (currentCommand->busPacketType){
 					case GC_READ:
-						if(LOGGING == true)
-						{
-							log->access_stop(currentCommand->virtualAddress);
-						}
 					case READ:	
 						planes[currentCommand->plane].read(currentCommand);
 						returnDataPackets.push(planes[currentCommand->plane].readFromData());
-						if(LOGGING == true)
-						{
-							log->access_stop(currentCommand->virtualAddress);
-						}
 						break;
 					case WRITE:				     
 						planes[currentCommand->plane].write(currentCommand);
 						parentNVDIMM->numWrites++;
-						if(LOGGING == true)
-						{
-							log->access_stop(currentCommand->virtualAddress);
-						}
+
 						//call write callback
 						if (parentNVDIMM->WriteDataDone != NULL){
 							(*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->virtualAddress, currentClockCycle);
@@ -165,22 +156,30 @@ void Die::update(void){
 					case GC_WRITE:
 						planes[currentCommand->plane].write(currentCommand);
 						parentNVDIMM->numWrites++;
-						if(LOGGING == true)
-						{
-							log->access_stop(currentCommand->virtualAddress);
-						}
 						break;
 					case ERASE:
 						planes[currentCommand->plane].erase(currentCommand);
 						parentNVDIMM->numErases++;
-						if(LOGGING == true)
-						{
-							log->access_stop(currentCommand->virtualAddress);
-						}
 						break;
 					default:
 						break;
 				}
+
+				if (currentCommand->busPacketType != DATA_READ)
+				{
+					// For everything but DATA_READ, the access is done at this point.
+					// Note: for DATA_READ, this is handled in Controller::receiveFromChannel().
+
+					// Tell the logger the access is done.
+					if(LOGGING == true)
+					{
+						log->access_stop(currentCommand->virtualAddress);
+					}
+
+					// Delete the memory allocated for the current command to prevent memory leaks.
+					delete currentCommand;
+				}
+
 				//sim output
 				currentCommands[i]= NULL;
 			}

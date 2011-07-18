@@ -100,14 +100,19 @@ void Controller::returnPowerData(vector<double> idle_energy, vector<double> acce
 }
 
 	void Controller::receiveFromChannel(ChannelPacket *busPacket){
+		// DATA_READ is now done. Log it and call delete
 		if(LOGGING == true)
 		{
 			log->access_stop(busPacket->physicalAddress);
 		}
+
+		// Put in the returnTransaction queue 
 		if (busPacket->busPacketType == READ)
 			returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->virtualAddress, busPacket->data));
 		else
 			returnTransaction.push_back(FlashTransaction(GC_DATA, busPacket->virtualAddress, busPacket->data));
+
+		// Delete the ChannelPacket since DATA_READ is done. This must be done to prevent memory leaks.
 		delete(busPacket);
 	}
 
