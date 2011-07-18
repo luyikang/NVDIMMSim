@@ -126,17 +126,20 @@ void Die::update(void){
 						planes[currentCommand->plane].erase(currentCommand);
 						parentNVDIMM->numErases++;
 						break;
+					case DATA:
+						// Nothing to do.
 					default:
 						break;
 				}
 
-				if (currentCommand->busPacketType != READ)
+				if ((currentCommand->busPacketType != READ) && currentCommand->busPacketType != DATA)
 				{
-					// For everything but READ, the access is done at this point.
-					// Note: for DATA_READ, this is handled in Controller::receiveFromChannel().
+					// For everything but READ and DATA, the access is done at this point.
+					// Note: for READ, this is handled in Controller::receiveFromChannel().
+					// For DATA, this is handled as part of the WRITE.
 
 					// Tell the logger the access is done.
-					if(LOGGING == true)
+					if (LOGGING == true) 
 					{
 						log->access_stop(currentCommand->virtualAddress);
 					}
