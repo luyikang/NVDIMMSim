@@ -165,9 +165,9 @@ void Die::update(void){
 						break;
 				}
 
-				if (currentCommand->busPacketType != DATA_READ)
+				if (currentCommand->busPacketType != READ)
 				{
-					// For everything but DATA_READ, the access is done at this point.
+					// For everything but READ, the access is done at this point.
 					// Note: for DATA_READ, this is handled in Controller::receiveFromChannel().
 
 					// Tell the logger the access is done.
