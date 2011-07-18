@@ -46,11 +46,6 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				{
 					controlCyclesLeft[busPacket->plane]= READ_TIME;
 				}
-				if(LOGGING == true)
-				{
-					//update the logger
-					log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, READ);
-				}
 				break;
 			case GC_READ:
 				if(DEVICE_TYPE.compare("PCM") == 0)
@@ -60,11 +55,6 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				else
 				{
 					controlCyclesLeft[busPacket->plane]= READ_TIME;
-				}
-				if(LOGGING == true)
-				{
-					//update the logger
-					log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, GC_READ);
 				}
 				break;
 			case WRITE:
@@ -76,11 +66,6 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				{
 					controlCyclesLeft[busPacket->plane]= WRITE_TIME;
 				}
-				if(LOGGING == true)
-				{
-					//update the logger
-					log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, WRITE);
-				}
 				break;
 			case GC_WRITE:
 				if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
@@ -90,11 +75,6 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				else
 				{
 					controlCyclesLeft[busPacket->plane]= WRITE_TIME;
-				}
-				if(LOGGING == true)
-				{
-					//update the logger
-					log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, GC_WRITE);
 				}
 				break;
 			case ERASE:
@@ -106,14 +86,17 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				{
 					controlCyclesLeft[busPacket->plane]= ERASE_TIME;
 				}
-				if(LOGGING == true)
-				{
-					//update the logger
-					log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, ERASE);
-				}
 				break;
 			default:
 				break;
+
+
+			if (LOGGING)
+			{
+				// Tell the logger the access has now been processed.
+				log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, busPacket->busPacketType);
+			}
+				
 		}
 	} else{
 		ERROR("Die is busy");

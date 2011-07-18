@@ -179,7 +179,11 @@ void Controller::update(void){
 			}
 		}
 		//Directly calculate the expected transfer time 
-	}else{
+	}
+	else
+	{
+		// BUFFERED NOT TRUE CASE...
+
 		uint i;
 		//Check for commands/data on a channel. If there is, see if it is done on channel
 		for (i= 0; i < outgoingPackets.size(); i++){
