@@ -138,10 +138,13 @@ void Die::update(void){
 			if (controlCyclesLeft[i] == 0){
 				switch (currentCommand->busPacketType){
 					case GC_READ:
+					        planes[currentCommand->plane].read(currentCommand);
+						returnDataPackets.push(planes[currentCommand->plane].readFromData());
 						if(LOGGING == true)
 						{
 							log->access_stop(currentCommand->virtualAddress);
 						}
+						break;
 					case READ:	
 						planes[currentCommand->plane].read(currentCommand);
 						returnDataPackets.push(planes[currentCommand->plane].readFromData());
