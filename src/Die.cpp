@@ -132,14 +132,14 @@ void Die::update(void){
 						break;
 				}
 
-				if ((currentCommand->busPacketType != READ) && currentCommand->busPacketType != DATA)
+				if ((currentCommand->busPacketType != READ) && (currentCommand->busPacketType != DATA))
 				{
 					// For everything but READ and DATA, the access is done at this point.
 					// Note: for READ, this is handled in Controller::receiveFromChannel().
 					// For DATA, this is handled as part of the WRITE.
 
 					// Tell the logger the access is done.
-					if (LOGGING == true) 
+					if (LOGGING)
 					{
 						log->access_stop(currentCommand->virtualAddress);
 					}
