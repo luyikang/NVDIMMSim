@@ -127,39 +127,7 @@ void Ftl::update(void){
 
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
-					if (addressMap.find(vAddr) == addressMap.end()){
-						if(LOGGING == true)
-						{
-							//update the logger
-							log->access_process(vAddr, vAddr, 0, READ);
-							log->read_unmapped();
-						}
-
-						//miss, nothing to read so return garbage
-						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
-						transactionQueue.pop_front();
-						busy = 0;
-					} else {					       
-						commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
-
-						//send the read to the controller
-						bool result = controller->addPacket(commandPacket);
-						if(result == true)
-						{
-							if(LOGGING == true)
-							{
-								//update the logger
-								log->read_mapped();
-							}
-							transactionQueue.pop_front();
-							busy = 0;
-						}
-						else
-						{
-							// Delete the packet if it is not being used to prevent memory leaks.
-							delete commandPacket;
-						}
-					}
+					handle_read();
 					break;
 
 				case DATA_WRITE: 
@@ -308,6 +276,57 @@ void Ftl::update(void){
 		}
 	}
 }
+
+void Ftl::handle_read()
+{
+	ChannelPacket *commandPacket;
+	uint64_t vAddr = currentTransaction.address;
+
+	// Check to see if the vAddr exists in the address map.
+	if (addressMap.find(vAddr) == addressMap.end())
+	{
+		// If not, then this is an unmapped read.
+		// We return a fake result immediately.
+		// In the future, this could be an error message if we want.
+
+		if(LOGGING)
+		{
+			// Update the logger
+			log->read_unmapped();
+
+			// access_process for this read is called here since this ends now.
+			log->access_process(vAddr, vAddr, 0, READ);
+		}
+
+		// Miss, nothing to read so return garbage.
+		controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
+		transactionQueue.pop_front();
+		busy = 0;
+	} 
+	else 
+	{					       
+		commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
+
+		//send the read to the controller
+		bool result = controller->addPacket(commandPacket);
+		if(result)
+		{
+			if(LOGGING)
+			{
+				//update the logger
+				log->read_mapped();
+			}
+			transactionQueue.pop_front();
+			busy = 0;
+		}
+		else
+		{
+			// Delete the packet if it is not being used to prevent memory leaks.
+			delete commandPacket;
+		}
+	}
+}
+
 
 void Ftl::attemptWrite(uint64_t start, uint64_t *vAddr, uint64_t *pAddr, bool *done){
 	uint64_t block, page;
