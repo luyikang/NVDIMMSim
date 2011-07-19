@@ -299,8 +299,14 @@ void Ftl::handle_write(bool gc)
 
 
 		//send write to controller
+		
+		ChannelPacketType write_type;
+		if (gc)
+			write_type = GC_WRITE;
+		else
+			write_type = WRITE;
 		dataPacket = Ftl::translate(DATA, vAddr, pAddr);
-		commandPacket = Ftl::translate(WRITE, vAddr, pAddr);
+		commandPacket = Ftl::translate(write_type, vAddr, pAddr);
 
 		// Check to see if there is enough room for both packets in the queue (need two open spots).
 		bool queue_open = controller->checkQueueWrite(dataPacket);
@@ -344,7 +350,7 @@ void Ftl::handle_write(bool gc)
 			//cout << "WRITE COUNTER IS " << write_counter << "\n";
 
 
-			if (LOGGING)
+			if (LOGGING && !gc)
 			{
 				if (mapped)
 					log->write_mapped();

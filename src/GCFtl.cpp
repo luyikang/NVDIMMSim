@@ -95,6 +95,8 @@ void GCFtl::update(void){
 
 
 				case GC_DATA_WRITE:
+					handle_write(true);
+/*
 				        if (addressMap.find(vAddr) != addressMap.end()){
 					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
 					}			          
@@ -115,6 +117,7 @@ void GCFtl::update(void){
 					} else {
 						addressMap[vAddr] = pAddr;
 					}
+*/
 					break;
 
 
