@@ -22,6 +22,7 @@ namespace NVDSim{
 			bool addTransaction(FlashTransaction &t);
 			void addGcTransaction(FlashTransaction &t);
 			void update(void);
+			void write_used_handler(uint64_t vAddr);
 			bool checkGC(void); 
 			void runGC(void);
 
