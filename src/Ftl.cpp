@@ -123,42 +123,6 @@ void Ftl::update(void){
 
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
-/*
-					if (addressMap.find(vAddr) == addressMap.end()){
-						if(LOGGING == true)
-						{
-							//update the logger
-							log->access_process(vAddr, vAddr, 0, READ);
-							log->read_unmapped();
-							log->access_stop(vAddr, vAddr);
-						}
-
-						//miss, nothing to read so return garbage
-						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
-						transactionQueue.pop_front();
-						busy = 0;
-					} else {					       
-						commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
-
-						//send the read to the controller
-						bool result = controller->addPacket(commandPacket);
-						if(result == true)
-						{
-							if(LOGGING == true)
-							{
-								//update the logger
-								log->read_mapped();
-							}
-							transactionQueue.pop_front();
-							busy = 0;
-						}
-						else
-						{
-							// Delete the packet if it is not being used to prevent memory leaks.
-							delete commandPacket;
-						}
-					}
-*/
 					handle_read(false);
 					break;
 
@@ -253,7 +217,7 @@ void Ftl::write_used_handler(uint64_t vAddr)
 		// want to reuse this block for something at some later time so mark it as unused because it is
 		used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = false;
 
-		//cout << "USING FTL's WRITE_USED_HANDLER!!!\n";
+		cout << "USING FTL's WRITE_USED_HANDLER!!!\n";
 }
 
 

@@ -25,7 +25,7 @@ namespace NVDSim{
 			void addFfTransaction(FlashTransaction &t);
 			virtual void update(void);
 			void handle_read(bool gc);
-			void write_used_handler(uint64_t vAddr);
+			virtual void write_used_handler(uint64_t vAddr);
 			void handle_write(bool gc);
 			void attemptWrite(uint64_t start, uint64_t *vAddr, uint64_t *pAddr, bool *done);
 			uint64_t get_ptr(void); 

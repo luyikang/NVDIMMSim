@@ -66,78 +66,16 @@ void GCFtl::update(void){
 			
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
-/*
-					if (addressMap.find(vAddr) == addressMap.end()){
-					        if(LOGGING == true)
-						{
-						    //update the logger
-						    log->access_process(vAddr, vAddr, 0, READ);
-						    log->read_unmapped();
-						    log->access_stop(vAddr, vAddr);
-						}
-
-						//miss, nothing to read so return garbage
-						controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
-						transactionQueue.pop_front();
-						busy = 0;
-					} else {	
-					        commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
-						if(LOGGING == true)
-						{
-						    //update the logger
-						    log->read_mapped();
-						}
-						//send the read to the controller
-						result = controller->addPacket(commandPacket);
-						if(result == true && wait == false)
-						{
-						    transactionQueue.pop_front();
-						    busy = 0;
-						}
-					}
-*/
 					handle_read(false);
 					break;
 
 				case DATA_WRITE:
 					handle_write(false);
-
-/*
-				        if (addressMap.find(vAddr) != addressMap.end()){
-					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
-					    if(LOGGING == true)
-					    {
-						log->write_mapped();
-					    }
-					}
-					else
-					{
-					    if(LOGGING == true)
-					    {
-						log->write_unmapped();
-					    }
-					}
-					//look for first free physical page starting at the write pointer
-	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
-					attemptWrite(start, &vAddr, &pAddr, &done);
-
-					//if we didn't find a free page after scanning til the end, check the beginning
-				        if (!done){
-					    attemptWrite(0, &vAddr, &pAddr, &done);
-					}
-
-					if (!done){
-						// TODO: Call GC
-						//ERROR("No free pages? GC needs some work.");
-						//exit(1);
-						// Trust that the GC is running and wait
-					        break;
-					} else {
-						addressMap[vAddr] = pAddr;
-					}
-*/
 					break;
-			        case GC_DATA_READ:
+
+				case GC_DATA_READ:
+					handle_read(true);
+/*
 				    	if (addressMap.find(vAddr) == addressMap.end()){
 					        ERROR("GC tried to move data that wasn't there.");
 						exit(1);
@@ -151,11 +89,12 @@ void GCFtl::update(void){
 						    busy = 0;
 						}
 					}
+*/
 					break;
 
 
 
-			        case GC_DATA_WRITE:
+				case GC_DATA_WRITE:
 				        if (addressMap.find(vAddr) != addressMap.end()){
 					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
 					}			          
@@ -177,6 +116,9 @@ void GCFtl::update(void){
 						addressMap[vAddr] = pAddr;
 					}
 					break;
+
+
+
 				case BLOCK_ERASE:	        
 					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
 					result = controller->addPacket(commandPacket);
@@ -252,7 +194,7 @@ void GCFtl::write_used_handler(uint64_t vAddr)
 {
 	dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
 
-	cout << "USING FTL's WRITE_USED_HANDLER!!!\n";
+	cout << "USING GCFTL's WRITE_USED_HANDLER!!!\n";
 }
 
 bool GCFtl::checkGC(void){
