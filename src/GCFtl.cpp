@@ -75,52 +75,11 @@ void GCFtl::update(void){
 
 				case GC_DATA_READ:
 					handle_read(true);
-/*
-				    	if (addressMap.find(vAddr) == addressMap.end()){
-					        ERROR("GC tried to move data that wasn't there.");
-						exit(1);
-					} else {		
-					        commandPacket = Ftl::translate(GC_READ, vAddr, addressMap[vAddr]);
-						//send the read to the controller
-						result = controller->addPacket(commandPacket);
-						if(result == true)
-						{
-						    transactionQueue.pop_front();
-						    busy = 0;
-						}
-					}
-*/
 					break;
-
-
 
 				case GC_DATA_WRITE:
 					handle_write(true);
-/*
-				        if (addressMap.find(vAddr) != addressMap.end()){
-					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
-					}			          
-					//look for first free physical page starting at the write pointer
-	                                start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
-					attemptWrite(start, &vAddr, &pAddr, &done);
-
-					//if we didn't find a free page after scanning til the end, check the beginning
-				        if (!done){
-					    attemptWrite(0, &vAddr, &pAddr, &done);
-					}
-
-					if (!done){
-						// TODO: Call GC
-						//ERROR("No free pages? GC needs some work.");
-						//exit(1);
-						// Trust that the GC is running and wait
-					} else {
-						addressMap[vAddr] = pAddr;
-					}
-*/
 					break;
-
-
 
 				case BLOCK_ERASE:	        
 					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
@@ -138,6 +97,7 @@ void GCFtl::update(void){
 					    busy = 0;
 					}
 					break;		
+
 				default:
 					ERROR("Transaction in Ftl that isn't a read or write... What?");
 					exit(1);
@@ -197,7 +157,7 @@ void GCFtl::write_used_handler(uint64_t vAddr)
 {
 	dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
 
-	cout << "USING GCFTL's WRITE_USED_HANDLER!!!\n";
+	//cout << "USING GCFTL's WRITE_USED_HANDLER!!!\n";
 }
 
 bool GCFtl::checkGC(void){

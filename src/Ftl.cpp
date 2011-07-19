@@ -217,7 +217,7 @@ void Ftl::write_used_handler(uint64_t vAddr)
 		// want to reuse this block for something at some later time so mark it as unused because it is
 		used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = false;
 
-		cout << "USING FTL's WRITE_USED_HANDLER!!!\n";
+		//cout << "USING FTL's WRITE_USED_HANDLER!!!\n";
 }
 
 
