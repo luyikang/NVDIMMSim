@@ -214,7 +214,7 @@ void Ftl::write_used_handler(uint64_t vAddr)
 		// want to reuse this block for something at some later time so mark it as unused because it is
 		used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = false;
 
-		cout << "USING FTL's WRITE_USED_HANDLER!!!\n";
+		//cout << "USING FTL's WRITE_USED_HANDLER!!!\n";
 }
 
 
@@ -237,7 +237,7 @@ void Ftl::handle_write(bool gc)
 
 	//look for first free physical page starting at the write pointer
 	start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
-	uint64_t block, page;
+	uint64_t block, page, tmp_block, tmp_page;
 
 	// Search from the current write pointer to the end of the flash for a free page.
 	for (block = start ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++)
@@ -246,11 +246,17 @@ void Ftl::handle_write(bool gc)
 		{
 			if (!used[block][page])
 			{
+				//cout << "Found free page: inside: " << block << "/" << page << " ";
+				tmp_block = block;
+				tmp_page = page;
 				pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
 				done = true;
 			}
 		}
 	}
+	block = tmp_block;
+	page = tmp_page;
+	//cout << "outside: " << block << "/" << page << "\n";
 	//attemptWrite(start, &vAddr, &pAddr, &done);
 
 
@@ -266,11 +272,15 @@ void Ftl::handle_write(bool gc)
 			{
 				if (!used[block][page])
 				{
+					tmp_block = block;
+					tmp_page = page;
 					pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
 					done = true;
 				}
 			}
 		}
+		block = tmp_block;
+		page = tmp_page;
 	}
 
 	if (!done)
@@ -341,6 +351,7 @@ void Ftl::handle_write(bool gc)
 
 			// Update the address map.
 			addressMap[vAddr] = pAddr;
+			//cout << "Added " << hex << vAddr << " -> " << pAddr << dec << " to addressMap on cycle " << 100 << " " << currentClockCycle << "\n";
 		}
 	}
 }
