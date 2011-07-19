@@ -36,6 +36,11 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 		planes[busPacket->plane].storeInData(busPacket);
 	} else if (currentCommands[busPacket->plane] == NULL) {
 		currentCommands[busPacket->plane] = busPacket;
+		if (LOGGING)
+		{
+			// Tell the logger the access has now been processed.
+			log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, busPacket->busPacketType);
+		}
 		switch (busPacket->busPacketType){
 			case READ:
 			case GC_READ:
@@ -70,15 +75,7 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				}
 				break;
 			default:
-				break;
-
-
-			if (LOGGING)
-			{
-				// Tell the logger the access has now been processed.
-				log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, busPacket->busPacketType);
-			}
-				
+				break;			
 		}
 	} else{
 		ERROR("Die is busy");
@@ -142,7 +139,7 @@ void Die::update(void){
 					// Tell the logger the access is done.
 					if (LOGGING)
 					{
-						log->access_stop(currentCommand->virtualAddress);
+					    log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
 					}
 
 					// Delete the memory allocated for the current command to prevent memory leaks.

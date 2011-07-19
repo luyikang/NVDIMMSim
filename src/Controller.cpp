@@ -99,30 +99,30 @@ void Controller::returnPowerData(vector<double> idle_energy, vector<double> acce
 	}
 }
 
-	void Controller::receiveFromChannel(ChannelPacket *busPacket){
-		// READ is now done. Log it and call delete
-		if(LOGGING == true)
-		{
-			log->access_stop(busPacket->physicalAddress);
-		}
-
-		// Put in the returnTransaction queue 
-		switch (busPacket->busPacketType)
-		{
-			case READ:
-				returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->virtualAddress, busPacket->data));
-				break;
-			case GC_READ:
-				// Nothing to do.
-				break;
-			default:
-				ERROR("Illegal busPacketType " << busPacket->busPacketType << " in Controller::receiveFromChannel\n");
-				break;
-		}
-
-		// Delete the ChannelPacket since READ is done. This must be done to prevent memory leaks.
-		delete(busPacket);
+void Controller::receiveFromChannel(ChannelPacket *busPacket){
+	// READ is now done. Log it and call delete
+	if(LOGGING == true)
+	{
+		log->access_stop(busPacket->virtualAddress, busPacket->physicalAddress);
 	}
+
+	// Put in the returnTransaction queue 
+	switch (busPacket->busPacketType)
+	{
+		case READ:
+			returnTransaction.push_back(FlashTransaction(RETURN_DATA, busPacket->virtualAddress, busPacket->data));
+			break;
+		case GC_READ:
+			// Nothing to do.
+			break;
+		default:
+			ERROR("Illegal busPacketType " << busPacket->busPacketType << " in Controller::receiveFromChannel\n");
+			break;
+	}
+
+	// Delete the ChannelPacket since READ is done. This must be done to prevent memory leaks.
+	delete(busPacket);
+}
 
 bool Controller::checkQueueWrite(ChannelPacket *p)
 {

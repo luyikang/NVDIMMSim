@@ -57,8 +57,8 @@ namespace NVDSim
 	virtual void update();
 	
 	void access_start(uint64_t addr);
-	virtual void access_process(uint64_t addr, uint64_t paddr, uint package, ChannelPacketType op);
-	virtual void access_stop(uint64_t addr);
+	void access_process(uint64_t addr, uint64_t paddr, uint package, ChannelPacketType op);
+	virtual void access_stop(uint64_t addr, uint64_t paddr);
 
 	virtual void save_epoch(uint64_t cycle, uint epoch);
 	
@@ -117,7 +117,7 @@ namespace NVDSim
 	};
 
 	// Store access info while the access is being processed.
-	std::unordered_map<uint64_t, AccessMapEntry> access_map;
+	std::unordered_map<uint64_t, std::unordered_map<uint64_t, AccessMapEntry>> access_map;
 
 	// Store the address and arrival time while access is waiting to be processed.
 	// Must do this because duplicate addresses may arrive close together.

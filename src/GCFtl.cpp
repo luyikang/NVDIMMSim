@@ -73,6 +73,7 @@ void GCFtl::update(void){
 						    //update the logger
 						    log->access_process(vAddr, vAddr, 0, READ);
 						    log->read_unmapped();
+						    log->access_stop(vAddr, vAddr);
 						}
 
 						//miss, nothing to read so return garbage

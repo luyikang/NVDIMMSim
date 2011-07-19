@@ -76,8 +76,10 @@ void Logger::access_process(uint64_t addr, uint64_t paddr, uint package, Channel
 		abort();
 	}
 
-	if (access_map.count(addr) != 0)
+	if (access_map[addr].count(paddr) != 0)
 	{
+	    cout << access_map.count(addr) << "\n";
+	    cout << access_map[addr].count(paddr) << "\n";
 		cerr << "ERROR: NVLogger.access_process() called with address already in access_map. address=0x" << hex << addr << "\n" << dec;
 		abort();
 	}
@@ -88,22 +90,23 @@ void Logger::access_process(uint64_t addr, uint64_t paddr, uint package, Channel
 	a.process = this->currentClockCycle;
 	a.pAddr = paddr;
 	a.package = package;
-	access_map[addr] = a;
+	//access_map[addr] = std::unordered_map<uint64_t, AccessMapEntry>();
+	access_map[addr][paddr] = a;
 	
 	this->queue_latency(a.process - a.start);
 }
 
-void Logger::access_stop(uint64_t addr)
+void Logger::access_stop(uint64_t addr, uint64_t paddr)
 {
-        if (access_map.count(addr) == 0)
+        if (access_map[addr].count(paddr) == 0)
 	{
 		cerr << "ERROR: NVLogger.access_stop() called with address not in access_map. address=" << hex << addr << "\n" << dec;
 		abort();
 	}
 
-	AccessMapEntry a = access_map[addr];
+	AccessMapEntry a = access_map[addr][paddr];
 	a.stop = this->currentClockCycle;
-	access_map[addr] = a;
+	access_map[addr][paddr] = a;
 
 	// Log cache event type.
 	if (a.op == READ)
@@ -132,7 +135,11 @@ void Logger::access_stop(uint64_t addr)
 	    }
 	}
 		
-	access_map.erase(addr);
+	access_map[addr].erase(paddr);
+	if(access_map.count(addr) == 0)
+	{
+	    access_map.erase(addr);
+	}
 }
 
 void Logger::read()

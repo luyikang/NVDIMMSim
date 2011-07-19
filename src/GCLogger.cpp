@@ -29,62 +29,17 @@ void GCLogger::update()
 	this->step();
 }
 
-
-// Using virtual addresses here right now
-void GCLogger::access_process(uint64_t addr, uint64_t paddr, uint package, ChannelPacketType op)
+void GCLogger::access_stop(uint64_t addr, uint64_t paddr)
 {
-        // Get entry off of the access_queue.
-	uint64_t start_cycle = 0;
-	bool found = false;
-	list<pair <uint64_t, uint64_t>>::iterator it;
-	for (it = access_queue.begin(); it != access_queue.end(); it++)
-	{
-		uint64_t cur_addr = (*it).first;
-		uint64_t cur_cycle = (*it).second;
-
-		if (cur_addr == addr)
-		{
-			start_cycle = cur_cycle;
-			found = true;
-			access_queue.erase(it);
-			break;
-		}
-	}
-
-	if (!found)
-	{
-		cerr << "ERROR: NVLogger.access_process() called with address not in the access_queue. address=0x" << hex << addr << "\n" << dec;
-		abort();
-	}
-
-	if (access_map.count(addr) != 0)
-	{
-		cerr << "ERROR: NVLogger.access_process() called with address already in access_map. address=0x" << hex << addr << "\n" << dec;
-		abort();
-	}
-
-	AccessMapEntry a;
-	a.start = start_cycle;
-	a.op = op;
-	a.process = this->currentClockCycle;
-	a.pAddr = paddr;
-	a.package = package;
-	access_map[addr] = a;
-
-	this->queue_latency(a.process - a.start);
-}
-
-void GCLogger::access_stop(uint64_t addr)
-{
-	if (access_map.count(addr) == 0)
+        if (access_map[addr].count(paddr) == 0)
 	{
 		cerr << "ERROR: NVLogger.access_stop() called with address not in access_map. address=" << hex << addr << "\n" << dec;
 		abort();
 	}
 
-	AccessMapEntry a = access_map[addr];
+	AccessMapEntry a = access_map[addr][paddr];
 	a.stop = this->currentClockCycle;
-	access_map[addr] = a;
+	access_map[addr][paddr] = a;
 
 	// Log cache event type.
 	if (a.op == READ)
@@ -144,8 +99,12 @@ void GCLogger::access_stop(uint64_t addr)
 		}
 	    }
 	}
-		
-	access_map.erase(addr);
+	
+	access_map[addr].erase(paddr);
+	if(access_map.count(addr) == 0)
+	{
+	    access_map.erase(addr);
+	}
 }
 
 void GCLogger::erase()

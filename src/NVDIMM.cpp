@@ -181,7 +181,7 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 }
 
 bool NVDIMM::add(FlashTransaction &trans){
-	return ftl->addTransaction(trans);
+	return ftl->addTransaction(trans);	
 }
 
 bool NVDIMM::addTransaction(bool isWrite, uint64_t addr){
