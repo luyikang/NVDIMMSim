@@ -45,6 +45,7 @@ namespace NVDSim{
 			Logger *log;
 
 			uint64_t write_counter;
+			uint64_t used_page_count;
 
 		protected:
 			bool gc_flag;
