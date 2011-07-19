@@ -57,7 +57,6 @@ void GCFtl::addGcTransaction(FlashTransaction &t){
 void GCFtl::update(void){
         uint64_t start;
 	uint i;
-	bool wait = false;
 	if (busy) {
 		if (lookupCounter <= 0){
 			uint64_t vAddr = currentTransaction.address, pAddr;
@@ -67,6 +66,7 @@ void GCFtl::update(void){
 			
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
+/*
 					if (addressMap.find(vAddr) == addressMap.end()){
 					        if(LOGGING == true)
 						{
@@ -95,8 +95,14 @@ void GCFtl::update(void){
 						    busy = 0;
 						}
 					}
+*/
+					handle_read(false);
 					break;
+
 				case DATA_WRITE:
+					handle_write(false);
+
+/*
 				        if (addressMap.find(vAddr) != addressMap.end()){
 					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
 					    if(LOGGING == true)
@@ -129,6 +135,7 @@ void GCFtl::update(void){
 					} else {
 						addressMap[vAddr] = pAddr;
 					}
+*/
 					break;
 			        case GC_DATA_READ:
 				    	if (addressMap.find(vAddr) == addressMap.end()){
@@ -138,13 +145,16 @@ void GCFtl::update(void){
 					        commandPacket = Ftl::translate(GC_READ, vAddr, addressMap[vAddr]);
 						//send the read to the controller
 						result = controller->addPacket(commandPacket);
-						if(result == true && wait == false)
+						if(result == true)
 						{
 						    transactionQueue.pop_front();
 						    busy = 0;
 						}
 					}
 					break;
+
+
+
 			        case GC_DATA_WRITE:
 				        if (addressMap.find(vAddr) != addressMap.end()){
 					    dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
@@ -163,7 +173,6 @@ void GCFtl::update(void){
 						//ERROR("No free pages? GC needs some work.");
 						//exit(1);
 						// Trust that the GC is running and wait
-					        wait = true;
 					} else {
 						addressMap[vAddr] = pAddr;
 					}
@@ -171,7 +180,7 @@ void GCFtl::update(void){
 				case BLOCK_ERASE:	        
 					commandPacket = Ftl::translate(ERASE, 0, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
 					result = controller->addPacket(commandPacket);
-					if(result == true && wait == false)
+					if(result == true)
 					{
 					    for (i = 0 ; i < PAGES_PER_BLOCK ; i++){
 						dirty[vAddr / BLOCK_SIZE][i] = false;
@@ -237,6 +246,13 @@ void GCFtl::update(void){
 	  controller->returnPowerData(idle_energy, access_energy, erase_energy);
 #endif
 
+}
+
+void GCFtl::write_used_handler(uint64_t vAddr)
+{
+	dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
+
+	cout << "USING FTL's WRITE_USED_HANDLER!!!\n";
 }
 
 bool GCFtl::checkGC(void){
