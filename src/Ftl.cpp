@@ -37,6 +37,8 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 	parent = p;
 
 	log = l;
+	
+	loaded = false;
 
 	// Counter to keep track of succesful writes.
 	write_counter = 0;
@@ -420,15 +422,15 @@ void Ftl::saveNVState(void)
 	if(ENABLE_NV_SAVE)
 	{
 		ofstream save_file;
-		save_file.open(NVDIMM_SAVE_FILE, ios_base::out | ios_base::trunc);
+		save_file.open(NV_SAVE_FILE, ios_base::out | ios_base::trunc);
 		if(!save_file)
 		{
-			cout << "ERROR: Could not open NVDIMM state save file: " << NVDIMM_SAVE_FILE << "\n";
+			cout << "ERROR: Could not open NVDIMM state save file: " << NV_SAVE_FILE << "\n";
 			abort();
 		}
 
 		cout << "NVDIMM is saving the used table and address map \n";
-		cout << "save file is" << NVDIMM_SAVE_FILE << "\n";
+		cout << "save file is" << NV_SAVE_FILE << "\n";
 
 		// save the address map
 		save_file << "AddressMap \n";
@@ -456,17 +458,17 @@ void Ftl::saveNVState(void)
 
 void Ftl::loadNVState(void)
 {
-	if(ENABLE_NV_RESTORE)
+	if(ENABLE_NV_RESTORE && !loaded)
 	{
 		ifstream restore_file;
-		restore_file.open(NVDIMM_RESTORE_FILE);
+		restore_file.open(NV_RESTORE_FILE);
 		if(!restore_file)
 		{
-			cout << "ERROR: Could not open NVDIMM restore file: " << NVDIMM_RESTORE_FILE << "\n";
+			cout << "ERROR: Could not open NVDIMM restore file: " << NV_RESTORE_FILE << "\n";
 			abort();
 		}
 
-		cout << "NVDIMM is restoring the system from file \n";
+		cout << "NVDIMM is restoring the system from file " << NV_RESTORE_FILE <<"\n";
 
 		// restore the data
 		uint doing_used = 0;
@@ -536,6 +538,8 @@ void Ftl::loadNVState(void)
 			}
 		}
 
+		restore_file.close();
+		loaded = true;
 	}
 }
 

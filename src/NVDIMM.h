@@ -49,6 +49,7 @@ namespace NVDSim{
 
 			uint systemID, numReads, numWrites, numErases;
 			uint epoch_count, epoch_cycles;
+
 		private:
 			string dev, sys, cDirectory;
 	};

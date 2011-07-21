@@ -273,14 +273,14 @@ void NVDIMM::powerCallback(void){
 //therefore the appropriate system setting should be set
 void NVDIMM::saveNVState(string filename){
     ENABLE_NV_SAVE = 1;
-    NVDIMM_SAVE_FILE = filename;
+    NV_SAVE_FILE = filename;
     cout << "got to save state in nvdimm \n";
-    cout << "save file was" << NVDIMM_SAVE_FILE << "\n";
+    cout << "save file was" << NV_SAVE_FILE << "\n";
     ftl->saveNVState();
 }
 
 void NVDIMM::loadNVState(string filename){
     ENABLE_NV_RESTORE = 1;
-    NVDIMM_RESTORE_FILE = filename;
+    NV_RESTORE_FILE = filename;
     ftl->loadNVState();
 }

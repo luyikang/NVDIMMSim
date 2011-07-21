@@ -47,6 +47,8 @@ namespace NVDSim{
 			uint64_t write_counter;
 			uint64_t used_page_count;
 
+			bool loaded;
+
 		protected:
 			bool gc_flag;
 			uint offset,  pageBitWidth, blockBitWidth, planeBitWidth, dieBitWidth, packageBitWidth;

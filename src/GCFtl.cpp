@@ -45,7 +45,7 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 }
 
 void GCFtl::addGcTransaction(FlashTransaction &t){ 
-	transactionQueue.push_back(t);
+	transactionQueue.push_front(t);
 
 	if(LOGGING == true)
 	{
@@ -88,6 +88,8 @@ void GCFtl::update(void){
 					{
 					    for (i = 0 ; i < PAGES_PER_BLOCK ; i++){
 						dirty[vAddr / BLOCK_SIZE][i] = false;
+						cout << "virtual address was " << vAddr << "\n";
+						cout << used[vAddr / BLOCK_SIZE][i] << "\n";
 						if (used[vAddr / BLOCK_SIZE][i]){
 							used[vAddr / BLOCK_SIZE][i] = false;
 							used_page_count--;
@@ -233,10 +235,10 @@ void GCFtl::saveNVState(void)
      if(ENABLE_NV_SAVE)
     {
 	ofstream save_file;
-	save_file.open(NVDIMM_SAVE_FILE, ios_base::out | ios_base::trunc);
+	save_file.open(NV_SAVE_FILE, ios_base::out | ios_base::trunc);
 	if(!save_file)
 	{
-	    cout << "ERROR: Could not open NVDIMM state save file: " << NVDIMM_SAVE_FILE << "\n";
+	    cout << "ERROR: Could not open NVDIMM state save file: " << NV_SAVE_FILE << "\n";
 	    abort();
 	}
 	
@@ -279,17 +281,17 @@ void GCFtl::saveNVState(void)
 
 void GCFtl::loadNVState(void)
 {
-    if(ENABLE_NV_RESTORE)
+    if(ENABLE_NV_RESTORE && !loaded)
     {
 	ifstream restore_file;
-	restore_file.open(NVDIMM_RESTORE_FILE);
+	restore_file.open(NV_RESTORE_FILE);
 	if(!restore_file)
 	{
-	    cout << "ERROR: Could not open NVDIMM restore file: " << NVDIMM_RESTORE_FILE << "\n";
+	    cout << "ERROR: Could not open NVDIMM restore file: " << NV_RESTORE_FILE << "\n";
 	    abort();
 	}
 
-	cout << "NVDIMM is restoring the system from file \n";
+	cout << "NVDIMM is restoring the system from file " << NV_RESTORE_FILE <<"\n";
 
 	// restore the data
 	uint doing_used = 0;
@@ -385,5 +387,8 @@ void GCFtl::loadNVState(void)
 	    }
 
 	}
+
+	restore_file.close();
+	loaded = true;
     }
 }
