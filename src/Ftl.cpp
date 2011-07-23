@@ -251,7 +251,6 @@ void Ftl::handle_write(bool gc)
 		{
 			if (!used[block][page])
 			{
-				//cout << "Found free page: inside: " << block << "/" << page << " ";
 				tmp_block = block;
 				tmp_page = page;
 				pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
@@ -290,10 +289,11 @@ void Ftl::handle_write(bool gc)
 
 	if (!done)
 	{
-		//bad news
-		ERROR("FLASH DIMM IS COMPLETELY FULL - If you see this, something has gone horribly wrong.");
-		cout << "WRITE COUNTER IS " << write_counter << "\n";
-		exit(9001);
+	    //bad news
+		    //ERROR("FLASH DIMM IS COMPLETELY FULL - If you see this, something has gone horribly wrong.");
+		//cout << "WRITE COUNTER IS " << write_counter << "\n";
+		//cout << "USED PAGE COUNT IS " << used_page_count << "\n";
+		//exit(9001);
 	} 
 	else 
 	{

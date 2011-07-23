@@ -24,7 +24,7 @@ namespace NVDSim{
 			void update(void);
 			void write_used_handler(uint64_t vAddr);
 			bool checkGC(void); 
-			void runGC(void);
+			void runGC(uint plane);
 
 			void saveNVState(void);
 			void loadNVState(void);
@@ -32,6 +32,9 @@ namespace NVDSim{
 		protected:
 			uint gc_status, panic_mode;
 			uint64_t start_erase;
+
+			uint* erase_pointer;
+			uint gc_pointer;
 			    
 			std::vector<vector<bool>> dirty;
 	};

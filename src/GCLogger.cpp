@@ -33,7 +33,7 @@ void GCLogger::access_stop(uint64_t addr, uint64_t paddr)
 {
         if (access_map[addr].count(paddr) == 0)
 	{
-		cerr << "ERROR: NVLogger.access_stop() called with address not in access_map. address=" << hex << addr << "\n" << dec;
+	    cerr << "ERROR: NVGCLogger.access_stop() called with address not in access_map. address= " << hex << addr << ", " << paddr << "\n" << dec;
 		abort();
 	}
 

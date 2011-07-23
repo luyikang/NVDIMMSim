@@ -14,7 +14,7 @@
 #include <time.h>
 #include "TraceBasedSim.h"
 
-#define NUM_WRITES 10
+#define NUM_WRITES 1000
 #define SIM_CYCLES 50000000
 
 /*temporary assignments for externed variables.
@@ -99,7 +99,7 @@ void test_obj::power_cb(uint id, vector<vector<double>> data, uint64_t cycle){
 void test_obj::run_test(void){
 	clock_t start= clock(), end;
 	uint write, cycle;
-	NVDIMM *NVDimm= new NVDIMM(1,"ini/samsung_K9XXG08UXM(pcm).ini","ini/def_system.ini","","");
+	NVDIMM *NVDimm= new NVDIMM(1,"ini/samsung_K9XXG08UXM(gc_test).ini","ini/def_system.ini","","");
 	//NVDIMM *NVDimm= new NVDIMM(1,"ini/PCM_TEST.ini","ini/def_system.ini","","");
 	typedef CallbackBase<void,uint,uint64_t,uint64_t> Callback_t;
 	Callback_t *r = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::read_cb);
@@ -117,16 +117,16 @@ void test_obj::run_test(void){
 		}*/
 
 	int writes = 0;
+	bool result = 0;
 	
 	for (cycle= 0; cycle<SIM_CYCLES; cycle++){
-	  if(writes < NUM_WRITES && cycle%1000 == 0){
-	     for (write= 0; write<2; write++){
-		  t= FlashTransaction(DATA_WRITE, write, (void *)0xdeadbeef);
-		  (*NVDimm).add(t);
+	  if(writes < NUM_WRITES){
+	      t = FlashTransaction(DATA_WRITE, 1, (void *)0xdeadbeef);
+	      result = (*NVDimm).add(t);
+	      if(result == 1)
+	      {
 		  writes++;
-		  t= FlashTransaction(DATA_READ, write, (void *)0xdeadbeef);
-		  (*NVDimm).add(t);
-	     }
+	      }
 	  }
 
 		(*NVDimm).update();
