@@ -21,14 +21,7 @@ GCFtl::GCFtl(Controller *c, Logger *l, NVDIMM *p)
 	dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
 
 	// set up internal pointer to make sure that the gc isn't always erasing the same block
-	erase_pointer = new uint[NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE];
-	for(uint i = 0;  i < NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE; i++)
-	{
-	    erase_pointer[i] = 0;
-	}
-
-	// pointer to make sure when idle gc runs it cycles though planes
-	gc_pointer = 0;
+	erase_pointer = 0;
 }
 
 bool GCFtl::addTransaction(FlashTransaction &t){
@@ -56,6 +49,7 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 
 void GCFtl::addGcTransaction(FlashTransaction &t){ 
 	transactionQueue.push_front(t);
+	queues_full = false;
 
 	if(LOGGING == true)
 	{
@@ -68,30 +62,8 @@ void GCFtl::update(void){
         uint64_t start;
 	uint i;
 
-	if (gc_status){
-		if (!panic_mode && parent->numErases == start_erase + 1)
-			gc_status = 0;
-		if (panic_mode && parent->numErases == start_erase + PLANES_PER_DIE){
-			panic_mode = 0;
-			gc_status = 0;
-		}
-	}
-
-	if (!gc_status && (float)used_page_count >= (float)(FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE))){
-		start_erase = parent->numErases;
-		gc_status = 1;
-		panic_mode = 1;
-		cout << (float)(FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE)) << "\n";
-		cout << (float)used_page_count << "\n";
-		for (i = 0 ; i < PLANES_PER_DIE ; i++)
-		{
-			runGC(i);
-			cout << "running gc and used page count is " << used_page_count << "\n";
-		}
-	}
-
 	if (busy) {
-		if (lookupCounter <= 0){
+	    if (lookupCounter <= 0 && !queues_full){
 		        currentTransaction = transactionQueue.front();
 			uint64_t vAddr = currentTransaction.address, pAddr;
 			bool done = false;
@@ -116,7 +88,6 @@ void GCFtl::update(void){
 					break;
 
 				case BLOCK_ERASE:
-				    cout << "we're erasing block " << vAddr/BLOCK_SIZE << "and we have a used page count of " << used_page_count << "\n";
 					commandPacket = Ftl::translate(ERASE, vAddr, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
 					result = controller->addPacket(commandPacket);
 					if(result == true)
@@ -131,6 +102,11 @@ void GCFtl::update(void){
 					    transactionQueue.pop_front();
 					    busy = 0;
 					}
+					else
+					{
+					    delete commandPacket;
+					    queues_full = true;
+					}
 					break;		
 
 				default:
@@ -139,8 +115,10 @@ void GCFtl::update(void){
 					break;
 			}
 		} 
-		else
+		else if(lookupCounter > 0)
+		{
 			lookupCounter--;
+		}
 	} // if busy
 	else {
 		// Not currently busy.
@@ -155,10 +133,29 @@ void GCFtl::update(void){
 				// Run the GC.
 				start_erase = parent->numErases;
 				gc_status = 1;
-				cout << "ran the GC \n";
-				runGC(gc_pointer);
-				gc_pointer = (gc_pointer + 1) % (NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE);
+				runGC();
 			}
+		}
+	}
+
+	if (gc_status){
+		if (!panic_mode && parent->numErases == start_erase + 1)
+			gc_status = 0;
+		if (panic_mode && parent->numErases == start_erase + PLANES_PER_DIE){
+			panic_mode = 0;
+			gc_status = 0;
+		}
+	}
+
+	if (!gc_status && (float)used_page_count >= (float)(FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE))){
+		start_erase = parent->numErases;
+		gc_status = 1;
+		panic_mode = 1;
+		//cout << (float)(FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE)) << "\n";
+		//cout << (float)used_page_count << "\n";
+		for (i = 0 ; i < PLANES_PER_DIE ; i++)
+		{
+			runGC();
 		}
 	}
 
@@ -185,12 +182,12 @@ bool GCFtl::checkGC(void){
 }
 
 
-void GCFtl::runGC(uint plane) {
+void GCFtl::runGC() {
   uint64_t block, page, count, dirty_block=0, dirty_count=0, pAddr, vAddr, tmpAddr;
 	FlashTransaction trans;
 
 	// Get the dirtiest block (assumes the flash keeps track of this with an online algorithm).
-	for (block = erase_pointer[plane]; block < TOTAL_SIZE / BLOCK_SIZE; block++) {
+	for (block = erase_pointer; block < TOTAL_SIZE / BLOCK_SIZE; block++) {
 	  count = 0;
 	  for (page = 0; page < PAGES_PER_BLOCK; page++) {
 		if (dirty[block][page] == true) {
@@ -202,7 +199,7 @@ void GCFtl::runGC(uint plane) {
 	       	dirty_block = block;
 	  }
 	}
-	erase_pointer[plane] = (dirty_block + 1) % BLOCKS_PER_PLANE;
+	erase_pointer = (dirty_block + 1) % (TOTAL_SIZE / BLOCK_SIZE);
 
 	// All used pages in the dirty block, they must be moved elsewhere.
 	for (page = 0; page < PAGES_PER_BLOCK; page++) {
@@ -223,24 +220,20 @@ void GCFtl::runGC(uint plane) {
 			}
 		}
 		assert(found);
-			
-		cout << "moved a page \n";
+
 		ChannelPacket *dataPacket = Ftl::translate(DATA, vAddr, pAddr);
 		// Schedule a read and a write.
 		trans = FlashTransaction(GC_DATA_READ, vAddr, NULL);
 		addGcTransaction(trans);
 		trans = FlashTransaction(GC_DATA_WRITE, vAddr, NULL);
 		addGcTransaction(trans);
-
 	  }
    }
 
    // Schedule the BLOCK_ERASE command.
    // Note: The address field is just the block number, not an actual byte address.
-	cout << "scheduling an erase to block " << dirty_block << "\n";
    trans = FlashTransaction(BLOCK_ERASE, dirty_block * BLOCK_SIZE, NULL); 
    addGcTransaction(trans);
-
 }
 
 void GCFtl::saveNVState(void)

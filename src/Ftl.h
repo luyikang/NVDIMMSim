@@ -33,21 +33,18 @@ namespace NVDSim{
 
 			void sendQueueLength(void);
 			
-			void powerCallback();
+			void powerCallback(void);
 
 			virtual void saveNVState(void);
 			virtual void loadNVState(void);
+
+			void queuesNotFull(void);
 		       
 			Controller *controller;
 
 			NVDIMM *parent;
 
 			Logger *log;
-
-			uint64_t write_counter;
-			uint64_t used_page_count;
-
-			bool loaded;
 
 		protected:
 			bool gc_flag;
@@ -56,6 +53,15 @@ namespace NVDSim{
 			uint64_t max_queue_length;
 			FlashTransaction currentTransaction;
 			uint busy;
+
+			uint64_t deadlock_counter;
+			uint64_t deadlock_time;
+			uint64_t write_counter;
+			uint64_t used_page_count;
+
+			bool loaded;
+			bool queues_full;
+
 			std::unordered_map<uint64_t,uint64_t> addressMap;
 			std::vector<vector<bool>> used;
 			std::list<FlashTransaction> transactionQueue;

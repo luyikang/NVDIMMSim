@@ -284,3 +284,8 @@ void NVDIMM::loadNVState(string filename){
     NV_RESTORE_FILE = filename;
     ftl->loadNVState();
 }
+
+void NVDIMM::queuesNotFull(void)
+{
+    ftl->queuesNotFull();
+}

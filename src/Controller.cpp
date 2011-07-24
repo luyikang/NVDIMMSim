@@ -155,7 +155,8 @@ void Controller::update(void){
 					//if we can get the channel
 					if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
 						outgoingPackets[i]= channelQueues[i].front();
-						channelQueues[i].pop();				
+						channelQueues[i].pop();	
+						parentNVDIMM->queuesNotFull();
 						switch (outgoingPackets[i]->busPacketType){
 							case DATA:
 								// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
@@ -211,7 +212,8 @@ void Controller::update(void){
 				//if we can get the channel
 				if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
 					outgoingPackets[i] = channelQueues[i].front();
-					channelQueues[i].pop();				
+					channelQueues[i].pop();	
+					parentNVDIMM->queuesNotFull();
 					switch (outgoingPackets[i]->busPacketType){
 						case DATA:
 							// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits

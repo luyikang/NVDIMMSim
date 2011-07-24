@@ -37,6 +37,8 @@ namespace NVDSim{
 			void saveNVState(string filename);
 			void loadNVState(string filename);
 
+			void queuesNotFull(void);
+
 			Controller *controller;
 			Ftl *ftl;
 			Logger *log;

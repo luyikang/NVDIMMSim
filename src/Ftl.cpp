@@ -39,9 +39,26 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 	log = l;
 	
 	loaded = false;
+	queues_full = false;
 
 	// Counter to keep track of succesful writes.
 	write_counter = 0;
+
+	// Counter to keep track of cycles we spend waiting on erases
+	// if we wait longer than the length of an erase, we've probably deadlocked
+	deadlock_counter = 0;
+
+	// the maximum amount of time we can wait before we're sure we've deadlocked
+	// time it takes to read all of the pages in a block
+	deadlock_time = PAGES_PER_BLOCK * (READ_TIME + ((divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
+					   ((divide_params(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME));
+	// plus the time it takes to write all of the pages in a block
+	deadlock_time += PAGES_PER_BLOCK * (WRITE_TIME + ((divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
+					   ((divide_params(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME));
+	// plus the time it takes to erase the block
+	deadlock_time += ERASE_TIME + ((divide_params(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME);
+	// with a small margin of error added to cover any other operations that might be in the way
+	deadlock_time *= 2;
 }
 
 ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr){
@@ -121,7 +138,7 @@ void Ftl::addFfTransaction(FlashTransaction &t){
 
 void Ftl::update(void){
 	if (busy) {
-		if (lookupCounter == 0){
+	    if (lookupCounter <= 0 && !queues_full){
 
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
@@ -137,8 +154,10 @@ void Ftl::update(void){
 					break;
 			}
 		} //if lookupCounter is not 0
-		else
+		else if(lookupCounter > 0)
+		{
 			lookupCounter--;
+		}
 	} // if busy
 	else {
 		// Not currently busy.
@@ -209,6 +228,7 @@ void Ftl::handle_read(bool gc)
 		{
 			// Delete the packet if it is not being used to prevent memory leaks.
 			delete commandPacket;
+			queues_full = true;
 		}
 	}
 }
@@ -289,16 +309,21 @@ void Ftl::handle_write(bool gc)
 
 	if (!done)
 	{
-	    //bad news
-		    //ERROR("FLASH DIMM IS COMPLETELY FULL - If you see this, something has gone horribly wrong.");
-		//cout << "WRITE COUNTER IS " << write_counter << "\n";
-		//cout << "USED PAGE COUNT IS " << used_page_count << "\n";
-		//exit(9001);
+	    deadlock_counter++;
+	    if(deadlock_counter == deadlock_time)
+	    {
+		//bad news
+		cout << deadlock_time;
+		ERROR("FLASH DIMM IS COMPLETELY FULL AND DEADLOCKED - If you see this, something has gone horribly wrong.");
+		exit(9001);
+	    }
 	} 
 	else 
 	{
 		// We've found a used page. Now we need to try to add the transaction to the Controller queue.
-
+	       
+	        // first things first, we're no longer in danger of dead locking so reset the counter
+	        deadlock_counter = 0;
 
 		//send write to controller
 		
@@ -319,6 +344,7 @@ void Ftl::handle_write(bool gc)
 			// memory leaks.
 			delete dataPacket;
 			delete commandPacket;
+			queues_full = true;
 		}
 
 		if (queue_open)
@@ -543,5 +569,7 @@ void Ftl::loadNVState(void)
 	}
 }
 
-
-
+void Ftl::queuesNotFull(void)
+{
+    queues_full = false;
+}

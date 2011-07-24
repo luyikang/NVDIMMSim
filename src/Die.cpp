@@ -39,6 +39,7 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 		if (LOGGING)
 		{
 			// Tell the logger the access has now been processed.
+		        
 			log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, busPacket->busPacketType);
 		}
 		switch (busPacket->busPacketType){
@@ -71,7 +72,6 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				}
 				else
 				{
-				    cout << "we are now doing the erase to block " << busPacket->block << "\n";
 					controlCyclesLeft[busPacket->plane]= ERASE_TIME;
 				}
 				break;
@@ -109,11 +109,7 @@ void Die::update(void){
 						break;
 					case WRITE:				     
 						planes[currentCommand->plane].write(currentCommand);
-						parentNVDIMM->numWrites++;
-						
-						cout << "completed a write to die " << currentCommand->die << " and plane " << currentCommand->plane;
-						cout << " and block " << currentCommand->block << " and page " << currentCommand->page << "\n";
-						
+						parentNVDIMM->numWrites++;					
 						//call write callback
 						if (parentNVDIMM->WriteDataDone != NULL){
 							(*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->virtualAddress, currentClockCycle);
@@ -126,7 +122,6 @@ void Die::update(void){
 					case ERASE:
 						planes[currentCommand->plane].erase(currentCommand);
 						parentNVDIMM->numErases++;
-						cout << "completed an erase to block " << currentCommand->block << "\n";
 						break;
 					case DATA:
 						// Nothing to do.
