@@ -571,3 +571,13 @@ void Ftl::queuesNotFull(void)
 {
     queues_full = false;
 }
+
+void Ftl::GCReadDone(uint64_t vAddr)
+{
+    // an empty fucntion to make the compiler happy
+}
+
+void Ftl::GCWriteDone(uint64_t vAddr)
+{
+    // an empty fucntion to make the compiler happy
+}

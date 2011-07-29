@@ -102,10 +102,14 @@ void Die::update(void){
 
 				// Process each command based on the packet type.
 				switch (currentCommand->busPacketType){
-					case GC_READ:
 					case READ:	
 						planes[currentCommand->plane].read(currentCommand);
 						returnDataPackets.push(planes[currentCommand->plane].readFromData());
+						break;
+					case GC_READ:
+					        planes[currentCommand->plane].read(currentCommand);
+						returnDataPackets.push(planes[currentCommand->plane].readFromData());
+						parentNVDIMM->GCReadDone(currentCommand->virtualAddress);
 						break;
 					case WRITE:				     
 						planes[currentCommand->plane].write(currentCommand);
@@ -118,6 +122,7 @@ void Die::update(void){
 					case GC_WRITE:
 						planes[currentCommand->plane].write(currentCommand);
 						parentNVDIMM->numWrites++;
+						parentNVDIMM->GCWriteDone(currentCommand->virtualAddress);
 						break;
 					case ERASE:
 						planes[currentCommand->plane].erase(currentCommand);

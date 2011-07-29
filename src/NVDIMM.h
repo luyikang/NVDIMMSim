@@ -39,6 +39,9 @@ namespace NVDSim{
 
 			void queuesNotFull(void);
 
+			void GCReadDone(uint64_t vAddr);
+			void GCWriteDone(uint64_t vAddr);
+
 			Controller *controller;
 			Ftl *ftl;
 			Logger *log;

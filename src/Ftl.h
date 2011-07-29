@@ -39,6 +39,9 @@ namespace NVDSim{
 			virtual void loadNVState(void);
 
 			void queuesNotFull(void);
+
+			virtual void GCReadDone(uint64_t vAddr);
+			virtual void GCWriteDone(uint64_t vAddr);
 		       
 			Controller *controller;
 

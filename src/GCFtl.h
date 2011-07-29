@@ -29,12 +29,28 @@ namespace NVDSim{
 			void saveNVState(void);
 			void loadNVState(void);
 
+			void GCReadDone(uint64_t vAddr);
+			void GCWriteDone(uint64_t vAddr);
+
 		protected:
 			uint gc_status, panic_mode;
 			uint64_t start_erase;
 
-			uint erase_pointer;
+			uint erase_pointer;			
+			
+			class PendingErase
+			{
+			public:
+			    std::list<uint64_t> pending_writes;
+			    uint64_t erase_block;
 			    
+			    PendingErase()
+			    {
+				erase_block = 0;
+			    }
+			};
+			std::list<PendingErase> gc_pending_erase;  
+
 			std::vector<vector<bool>> dirty;
 	};
 }

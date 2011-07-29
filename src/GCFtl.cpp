@@ -185,6 +185,7 @@ bool GCFtl::checkGC(void){
 void GCFtl::runGC() {
   uint64_t block, page, count, dirty_block=0, dirty_count=0, pAddr, vAddr, tmpAddr;
 	FlashTransaction trans;
+	PendingErase temp_erase;
 
 	// Get the dirtiest block (assumes the flash keeps track of this with an online algorithm).
 	for (block = erase_pointer; block < TOTAL_SIZE / BLOCK_SIZE; block++) {
@@ -200,6 +201,9 @@ void GCFtl::runGC() {
 	  }
 	}
 	erase_pointer = (dirty_block + 1) % (TOTAL_SIZE / BLOCK_SIZE);
+
+	// set the block we're going to erase with this gc operation
+	temp_erase.erase_block = dirty_block;
 
 	// All used pages in the dirty block, they must be moved elsewhere.
 	for (page = 0; page < PAGES_PER_BLOCK; page++) {
@@ -222,18 +226,15 @@ void GCFtl::runGC() {
 		assert(found);
 
 		ChannelPacket *dataPacket = Ftl::translate(DATA, vAddr, pAddr);
-		// Schedule a read and a write.
+		// Schedule a read
 		trans = FlashTransaction(GC_DATA_READ, vAddr, NULL);
 		addGcTransaction(trans);
-		trans = FlashTransaction(GC_DATA_WRITE, vAddr, NULL);
-		addGcTransaction(trans);
-	  }
-   }
 
-   // Schedule the BLOCK_ERASE command.
-   // Note: The address field is just the block number, not an actual byte address.
-   trans = FlashTransaction(BLOCK_ERASE, dirty_block * BLOCK_SIZE, NULL); 
-   addGcTransaction(trans);
+		// add an entry to the pending writes list in our erase record
+		temp_erase.pending_writes.push_front(vAddr);
+	  }
+	}
+	gc_pending_erase.push_front(temp_erase);
 }
 
 void GCFtl::saveNVState(void)
@@ -397,4 +398,29 @@ void GCFtl::loadNVState(void)
 	restore_file.close();
 	loaded = true;
     }
+}
+
+void GCFtl::GCReadDone(uint64_t vAddr)
+{
+    cout << "gc read done called \n";
+   FlashTransaction trans = FlashTransaction(GC_DATA_WRITE, vAddr, NULL);
+   addGcTransaction(trans);
+}
+
+void GCFtl::GCWriteDone(uint64_t vAddr)
+{
+    cout << "gc write done called \n";
+    list<PendingErase>::iterator it;
+    for (it = gc_pending_erase.begin(); it != gc_pending_erase.end(); it++)
+    {
+	(*it).pending_writes.remove(vAddr);
+
+	if((*it).pending_writes.empty())
+	{
+	    FlashTransaction trans = FlashTransaction(BLOCK_ERASE, (*it).erase_block * BLOCK_SIZE, NULL); 
+	    addGcTransaction(trans);
+	    gc_pending_erase.erase(it);
+	    break;
+	}
+    }    
 }
