@@ -278,7 +278,7 @@ void GCFtl::saveNVState(void)
 	    {
 		save_file << used[i][j] << " ";
 	    }
-	    save_file << used[i][used[i].size()];
+	    save_file << used[i][used[i].size()-1];
 	}
 
 	save_file.close();

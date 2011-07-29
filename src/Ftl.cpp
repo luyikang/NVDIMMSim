@@ -57,8 +57,6 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 					   ((divide_params(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME));
 	// plus the time it takes to erase the block
 	deadlock_time += ERASE_TIME + ((divide_params(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME);
-	// with a small margin of error added to cover any other operations that might be in the way
-	deadlock_time *= 2;
 }
 
 ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr){
@@ -261,7 +259,7 @@ void Ftl::handle_write(bool gc)
 	}
 
 	//look for first free physical page starting at the write pointer
-	start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
+	start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + DIES_PER_PACKAGE * channel));
 	uint64_t block, page, tmp_block, tmp_page;
 
 	// Search from the current write pointer to the end of the flash for a free page.
