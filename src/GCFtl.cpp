@@ -88,7 +88,7 @@ void GCFtl::update(void){
 					break;
 
 				case BLOCK_ERASE:
-					commandPacket = Ftl::translate(ERASE, vAddr, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
+					commandPacket = Ftl::translate(ERASE, TOTAL_SIZE+1, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
 					result = controller->addPacket(commandPacket);
 					if(result == true)
 					{
@@ -201,6 +201,60 @@ void GCFtl::runGC() {
 	  }
 	}
 	erase_pointer = (dirty_block + 1) % (TOTAL_SIZE / BLOCK_SIZE);
+
+	// set the block we're going to erase with this gc operation
+	temp_erase.erase_block = dirty_block;
+
+	// All used pages in the dirty block, they must be moved elsewhere.
+	for (page = 0; page < PAGES_PER_BLOCK; page++) {
+	  if (used[dirty_block][page] == true && dirty[dirty_block][page] == false) {
+	    	// Compute the physical address to move.
+		pAddr = (dirty_block * BLOCK_SIZE + page * NV_PAGE_SIZE);
+
+		// Do a reverse lookup for the virtual page address.
+		// This is slow, but the alternative is maintaining a full reverse lookup map.
+		// Another alternative may be to make new FlashTransaction commands for physical address read/write.
+		bool found = false;
+		for (std::unordered_map<uint64_t, uint64_t>::iterator it = addressMap.begin(); it != addressMap.end(); it++) {
+			tmpAddr = (*it).second;
+			if (tmpAddr == pAddr) {
+				vAddr = (*it).first;
+				found = true;
+				break;
+			}
+		}
+		assert(found);
+
+		ChannelPacket *dataPacket = Ftl::translate(DATA, vAddr, pAddr);
+		// Schedule a read
+		trans = FlashTransaction(GC_DATA_READ, vAddr, NULL);
+		addGcTransaction(trans);
+
+		// add an entry to the pending writes list in our erase record
+		temp_erase.pending_writes.push_front(vAddr);
+	  }
+	}
+	gc_pending_erase.push_front(temp_erase);
+}
+
+void GCFtl::runGC(uint64_t plane) {
+  uint64_t block, page, count, dirty_block=0, dirty_count=0, pAddr, vAddr, tmpAddr;
+	FlashTransaction trans;
+	PendingErase temp_erase;
+
+	// Get the dirtiest block (assumes the flash keeps track of this with an online algorithm).
+	for (block = plane*; block < TOTAL_SIZE / BLOCK_SIZE; block++) {
+	  count = 0;
+	  for (page = 0; page < PAGES_PER_BLOCK; page++) {
+		if (dirty[block][page] == true) {
+			count++;
+		}
+	  }
+	  if (count > dirty_count) {
+	      	dirty_count = count;
+	       	dirty_block = block;
+	  }
+	}
 
 	// set the block we're going to erase with this gc operation
 	temp_erase.erase_block = dirty_block;
