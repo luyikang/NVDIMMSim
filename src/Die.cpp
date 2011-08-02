@@ -127,6 +127,7 @@ void Die::update(void){
 					case ERASE:
 						planes[currentCommand->plane].erase(currentCommand);
 						parentNVDIMM->numErases++;
+						cout << "Doing erase \n";
 						break;
 					case DATA:
 						// Nothing to do.

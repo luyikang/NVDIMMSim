@@ -18,6 +18,8 @@ GCFtl::GCFtl(Controller *c, Logger *l, NVDIMM *p)
 	gc_status = 0;
 	panic_mode = 0;
 
+	dirty_page_count = 0;
+
 	dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
 
 	// set up internal pointer to make sure that the gc isn't always erasing the same block
@@ -59,14 +61,42 @@ void GCFtl::addGcTransaction(FlashTransaction &t){
 }
 
 void GCFtl::update(void){
-        uint64_t start;
 	uint i;
+
+	if (gc_status){
+		if (!panic_mode && parent->numErases == start_erase + 1)
+			gc_status = 0;
+		if (panic_mode && parent->numErases == start_erase + PLANES_PER_DIE * DIES_PER_PACKAGE * NUM_PACKAGES){
+			panic_mode = 0;
+			gc_status = 0;
+		}
+	}
+
+	if (!gc_status && (float)used_page_count >= (float)(FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE))){
+	    if(dirty_page_count != 0)
+	    {
+		start_erase = parent->numErases;
+		gc_status = 1;
+		panic_mode = 1;
+		cout << "panic mode running \n";
+		//cout << (float)(FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE)) << "\n";
+		//cout << (float)used_page_count << "\n";
+		for (i = 0 ; i < PLANES_PER_DIE * DIES_PER_PACKAGE * NUM_PACKAGES; i++)
+		{
+			runGC(i);
+		}
+	    }
+	    else
+	    {
+		ERROR("FLASH DIMM IS FULL OF USED PAGES AND NONE OF THEM ARE DIRTY - there is nothing the gc can do.");
+		exit(7001);
+	    }
+	}
 
 	if (busy) {
 	    if (lookupCounter <= 0 && !queues_full){
 		        currentTransaction = transactionQueue.front();
-			uint64_t vAddr = currentTransaction.address, pAddr;
-			bool done = false;
+			uint64_t vAddr = currentTransaction.address;
 			bool result = false;
 			ChannelPacket *commandPacket;
 			
@@ -88,12 +118,15 @@ void GCFtl::update(void){
 					break;
 
 				case BLOCK_ERASE:
-					commandPacket = Ftl::translate(ERASE, TOTAL_SIZE+1, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
+					commandPacket = Ftl::translate(ERASE, vAddr, vAddr);//note: vAddr is actually the pAddr in this case with the way garbage collection is written
 					result = controller->addPacket(commandPacket);
 					if(result == true)
 					{
 					    for (i = 0 ; i < PAGES_PER_BLOCK ; i++){
-						dirty[vAddr / BLOCK_SIZE][i] = false;
+						if (dirty[vAddr / BLOCK_SIZE][i]){
+							dirty[vAddr / BLOCK_SIZE][i] = false;
+							dirty_page_count--;
+						}
 						if (used[vAddr / BLOCK_SIZE][i]){
 							used[vAddr / BLOCK_SIZE][i] = false;
 							used_page_count--;
@@ -138,27 +171,6 @@ void GCFtl::update(void){
 		}
 	}
 
-	if (gc_status){
-		if (!panic_mode && parent->numErases == start_erase + 1)
-			gc_status = 0;
-		if (panic_mode && parent->numErases == start_erase + PLANES_PER_DIE){
-			panic_mode = 0;
-			gc_status = 0;
-		}
-	}
-
-	if (!gc_status && (float)used_page_count >= (float)(FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE))){
-		start_erase = parent->numErases;
-		gc_status = 1;
-		panic_mode = 1;
-		//cout << (float)(FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE)) << "\n";
-		//cout << (float)used_page_count << "\n";
-		for (i = 0 ; i < PLANES_PER_DIE ; i++)
-		{
-			runGC();
-		}
-	}
-
 	//place power callbacks to hybrid_system
 #if Verbose_Power_Callback
 	  controller->returnPowerData(idle_energy, access_energy, erase_energy);
@@ -169,6 +181,7 @@ void GCFtl::update(void){
 void GCFtl::write_used_handler(uint64_t vAddr)
 {
 	dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
+	dirty_page_count ++;
 
 	//cout << "USING GCFTL's WRITE_USED_HANDLER!!!\n";
 	//cout << "Block " << addressMap[vAddr] / BLOCK_SIZE << " Page " << addressMap[vAddr] / NV_PAGE_SIZE << " is now dirty \n";
@@ -183,7 +196,7 @@ bool GCFtl::checkGC(void){
 
 
 void GCFtl::runGC() {
-  uint64_t block, page, count, dirty_block=0, dirty_count=0, pAddr, vAddr, tmpAddr;
+  uint64_t block, page, count, dirty_block=0, dirty_count=0;
 	FlashTransaction trans;
 	PendingErase temp_erase;
 
@@ -202,48 +215,19 @@ void GCFtl::runGC() {
 	}
 	erase_pointer = (dirty_block + 1) % (TOTAL_SIZE / BLOCK_SIZE);
 
-	// set the block we're going to erase with this gc operation
-	temp_erase.erase_block = dirty_block;
-
-	// All used pages in the dirty block, they must be moved elsewhere.
-	for (page = 0; page < PAGES_PER_BLOCK; page++) {
-	  if (used[dirty_block][page] == true && dirty[dirty_block][page] == false) {
-	    	// Compute the physical address to move.
-		pAddr = (dirty_block * BLOCK_SIZE + page * NV_PAGE_SIZE);
-
-		// Do a reverse lookup for the virtual page address.
-		// This is slow, but the alternative is maintaining a full reverse lookup map.
-		// Another alternative may be to make new FlashTransaction commands for physical address read/write.
-		bool found = false;
-		for (std::unordered_map<uint64_t, uint64_t>::iterator it = addressMap.begin(); it != addressMap.end(); it++) {
-			tmpAddr = (*it).second;
-			if (tmpAddr == pAddr) {
-				vAddr = (*it).first;
-				found = true;
-				break;
-			}
-		}
-		assert(found);
-
-		ChannelPacket *dataPacket = Ftl::translate(DATA, vAddr, pAddr);
-		// Schedule a read
-		trans = FlashTransaction(GC_DATA_READ, vAddr, NULL);
-		addGcTransaction(trans);
-
-		// add an entry to the pending writes list in our erase record
-		temp_erase.pending_writes.push_front(vAddr);
-	  }
-	}
-	gc_pending_erase.push_front(temp_erase);
+	addGC(dirty_block);
 }
 
+// overloaded version of runGC that we use in panic mode to issue a different erase to each plane
+// if we are in panic mode then the system is dangerously full, we need to make as much clean space as possible
+// so we will erase a block on every independent plane at the same time
 void GCFtl::runGC(uint64_t plane) {
-  uint64_t block, page, count, dirty_block=0, dirty_count=0, pAddr, vAddr, tmpAddr;
+  uint64_t block, page, count, dirty_block=0, dirty_count=0;
 	FlashTransaction trans;
 	PendingErase temp_erase;
 
 	// Get the dirtiest block (assumes the flash keeps track of this with an online algorithm).
-	for (block = plane*; block < TOTAL_SIZE / BLOCK_SIZE; block++) {
+	for (block = (plane * BLOCKS_PER_PLANE); block < ((plane + 1) * BLOCKS_PER_PLANE); block++) {
 	  count = 0;
 	  for (page = 0; page < PAGES_PER_BLOCK; page++) {
 		if (dirty[block][page] == true) {
@@ -256,39 +240,58 @@ void GCFtl::runGC(uint64_t plane) {
 	  }
 	}
 
-	// set the block we're going to erase with this gc operation
-	temp_erase.erase_block = dirty_block;
+	addGC(dirty_block);
+}
 
-	// All used pages in the dirty block, they must be moved elsewhere.
-	for (page = 0; page < PAGES_PER_BLOCK; page++) {
-	  if (used[dirty_block][page] == true && dirty[dirty_block][page] == false) {
-	    	// Compute the physical address to move.
-		pAddr = (dirty_block * BLOCK_SIZE + page * NV_PAGE_SIZE);
+// the guts of the runGC function separated out to prevent duplicated code
+// this adds the read GC transactions if there are any and creates a pending erase entry
+void GCFtl::addGC(uint64_t dirty_block)
+{
+     uint64_t page, pAddr, vAddr, tmpAddr;
+     FlashTransaction trans;
+     PendingErase temp_erase;
 
-		// Do a reverse lookup for the virtual page address.
-		// This is slow, but the alternative is maintaining a full reverse lookup map.
-		// Another alternative may be to make new FlashTransaction commands for physical address read/write.
-		bool found = false;
-		for (std::unordered_map<uint64_t, uint64_t>::iterator it = addressMap.begin(); it != addressMap.end(); it++) {
-			tmpAddr = (*it).second;
-			if (tmpAddr == pAddr) {
-				vAddr = (*it).first;
-				found = true;
-				break;
-			}
-		}
-		assert(found);
+     // set the block we're going to erase with this gc operation
+     temp_erase.erase_block = dirty_block;
 
-		ChannelPacket *dataPacket = Ftl::translate(DATA, vAddr, pAddr);
-		// Schedule a read
-		trans = FlashTransaction(GC_DATA_READ, vAddr, NULL);
-		addGcTransaction(trans);
+     // All used pages in the dirty block, they must be moved elsewhere.
+     for (page = 0; page < PAGES_PER_BLOCK; page++) {
+	 if (used[dirty_block][page] == true && dirty[dirty_block][page] == false) {
+	     // Compute the physical address to move.
+	     pAddr = (dirty_block * BLOCK_SIZE + page * NV_PAGE_SIZE);
 
-		// add an entry to the pending writes list in our erase record
-		temp_erase.pending_writes.push_front(vAddr);
-	  }
-	}
-	gc_pending_erase.push_front(temp_erase);
+	     // Do a reverse lookup for the virtual page address.
+	     // This is slow, but the alternative is maintaining a full reverse lookup map.
+	     // Another alternative may be to make new FlashTransaction commands for physical address read/write.
+	     bool found = false;
+	     for (std::unordered_map<uint64_t, uint64_t>::iterator it = addressMap.begin(); it != addressMap.end(); it++) {
+		 tmpAddr = (*it).second;
+		 if (tmpAddr == pAddr) {
+		     vAddr = (*it).first;
+		     found = true;
+		     break;
+		 }
+	     }		assert(found);
+
+	     // Schedule a read
+	     trans = FlashTransaction(GC_DATA_READ, vAddr, NULL);
+	     addGcTransaction(trans);
+	     cout << "added gc read \n";
+	     
+	     // add an entry to the pending writes list in our erase record
+	     temp_erase.pending_writes.push_front(vAddr);
+	 }
+     }
+     // if we didn't need to move anything just go ahead and erase
+     if(temp_erase.pending_writes.empty())
+     {
+	 trans = FlashTransaction(BLOCK_ERASE, dirty_block * BLOCK_SIZE, NULL); 
+	 addGcTransaction(trans);
+     }
+     else
+     {
+	 gc_pending_erase.push_front(temp_erase);
+     }
 }
 
 void GCFtl::saveNVState(void)

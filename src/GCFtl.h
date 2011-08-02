@@ -25,6 +25,8 @@ namespace NVDSim{
 			void write_used_handler(uint64_t vAddr);
 			bool checkGC(void); 
 			void runGC(void);
+			void runGC(uint64_t plane);
+			void addGC(uint64_t dirty_block);
 
 			void saveNVState(void);
 			void loadNVState(void);
@@ -50,6 +52,8 @@ namespace NVDSim{
 			    }
 			};
 			std::list<PendingErase> gc_pending_erase;  
+
+			uint64_t dirty_page_count;
 
 			std::vector<vector<bool>> dirty;
 	};
