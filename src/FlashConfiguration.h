@@ -64,6 +64,11 @@
 #define Power_Callback 1
 #define Verbose_Power_Callback 0
 
+// Scheduling Options
+extern bool WRITE_ON_QUEUE_SIZE;
+extern uint WRITE_QUEUE_LIMIT;
+extern bool WRITE_WAIT;
+
 // Buffering Options
 extern bool BUFFERED;
 

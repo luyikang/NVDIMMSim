@@ -294,8 +294,3 @@ void NVDIMM::GCReadDone(uint64_t vAddr)
 {
     ftl->GCReadDone(vAddr);
 }
-
-void NVDIMM::GCWriteDone(uint64_t vAddr)
-{
-    ftl->GCWriteDone(vAddr);
-}

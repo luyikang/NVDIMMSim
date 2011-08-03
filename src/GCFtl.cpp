@@ -27,7 +27,9 @@ GCFtl::GCFtl(Controller *c, Logger *l, NVDIMM *p)
 }
 
 bool GCFtl::addTransaction(FlashTransaction &t){
-        if(transactionQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+    if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
+    {
+        if(readQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
 	{
 	    return false;
 	}
@@ -35,7 +37,7 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 	{
 	    if (!panic_mode)
 	    {
-		transactionQueue.push_back(t);
+		readQueue.push_back(t);
 		if(LOGGING == true)
 		{
 		    // Start the logging for this access.
@@ -46,18 +48,41 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 	    
 	    return false;
 	}
-	
+    }
+    else if(t.transactionType == DATA_WRITE)
+    {
+	if(writeQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+	{
+	    return false;
+	}
+	else
+	{
+	    if (!panic_mode)
+	    {
+		writeQueue.push_back(t);
+		if(LOGGING == true)
+		{
+		    // Start the logging for this access.
+		    log->access_start(t.address);
+		}
+		return true;
+	    }
+	    
+	    return false;
+	}
+    }
+    return false;
 }
 
 void GCFtl::addGcTransaction(FlashTransaction &t){ 
-	transactionQueue.push_front(t);
-	queues_full = false;
-
-	if(LOGGING == true)
-	{
-	    // Start the logging for this access.
-	    log->access_start(t.address);
-	}
+    readQueue.push_front(t);
+    queues_full = false;
+    
+    if(LOGGING == true)
+    {
+	// Start the logging for this access.
+	log->access_start(t.address);
+    }
 }
 
 void GCFtl::update(void){
@@ -78,9 +103,10 @@ void GCFtl::update(void){
 		start_erase = parent->numErases;
 		gc_status = 1;
 		panic_mode = 1;
-		cout << "panic mode running \n";
+		busy = 0;
 		//cout << (float)(FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE)) << "\n";
 		//cout << (float)used_page_count << "\n";
+		cout << "running gc \n";
 		for (i = 0 ; i < PLANES_PER_DIE * DIES_PER_PACKAGE * NUM_PACKAGES; i++)
 		{
 			runGC(i);
@@ -95,7 +121,6 @@ void GCFtl::update(void){
 
 	if (busy) {
 	    if (lookupCounter <= 0 && !queues_full){
-		        currentTransaction = transactionQueue.front();
 			uint64_t vAddr = currentTransaction.address;
 			bool result = false;
 			ChannelPacket *commandPacket;
@@ -132,7 +157,7 @@ void GCFtl::update(void){
 							used_page_count--;
 						}
 					    }
-					    transactionQueue.pop_front();
+					    readQueue.pop_front();
 					    busy = 0;
 					}
 					else
@@ -155,9 +180,35 @@ void GCFtl::update(void){
 	} // if busy
 	else {
 		// Not currently busy.
-		if (!transactionQueue.empty()) {
-			busy = 1;
-			lookupCounter = LOOKUP_TIME;
+	    if(((WRITE_ON_QUEUE_SIZE == true && writeQueue.size() >= WRITE_QUEUE_LIMIT) ||
+	       (WRITE_ON_QUEUE_SIZE == false && writeQueue.size() >= FTL_QUEUE_LENGTH-1)) &&
+	       !gc_status)
+	    {
+		// Not currently busy.
+		if (!writeQueue.empty()) {
+		    busy = 1;
+		    currentTransaction = writeQueue.front();
+		    lookupCounter = LOOKUP_TIME;
+		}
+		else if (!readQueue.empty()) {
+		    busy = 1;
+		    currentTransaction = readQueue.front();
+		    lookupCounter = LOOKUP_TIME;
+		}
+	    }
+	    else
+	    {
+		// Not currently busy.
+		if (!readQueue.empty()) {
+		    busy = 1;
+		    currentTransaction = readQueue.front();
+		    lookupCounter = LOOKUP_TIME;
+		}
+		else if(WRITE_WAIT == true && !writeQueue.empty())
+		{
+		    busy = 1;
+		    currentTransaction = writeQueue.front();
+		    lookupCounter = LOOKUP_TIME;
 		}
 		// Check to see if GC needs to run.
 		else {
@@ -169,6 +220,7 @@ void GCFtl::update(void){
 				runGC();
 			}
 		}
+	    }
 	}
 
 	//place power callbacks to hybrid_system
@@ -279,12 +331,13 @@ void GCFtl::addGC(uint64_t dirty_block)
 	     cout << "added gc read \n";
 	     
 	     // add an entry to the pending writes list in our erase record
-	     temp_erase.pending_writes.push_front(vAddr);
+	     temp_erase.pending_reads.push_front(vAddr);
 	 }
      }
      // if we didn't need to move anything just go ahead and erase
-     if(temp_erase.pending_writes.empty())
+     if(temp_erase.pending_reads.empty())
      {
+	 cout << "added a straight erase \n";
 	 trans = FlashTransaction(BLOCK_ERASE, dirty_block * BLOCK_SIZE, NULL); 
 	 addGcTransaction(trans);
      }
@@ -459,25 +512,21 @@ void GCFtl::loadNVState(void)
 
 void GCFtl::GCReadDone(uint64_t vAddr)
 {
-    cout << "gc read done called \n";
-   FlashTransaction trans = FlashTransaction(GC_DATA_WRITE, vAddr, NULL);
-   addGcTransaction(trans);
-}
-
-void GCFtl::GCWriteDone(uint64_t vAddr)
-{
-    cout << "gc write done called \n";
-    list<PendingErase>::iterator it;
+   list<PendingErase>::iterator it;
     for (it = gc_pending_erase.begin(); it != gc_pending_erase.end(); it++)
     {
-	(*it).pending_writes.remove(vAddr);
+	(*it).pending_reads.remove(vAddr);
 
-	if((*it).pending_writes.empty())
+	if((*it).pending_reads.empty())
 	{
 	    FlashTransaction trans = FlashTransaction(BLOCK_ERASE, (*it).erase_block * BLOCK_SIZE, NULL); 
 	    addGcTransaction(trans);
 	    gc_pending_erase.erase(it);
 	    break;
 	}
-    }    
+    } 
+
+    cout << "gc read done called \n";
+   FlashTransaction trans = FlashTransaction(GC_DATA_WRITE, vAddr, NULL);
+   addGcTransaction(trans);
 }

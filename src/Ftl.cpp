@@ -30,7 +30,8 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 
 	used = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
 
-	transactionQueue = list<FlashTransaction>();
+	readQueue = list<FlashTransaction>();
+	writeQueue = list<FlashTransaction>();
 
 	controller = c;
 
@@ -113,13 +114,15 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t p
 
 bool Ftl::addTransaction(FlashTransaction &t){
 
-	if(transactionQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+    if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
+    {
+	if(readQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
 	{
 		return false;
 	}
 	else
 	{
-		transactionQueue.push_back(t);
+		readQueue.push_back(t);
 
 		if(LOGGING == true)
 		{
@@ -128,10 +131,30 @@ bool Ftl::addTransaction(FlashTransaction &t){
 		}
 		return true;
 	}
+    }
+    else if(t.transactionType == DATA_WRITE)
+    {
+	if(writeQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+	{
+		return false;
+	}
+	else
+	{
+		writeQueue.push_back(t);
+
+		if(LOGGING == true)
+		{
+			// Start the logging for this access.
+			log->access_start(t.address);
+		}
+		return true;
+	}
+    }
+    return false;
 }
 
 void Ftl::addFfTransaction(FlashTransaction &t){ 
-	transactionQueue.push_back(t);
+
 }
 
 void Ftl::update(void){
@@ -158,21 +181,62 @@ void Ftl::update(void){
 		}
 	} // if busy
 	else {
+	    if((WRITE_ON_QUEUE_SIZE == true && writeQueue.size() >= WRITE_QUEUE_LIMIT) ||
+	       (WRITE_ON_QUEUE_SIZE == false && writeQueue.size() >= FTL_QUEUE_LENGTH))
+	    {
 		// Not currently busy.
-		if (!transactionQueue.empty()) {
+		if (!writeQueue.empty()) {
 			busy = 1;
-			currentTransaction = transactionQueue.front();
+			currentTransaction = writeQueue.front();
 			lookupCounter = LOOKUP_TIME;
 		}
+		else if (!readQueue.empty()) {
+			busy = 1;
+			currentTransaction = readQueue.front();
+			lookupCounter = LOOKUP_TIME;
+		}
+	    }
+	    else
+	    {
+		// Not currently busy.
+		if (!readQueue.empty()) {
+			busy = 1;
+			currentTransaction = readQueue.front();
+			lookupCounter = LOOKUP_TIME;
+		}
+		else if(WRITE_WAIT == true && !writeQueue.empty())
+		{
+		    busy = 1;
+		    currentTransaction = writeQueue.front();
+		    lookupCounter = LOOKUP_TIME;
+		}
+	    }
 	}
 }
 
 void Ftl::handle_read(bool gc)
 {
-	ChannelPacket *commandPacket;
-	uint64_t vAddr = currentTransaction.address;
-
-	// Check to see if the vAddr exists in the address map.
+    ChannelPacket *commandPacket;
+    uint64_t vAddr = currentTransaction.address;
+    bool write_queue_handled = false;
+    
+    //Check to see if the vAddr corresponds to the write waiting in the write queue
+    list<FlashTransaction>::iterator it;
+    for (it = writeQueue.begin(); it != writeQueue.end(); it++)
+    {
+	if((*it).address == vAddr)
+	{
+	    controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (*it).data));
+	    readQueue.pop_front();
+	    busy = 0;
+	    write_queue_handled = true;
+	    break;
+	}
+    }
+    
+    if(!write_queue_handled)
+    {
+        // Check to see if the vAddr exists in the address map.
 	if (addressMap.find(vAddr) == addressMap.end())
 	{
 		if (gc)
@@ -198,7 +262,7 @@ void Ftl::handle_read(bool gc)
 
 		// Miss, nothing to read so return garbage.
 		controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
-		transactionQueue.pop_front();
+		readQueue.pop_front();
 		busy = 0;
 	} 
 	else 
@@ -219,7 +283,7 @@ void Ftl::handle_read(bool gc)
 				// Update the logger (but not for GC_READ).
 				log->read_mapped();
 			}
-			transactionQueue.pop_front();
+			readQueue.pop_front();
 			busy = 0;
 		}
 		else
@@ -229,6 +293,7 @@ void Ftl::handle_read(bool gc)
 			queues_full = true;
 		}
 	}
+    }
 }
 
 void Ftl::write_used_handler(uint64_t vAddr)
@@ -367,7 +432,7 @@ void Ftl::handle_write(bool gc)
 			used_page_count++;
 
 			// Pop the transaction from the transaction queue.
-			transactionQueue.pop_front();
+			writeQueue.pop_front();
 
 			// The FTL is no longer busy.
 			busy = 0;
@@ -437,7 +502,7 @@ void Ftl::sendQueueLength(void)
 {
 	if(LOGGING == true)
 	{
-		log->ftlQueueLength(transactionQueue.size());
+		log->ftlQueueLength(readQueue.size());
 	}
 }
 
@@ -573,11 +638,6 @@ void Ftl::queuesNotFull(void)
 }
 
 void Ftl::GCReadDone(uint64_t vAddr)
-{
-    // an empty fucntion to make the compiler happy
-}
-
-void Ftl::GCWriteDone(uint64_t vAddr)
 {
     // an empty fucntion to make the compiler happy
 }

@@ -32,7 +32,6 @@ namespace NVDSim{
 			void loadNVState(void);
 
 			void GCReadDone(uint64_t vAddr);
-			void GCWriteDone(uint64_t vAddr);
 
 		protected:
 			uint gc_status, panic_mode;
@@ -43,7 +42,7 @@ namespace NVDSim{
 			class PendingErase
 			{
 			public:
-			    std::list<uint64_t> pending_writes;
+			    std::list<uint64_t> pending_reads;
 			    uint64_t erase_block;
 			    
 			    PendingErase()

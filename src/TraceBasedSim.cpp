@@ -14,8 +14,8 @@
 #include <time.h>
 #include "TraceBasedSim.h"
 
-#define NUM_WRITES 50
-#define SIM_CYCLES 500000
+#define NUM_WRITES 5000
+#define SIM_CYCLES 10000000
 
 /*temporary assignments for externed variables.
  * This should really be done with another class
@@ -99,7 +99,7 @@ void test_obj::power_cb(uint id, vector<vector<double>> data, uint64_t cycle){
 void test_obj::run_test(void){
 	clock_t start= clock(), end;
 	uint write, cycle;
-	NVDIMM *NVDimm= new NVDIMM(1,"ini/samsung_K9XXG08UXM(mod).ini","ini/def_system.ini","","");
+	NVDIMM *NVDimm= new NVDIMM(1,"ini/samsung_K9XXG08UXM(gc_test).ini","ini/def_system.ini","","");
 	//NVDIMM *NVDimm= new NVDIMM(1,"ini/PCM_TEST.ini","ini/def_system.ini","","");
 	typedef CallbackBase<void,uint,uint64_t,uint64_t> Callback_t;
 	Callback_t *r = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::read_cb);

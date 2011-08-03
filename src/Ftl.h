@@ -41,7 +41,6 @@ namespace NVDSim{
 			void queuesNotFull(void);
 
 			virtual void GCReadDone(uint64_t vAddr);
-			virtual void GCWriteDone(uint64_t vAddr);
 		       
 			Controller *controller;
 
@@ -67,7 +66,8 @@ namespace NVDSim{
 
 			std::unordered_map<uint64_t,uint64_t> addressMap;
 			std::vector<vector<bool>> used;
-			std::list<FlashTransaction> transactionQueue;
+			std::list<FlashTransaction> readQueue;
+			std::list<FlashTransaction> writeQueue;
 	};
 }
 #endif

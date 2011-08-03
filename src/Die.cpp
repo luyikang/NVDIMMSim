@@ -122,7 +122,6 @@ void Die::update(void){
 					case GC_WRITE:
 						planes[currentCommand->plane].write(currentCommand);
 						parentNVDIMM->numWrites++;
-						parentNVDIMM->GCWriteDone(currentCommand->virtualAddress);
 						break;
 					case ERASE:
 						planes[currentCommand->plane].erase(currentCommand);
