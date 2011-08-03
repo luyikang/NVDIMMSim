@@ -113,44 +113,48 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t p
 }
 
 bool Ftl::addTransaction(FlashTransaction &t){
-
-    if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
+    if(t.address <= (VIRTUAL_TOTAL_SIZE/NV_PAGE_SIZE))
     {
-	if(readQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+	if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
 	{
+	    if(readQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+	    {
 		return false;
-	}
-	else
-	{
+	    }
+	    else
+	    {
 		readQueue.push_back(t);
-
+		
 		if(LOGGING == true)
 		{
-			// Start the logging for this access.
-			log->access_start(t.address);
+		    // Start the logging for this access.
+		    log->access_start(t.address);
 		}
 		return true;
+	    }
 	}
-    }
-    else if(t.transactionType == DATA_WRITE)
-    {
-	if(writeQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+	else if(t.transactionType == DATA_WRITE)
 	{
+	    if(writeQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+	    {
 		return false;
-	}
-	else
-	{
+	    }
+	    else
+	    {
 		writeQueue.push_back(t);
-
+		
 		if(LOGGING == true)
 		{
-			// Start the logging for this access.
-			log->access_start(t.address);
+		    // Start the logging for this access.
+		    log->access_start(t.address);
 		}
 		return true;
+	    }
 	}
+	return false;
     }
-    return false;
+    ERROR("Tried to add a transaction with a virtual address that was out of bounds");
+    exit(5001);
 }
 
 void Ftl::addFfTransaction(FlashTransaction &t){ 

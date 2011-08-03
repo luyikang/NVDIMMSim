@@ -27,51 +27,56 @@ GCFtl::GCFtl(Controller *c, Logger *l, NVDIMM *p)
 }
 
 bool GCFtl::addTransaction(FlashTransaction &t){
-    if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
+    if(t.address <= (VIRTUAL_TOTAL_SIZE/NV_PAGE_SIZE))
     {
-        if(readQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+	if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
 	{
-	    return false;
-	}
-	else
-	{
-	    if (!panic_mode)
+	    if(readQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
 	    {
-		readQueue.push_back(t);
-		if(LOGGING == true)
-		{
-		    // Start the logging for this access.
-		    log->access_start(t.address);
-		}
-		return true;
+		return false;
 	    }
-	    
-	    return false;
-	}
-    }
-    else if(t.transactionType == DATA_WRITE)
-    {
-	if(writeQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
-	{
-	    return false;
-	}
-	else
-	{
-	    if (!panic_mode)
+	    else
 	    {
-		writeQueue.push_back(t);
-		if(LOGGING == true)
+		if (!panic_mode)
 		{
-		    // Start the logging for this access.
-		    log->access_start(t.address);
+		    readQueue.push_back(t);
+		    if(LOGGING == true)
+		    {
+			// Start the logging for this access.
+			log->access_start(t.address);
+		    }
+		    return true;
 		}
-		return true;
+		
+		return false;
 	    }
-	    
-	    return false;
 	}
+	else if(t.transactionType == DATA_WRITE)
+	{
+	    if(writeQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+	    {
+		return false;
+	    }
+	    else
+	    {
+		if (!panic_mode)
+		{
+		    writeQueue.push_back(t);
+		    if(LOGGING == true)
+		    {
+			// Start the logging for this access.
+			log->access_start(t.address);
+		    }
+		    return true;
+		}
+		
+		return false;
+	    }
+	}
+	return false;
     }
-    return false;
+    ERROR("Tried to add a transaction with a virtual address that was out of bounds");
+    exit(5001);
 }
 
 void GCFtl::addGcTransaction(FlashTransaction &t){ 
@@ -111,7 +116,7 @@ void GCFtl::update(void){
 			runGC(i);
 		}
 	    }
-	    else
+	    else if((float)used_page_count >= (float)(VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE))
 	    {
 		ERROR("FLASH DIMM IS FULL OF USED PAGES AND NONE OF THEM ARE DIRTY - there is nothing the gc can do.");
 		exit(7001);
@@ -198,7 +203,7 @@ void GCFtl::update(void){
 	    else
 	    {
 		// Not currently busy.
-		if (!readQueue.empty()) {
+ 		if (!readQueue.empty()) {
 		    busy = 1;
 		    currentTransaction = readQueue.front();
 		    lookupCounter = LOOKUP_TIME;
@@ -212,7 +217,8 @@ void GCFtl::update(void){
 		// Check to see if GC needs to run.
 		else {
 			// Check to see if GC needs to run.
-			if (checkGC() && !gc_status) {
+			if (checkGC() && !gc_status && dirty_page_count != 0)
+			{
 				// Run the GC.
 				start_erase = parent->numErases;
 				gc_status = 1;
