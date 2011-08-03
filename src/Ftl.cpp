@@ -221,19 +221,21 @@ void Ftl::handle_read(bool gc)
     bool write_queue_handled = false;
     
     //Check to see if the vAddr corresponds to the write waiting in the write queue
-    list<FlashTransaction>::iterator it;
-    for (it = writeQueue.begin(); it != writeQueue.end(); it++)
+    if(!gc)
     {
-	if((*it).address == vAddr)
+	list<FlashTransaction>::iterator it;
+	for (it = writeQueue.begin(); it != writeQueue.end(); it++)
 	{
-	    controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (*it).data));
-	    readQueue.pop_front();
-	    busy = 0;
-	    write_queue_handled = true;
-	    break;
+	    if((*it).address == vAddr)
+	    {
+		controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (*it).data));
+		readQueue.pop_front();
+		busy = 0;
+		write_queue_handled = true;
+		break;
+	    }
 	}
     }
-    
     if(!write_queue_handled)
     {
         // Check to see if the vAddr exists in the address map.
@@ -432,7 +434,14 @@ void Ftl::handle_write(bool gc)
 			used_page_count++;
 
 			// Pop the transaction from the transaction queue.
-			writeQueue.pop_front();
+			if(gc)
+			{
+			    readQueue.pop_front();
+			}
+			else
+			{
+			    writeQueue.pop_front();
+			}
 
 			// The FTL is no longer busy.
 			busy = 0;

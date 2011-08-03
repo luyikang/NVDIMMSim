@@ -54,7 +54,7 @@ namespace NVDSim{
 
 			uint64_t dirty_page_count;
 
-			std::vector<vector<bool>> dirty;
+			std::vector<vector<bool>> dirty;	
 	};
 }
 #endif

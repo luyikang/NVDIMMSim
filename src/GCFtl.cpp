@@ -106,7 +106,6 @@ void GCFtl::update(void){
 		busy = 0;
 		//cout << (float)(FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE)) << "\n";
 		//cout << (float)used_page_count << "\n";
-		cout << "running gc \n";
 		for (i = 0 ; i < PLANES_PER_DIE * DIES_PER_PACKAGE * NUM_PACKAGES; i++)
 		{
 			runGC(i);
@@ -328,7 +327,6 @@ void GCFtl::addGC(uint64_t dirty_block)
 	     // Schedule a read
 	     trans = FlashTransaction(GC_DATA_READ, vAddr, NULL);
 	     addGcTransaction(trans);
-	     cout << "added gc read \n";
 	     
 	     // add an entry to the pending writes list in our erase record
 	     temp_erase.pending_reads.push_front(vAddr);
@@ -337,7 +335,6 @@ void GCFtl::addGC(uint64_t dirty_block)
      // if we didn't need to move anything just go ahead and erase
      if(temp_erase.pending_reads.empty())
      {
-	 cout << "added a straight erase \n";
 	 trans = FlashTransaction(BLOCK_ERASE, dirty_block * BLOCK_SIZE, NULL); 
 	 addGcTransaction(trans);
      }
@@ -526,7 +523,6 @@ void GCFtl::GCReadDone(uint64_t vAddr)
 	}
     } 
 
-    cout << "gc read done called \n";
    FlashTransaction trans = FlashTransaction(GC_DATA_WRITE, vAddr, NULL);
    addGcTransaction(trans);
 }
