@@ -42,9 +42,10 @@ namespace NVDSim
 	double divide(double num, double denom);
 
 	void ftlQueueLength(uint64_t length);
+	virtual void ftlQueueLength(uint64_t length, uint64_t length2);
 	void ctrlQueueLength(std::vector<uint64_t> length);
 
-	void ftlQueueReset();
+	virtual void ftlQueueReset();
 	void ctrlQueueReset();
 
 	//Accessor for power data

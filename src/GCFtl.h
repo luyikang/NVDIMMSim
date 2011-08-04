@@ -28,6 +28,10 @@ namespace NVDSim{
 			void runGC(uint64_t plane);
 			void addGC(uint64_t dirty_block);
 
+			void popFront(ChannelPacketType type);
+
+			void sendQueueLength(void);
+
 			void saveNVState(void);
 			void loadNVState(void);
 
@@ -54,7 +58,8 @@ namespace NVDSim{
 
 			uint64_t dirty_page_count;
 
-			std::vector<vector<bool>> dirty;	
+			std::vector<vector<bool>> dirty;
+			std::list<FlashTransaction> gcQueue;
 	};
 }
 #endif

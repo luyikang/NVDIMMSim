@@ -65,9 +65,10 @@
 #define Verbose_Power_Callback 0
 
 // Scheduling Options
+extern bool SCHEDULE;
 extern bool WRITE_ON_QUEUE_SIZE;
 extern uint WRITE_QUEUE_LIMIT;
-extern bool WRITE_WAIT;
+extern bool IDLE_WRITE;
 
 // Buffering Options
 extern bool BUFFERED;

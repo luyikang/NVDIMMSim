@@ -31,6 +31,8 @@ namespace NVDSim{
 			uint64_t get_ptr(void); 
 			void inc_ptr(void); 
 
+			virtual void popFront(ChannelPacketType type);
+
 			void sendQueueLength(void);
 			
 			void powerCallback(void);

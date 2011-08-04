@@ -253,6 +253,17 @@ void Logger::ftlQueueLength(uint64_t length)
     }
 }
 
+void Logger::ftlQueueLength(uint64_t length, uint64_t length2)
+{
+    if(length > ftl_queue_length){
+	ftl_queue_length = length;
+    }
+
+    if(length > max_ftl_queue_length){
+	max_ftl_queue_length = length;
+    }
+}
+
 void Logger::ctrlQueueLength(vector<uint64_t> length)
 {
     for(uint i = 0; i < length.size(); i++)

@@ -21,6 +21,8 @@ GCFtl::GCFtl(Controller *c, Logger *l, NVDIMM *p)
 	dirty_page_count = 0;
 
 	dirty = vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
+	
+	gcQueue = list<FlashTransaction>();
 
 	// set up internal pointer to make sure that the gc isn't always erasing the same block
 	erase_pointer = 0;
@@ -29,7 +31,58 @@ GCFtl::GCFtl(Controller *c, Logger *l, NVDIMM *p)
 bool GCFtl::addTransaction(FlashTransaction &t){
     if(t.address <= (VIRTUAL_TOTAL_SIZE/NV_PAGE_SIZE))
     {
-	if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
+	// we are going to favor reads over writes
+	// so writes get put into a special lower prioirty queue
+	if(SCHEDULE)
+	{
+	    if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
+	    {
+		if(readQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+		{
+		    return false;
+		}
+		else
+		{
+		    if (!panic_mode)
+		    {
+			readQueue.push_back(t);
+			if(LOGGING == true)
+			{
+			    // Start the logging for this access.
+			    log->access_start(t.address);
+			}
+			return true;
+		    }
+		    
+		    return false;
+		}
+	    }
+	    else if(t.transactionType == DATA_WRITE)
+	    {
+		if(writeQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+		{
+		    return false;
+		}
+		else
+		{
+		    if (!panic_mode)
+		    {
+			writeQueue.push_back(t);
+			if(LOGGING == true)
+			{
+			    // Start the logging for this access.
+			    log->access_start(t.address);
+			}
+			return true;
+		    }
+		    
+		    return false;
+		}
+	    }
+	    return false;
+	}
+	// no scheduling, so just shove everything into the read queue
+	else
 	{
 	    if(readQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
 	    {
@@ -37,50 +90,24 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 	    }
 	    else
 	    {
-		if (!panic_mode)
-		{
-		    readQueue.push_back(t);
-		    if(LOGGING == true)
-		    {
-			// Start the logging for this access.
-			log->access_start(t.address);
-		    }
-		    return true;
-		}
+		readQueue.push_back(t);
 		
-		return false;
+		if(LOGGING == true)
+		{
+		    // Start the logging for this access.
+		    log->access_start(t.address);
+		}
+		return true;
 	    }
 	}
-	else if(t.transactionType == DATA_WRITE)
-	{
-	    if(writeQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
-	    {
-		return false;
-	    }
-	    else
-	    {
-		if (!panic_mode)
-		{
-		    writeQueue.push_back(t);
-		    if(LOGGING == true)
-		    {
-			// Start the logging for this access.
-			log->access_start(t.address);
-		    }
-		    return true;
-		}
-		
-		return false;
-	    }
-	}
-	return false;
     }
     ERROR("Tried to add a transaction with a virtual address that was out of bounds");
     exit(5001);
 }
 
 void GCFtl::addGcTransaction(FlashTransaction &t){ 
-    readQueue.push_front(t);
+    // we use a special GC queue whether we're scheduling or not so always just do it like this
+    gcQueue.push_back(t);
     queues_full = false;
     
     if(LOGGING == true)
@@ -161,7 +188,14 @@ void GCFtl::update(void){
 							used_page_count--;
 						}
 					    }
-					    readQueue.pop_front();
+					    if(gc_status)
+					    {
+						gcQueue.pop_front();
+					    }
+					    else
+					    {
+						readQueue.pop_front();
+					    }
 					    busy = 0;
 					}
 					else
@@ -181,42 +215,49 @@ void GCFtl::update(void){
 		{
 			lookupCounter--;
 		}
-	} // if busy
+	} 
+	// Not currently busy.
 	else {
-		// Not currently busy.
-	    if(((WRITE_ON_QUEUE_SIZE == true && writeQueue.size() >= WRITE_QUEUE_LIMIT) ||
-	       (WRITE_ON_QUEUE_SIZE == false && writeQueue.size() >= FTL_QUEUE_LENGTH-1)) &&
-	       !gc_status)
+	    // if we're doing gc stuff then everything should be coming from the gc queue
+	    if(gc_status)
 	    {
-		// Not currently busy.
-		if (!writeQueue.empty()) {
+		if (!gcQueue.empty()) {
 		    busy = 1;
-		    currentTransaction = writeQueue.front();
-		    lookupCounter = LOOKUP_TIME;
-		}
-		else if (!readQueue.empty()) {
-		    busy = 1;
-		    currentTransaction = readQueue.front();
+		    currentTransaction = gcQueue.front();
 		    lookupCounter = LOOKUP_TIME;
 		}
 	    }
-	    else
+	    // if we're not in gc mode and...
+	    // we're favoring reads over writes so we need to check the write queues to make sure they
+	    // aren't filling up. if they are we issue a write, otherwise we just keeo on issuing reads
+	    else if(SCHEDULE)
 	    {
-		// Not currently busy.
- 		if (!readQueue.empty()) {
-		    busy = 1;
-		    currentTransaction = readQueue.front();
-		    lookupCounter = LOOKUP_TIME;
-		}
-		else if(WRITE_WAIT == true && !writeQueue.empty())
+		// do we need to issue a write?
+		if((WRITE_ON_QUEUE_SIZE == true && writeQueue.size() >= WRITE_QUEUE_LIMIT) ||
+		    (WRITE_ON_QUEUE_SIZE == false && writeQueue.size() >= FTL_QUEUE_LENGTH-1))
 		{
 		    busy = 1;
 		    currentTransaction = writeQueue.front();
 		    lookupCounter = LOOKUP_TIME;
 		}
-		// Check to see if GC needs to run.
-		else {
-			// Check to see if GC needs to run.
+		// no? then issue a read
+		else
+		{
+		    if (!readQueue.empty()) {
+			busy = 1;
+			currentTransaction = readQueue.front();
+			lookupCounter = LOOKUP_TIME;
+		    }
+		    // no reads to issue? then issue a write if we have opted to issue writes during idle
+		    else if(IDLE_WRITE == true && !writeQueue.empty())
+		    {
+			busy = 1;
+			currentTransaction = writeQueue.front();
+			lookupCounter = LOOKUP_TIME;
+		    }
+		    // still need something to do?
+		    // Check to see if GC needs to run.
+		    else {
 			if (checkGC() && !gc_status && dirty_page_count != 0)
 			{
 				// Run the GC.
@@ -224,6 +265,17 @@ void GCFtl::update(void){
 				gc_status = 1;
 				runGC();
 			}
+		    }
+		}
+	    }
+	     // we're not scheduling so everything is in the read queue
+	    // just issue from there
+	    else
+	    {
+		if (!readQueue.empty()) {
+		    busy = 1;
+		    currentTransaction = readQueue.front();
+		    lookupCounter = LOOKUP_TIME;
 		}
 	    }
 	}
@@ -348,6 +400,41 @@ void GCFtl::addGC(uint64_t dirty_block)
      {
 	 gc_pending_erase.push_front(temp_erase);
      }
+}
+
+void GCFtl::popFront(ChannelPacketType type)
+{
+    // if its a gc operation pop from the gc queue
+    if(type == ERASE || type == GC_READ || type == GC_WRITE)
+    {
+	gcQueue.pop_front();
+    }
+    // if we've put stuff into different queues we must now figure out which queue to pop from
+    else if(SCHEDULE)
+    {
+	if(type == READ)
+	{
+	    readQueue.pop_front();	
+	}
+	else if(type == WRITE)
+	{
+	    writeQueue.pop_front();
+	}
+    }
+    // if we're just putting everything into the read queue, just pop from there
+    // unless its a gc operation then pop from the gcQueue
+    else
+    {
+	readQueue.pop_front();
+    }
+}
+
+void GCFtl::sendQueueLength(void)
+{
+	if(LOGGING == true)
+	{
+	    log->ftlQueueLength(readQueue.size(), gcQueue.size());
+	}
 }
 
 void GCFtl::saveNVState(void)

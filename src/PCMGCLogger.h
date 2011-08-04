@@ -65,6 +65,7 @@ namespace NVDSim
 	    uint64_t average_gcwrite_latency;
 
 	    uint64_t ftl_queue_length;
+	    uint64_t gc_queue_length;
 	    std::vector<uint64_t> ctrl_queue_length;
 
 	    std::unordered_map<uint64_t, uint64_t> writes_per_address;
@@ -103,6 +104,7 @@ namespace NVDSim
 		average_gcwrite_latency = 0;
 
 		ftl_queue_length = 0;
+		gc_queue_length = 0;
 		ctrl_queue_length = std::vector<uint64_t>(NUM_PACKAGES, 0);
 
 		idle_energy = std::vector<double>(NUM_PACKAGES, 0.0); 

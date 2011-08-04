@@ -5,9 +5,10 @@ using namespace std;
 // these are the values that are extern'd in FlashConfiguration.h so that they
 // have global scope even though they are set by Init
 
+bool SCHEDULE;
 bool WRITE_ON_QUEUE_SIZE;
 uint WRITE_QUEUE_LIMIT;
-bool WRITE_WAIT;
+bool IDLE_WRITE;
 
 bool BUFFERED;
 
@@ -73,9 +74,10 @@ namespace NVDSim
 	//Map the string names to the variables they set
 	static ConfigMap configMap[] = {
 		//DEFINE_UINT_PARAM -- see Init.h
+	        DEFINE_BOOL_PARAM(SCHEDULE, DEV_PARAM),
 	        DEFINE_BOOL_PARAM(WRITE_ON_QUEUE_SIZE, DEV_PARAM),
 		DEFINE_UINT_PARAM(WRITE_QUEUE_LIMIT, DEV_PARAM),
-		DEFINE_BOOL_PARAM(WRITE_WAIT, DEV_PARAM),
+		DEFINE_BOOL_PARAM(IDLE_WRITE, DEV_PARAM),
 	        DEFINE_BOOL_PARAM(BUFFERED, DEV_PARAM),
 		DEFINE_BOOL_PARAM(LOGGING, DEV_PARAM),
 	        DEFINE_BOOL_PARAM(WEAR_LEVEL_LOG, DEV_PARAM),

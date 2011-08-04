@@ -115,7 +115,61 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t p
 bool Ftl::addTransaction(FlashTransaction &t){
     if(t.address <= (VIRTUAL_TOTAL_SIZE/NV_PAGE_SIZE))
     {
-	if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
+	// we are going to favor reads over writes
+	// so writes get put into a special lower prioirty queue
+	if(SCHEDULE)
+	{
+	    if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
+	    {
+		if(readQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+		{
+		    return false;
+		}
+		else
+		{
+		    readQueue.push_back(t);
+		    
+		    if(LOGGING == true)
+		    {
+			// Start the logging for this access.
+			log->access_start(t.address);
+		    }
+		    return true;
+		}
+	    }
+	    else if(t.transactionType == DATA_WRITE)
+	    {
+		if(writeQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+		{
+		    return false;
+		}
+		else
+		{
+		    // see if this write replaces another already in the write queue
+		    // if it does remove that other write from the queue
+		    list<FlashTransaction>::iterator it;
+		    for (it = writeQueue.begin(); it != writeQueue.end(); it++)
+		    {
+			if((*it).address == t.address)
+			{
+			    writeQueue.erase(it);
+			    break;
+			}
+		    }
+		    writeQueue.push_back(t);
+		    
+		    if(LOGGING == true)
+		    {
+			// Start the logging for this access.
+			log->access_start(t.address);
+		    }
+		    return true;
+		}
+	    }
+	    return false;
+	}
+	// no scheduling, so just shove everything into the read queue
+	else
 	{
 	    if(readQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
 	    {
@@ -133,26 +187,8 @@ bool Ftl::addTransaction(FlashTransaction &t){
 		return true;
 	    }
 	}
-	else if(t.transactionType == DATA_WRITE)
-	{
-	    if(writeQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
-	    {
-		return false;
-	    }
-	    else
-	    {
-		writeQueue.push_back(t);
-		
-		if(LOGGING == true)
-		{
-		    // Start the logging for this access.
-		    log->access_start(t.address);
-		}
-		return true;
-	    }
-	}
-	return false;
     }
+    
     ERROR("Tried to add a transaction with a virtual address that was out of bounds");
     exit(5001);
 }
@@ -183,35 +219,44 @@ void Ftl::update(void){
 		{
 			lookupCounter--;
 		}
-	} // if busy
+	} // Not currently busy.
 	else {
-	    if((WRITE_ON_QUEUE_SIZE == true && writeQueue.size() >= WRITE_QUEUE_LIMIT) ||
-	       (WRITE_ON_QUEUE_SIZE == false && writeQueue.size() >= FTL_QUEUE_LENGTH))
+	    // we're favoring reads over writes so we need to check the write queues to make sure they
+	    // aren't filling up. if they are we issue a write, otherwise we just keeo on issuing reads
+	    if(SCHEDULE)
 	    {
-		// Not currently busy.
-		if (!writeQueue.empty()) {
-			busy = 1;
-			currentTransaction = writeQueue.front();
-			lookupCounter = LOOKUP_TIME;
-		}
-		else if (!readQueue.empty()) {
-			busy = 1;
-			currentTransaction = readQueue.front();
-			lookupCounter = LOOKUP_TIME;
-		}
-	    }
-	    else
-	    {
-		// Not currently busy.
-		if (!readQueue.empty()) {
-			busy = 1;
-			currentTransaction = readQueue.front();
-			lookupCounter = LOOKUP_TIME;
-		}
-		else if(WRITE_WAIT == true && !writeQueue.empty())
+		// do we need to issue a write?
+		if((WRITE_ON_QUEUE_SIZE == true && writeQueue.size() >= WRITE_QUEUE_LIMIT) ||
+		   (WRITE_ON_QUEUE_SIZE == false && writeQueue.size() >= FTL_QUEUE_LENGTH))
 		{
 		    busy = 1;
 		    currentTransaction = writeQueue.front();
+		    lookupCounter = LOOKUP_TIME;
+		}
+		// no? then issue a read
+		else
+		{
+		    if (!readQueue.empty()) {
+			busy = 1;
+			currentTransaction = readQueue.front();
+			lookupCounter = LOOKUP_TIME;
+		    }
+		    // no reads to issue? then issue a write if we have opted to issue writes during idle
+		    else if(IDLE_WRITE == true && !writeQueue.empty())
+		    {
+			busy = 1;
+			currentTransaction = writeQueue.front();
+			lookupCounter = LOOKUP_TIME;
+		    }
+		}
+	    }
+	    // we're not scheduling so everything is in the read queue
+	    // just issue from there
+	    else
+	    {
+		if (!readQueue.empty()) {
+		    busy = 1;
+		    currentTransaction = readQueue.front();
 		    lookupCounter = LOOKUP_TIME;
 		}
 	    }
@@ -232,6 +277,18 @@ void Ftl::handle_read(bool gc)
 	{
 	    if((*it).address == vAddr)
 	    {
+		if(LOGGING)
+		{
+		    // Update the logger (but not for GC_READ).
+		    log->read_mapped();
+
+		    // access_process for this read is called here since this ends now.
+		    log->access_process(vAddr, vAddr, 0, READ);
+
+		    // stop_process for this read is called here since this ends now.
+		    log->access_stop(vAddr, vAddr);
+		}
+
 		controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (*it).data));
 		readQueue.pop_front();
 		busy = 0;
@@ -268,7 +325,14 @@ void Ftl::handle_read(bool gc)
 
 		// Miss, nothing to read so return garbage.
 		controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
-		readQueue.pop_front();
+		if(gc)
+		{
+		    popFront(GC_READ);
+		}
+		else
+		{
+		    popFront(READ);
+		}
 		busy = 0;
 	} 
 	else 
@@ -289,7 +353,7 @@ void Ftl::handle_read(bool gc)
 				// Update the logger (but not for GC_READ).
 				log->read_mapped();
 			}
-			readQueue.pop_front();
+			popFront(read_type);
 			busy = 0;
 		}
 		else
@@ -438,14 +502,7 @@ void Ftl::handle_write(bool gc)
 			used_page_count++;
 
 			// Pop the transaction from the transaction queue.
-			if(gc)
-			{
-			    readQueue.pop_front();
-			}
-			else
-			{
-			    writeQueue.pop_front();
-			}
+			popFront(write_type);
 
 			// The FTL is no longer busy.
 			busy = 0;
@@ -488,6 +545,31 @@ uint64_t Ftl::get_ptr(void) {
 	// Return a pointer to the current plane.
 	return NV_PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
 		(plane + PLANES_PER_DIE * (die + NUM_PACKAGES * channel));
+}
+
+void Ftl::popFront(ChannelPacketType type)
+{
+    // if we've put stuff into different queues we must now figure out which queue to pop from
+    if(SCHEDULE)
+    {
+	if(type == READ)
+	{
+	    readQueue.pop_front();	
+	}
+	else if(type == WRITE)
+	{
+	    writeQueue.pop_front();
+	}
+	else if(type == ERASE)
+	{
+	    readQueue.pop_front();
+	}
+    }
+    // if we're just putting everything into the read queue, just pop from there
+    else
+    {
+	readQueue.pop_front();
+    }
 }
 
 void Ftl::powerCallback(void) 

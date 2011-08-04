@@ -23,6 +23,9 @@ namespace NVDSim
 	void erase_latency(uint64_t cycles);
 	void gcread_latency(uint64_t cycles);
 	void gcwrite_latency(uint64_t cycles);
+
+	void ftlQueueLength(uint64_t length, uint64_t length2);
+	void ftlQueueReset(void);
 	
 	void save(uint64_t cycle, uint epoch);
 	void print(uint64_t cycle);
@@ -45,6 +48,9 @@ namespace NVDSim
 	uint64_t average_erase_latency;
 	uint64_t average_gcread_latency;
 	uint64_t average_gcwrite_latency;
+
+	uint64_t gc_queue_length;
+	uint64_t max_gc_queue_length;
 
 	// Power Stuff
 	// This is computed per package
@@ -80,6 +86,7 @@ namespace NVDSim
 	    uint64_t average_gcwrite_latency;
 
 	    uint64_t ftl_queue_length;
+	    uint64_t gc_queue_length;
 	    std::vector<uint64_t> ctrl_queue_length;
 
 	    std::unordered_map<uint64_t, uint64_t> writes_per_address;
@@ -114,6 +121,7 @@ namespace NVDSim
 		average_gcwrite_latency = 0;
 		
 		ftl_queue_length = 0;
+		gc_queue_length = 0;
 		ctrl_queue_length = std::vector<uint64_t>(NUM_PACKAGES, 0);
 
 		idle_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
