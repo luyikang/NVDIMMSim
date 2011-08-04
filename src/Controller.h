@@ -27,6 +27,8 @@ namespace NVDSim{
 
 			void attachPackages(vector<Package> *packages);
 			void returnReadData(const FlashTransaction &trans);
+			void returnUnmappedData(const FlashTransaction &trans);
+			void returnCritLine(ChannelPacket *busPacket);
 			void returnPowerData(vector<double> idle_energy,
 					 vector<double> access_energy,
 					 vector<double> erase_energy,

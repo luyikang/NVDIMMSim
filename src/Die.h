@@ -23,9 +23,9 @@ namespace NVDSim{
 			void receiveFromBuffer(ChannelPacket *busPacket);
 			int isDieBusy(uint plane);
 			void update(void);
-
 			void channelDone(void);
 			void bufferDone(void);
+			void critLineDone(void);
 
 			// for fast forwarding
 			void writeToPlane(ChannelPacket *packet);
@@ -37,7 +37,8 @@ namespace NVDSim{
 			Logger *log;
 			bool sending;
 			uint dataCyclesLeft; //cycles per device beat
-			uint deviceBeatsLeft; //device beats per page			
+			uint deviceBeatsLeft; //device beats per page
+			uint critBeat; //device beat when first cache line will have been sent, used for crit line first
 			std::queue<ChannelPacket *> returnDataPackets;
 			std::vector<Plane> planes;
 			std::vector<ChannelPacket *> currentCommands;

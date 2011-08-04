@@ -42,6 +42,19 @@ void Controller::returnReadData(const FlashTransaction  &trans){
 	parentNVDIMM->numReads++;
 }
 
+void Controller::returnUnmappedData(const FlashTransaction  &trans){
+	if(parentNVDIMM->UnmappedReadDone!=NULL){
+		(*parentNVDIMM->UnmappedReadDone)(parentNVDIMM->systemID, trans.address, currentClockCycle);
+	}
+	parentNVDIMM->numReads++;
+}
+
+void Controller::returnCritLine(ChannelPacket *busPacket){
+	if(parentNVDIMM->CriticalLineDone!=NULL){
+		(*parentNVDIMM->CriticalLineDone)(parentNVDIMM->systemID, busPacket->virtualAddress, currentClockCycle);
+	}
+}
+
 void Controller::returnPowerData(vector<double> idle_energy, vector<double> access_energy, vector<double> erase_energy,
 		vector<double> vpp_idle_energy, vector<double> vpp_access_energy, vector<double> vpp_erase_energy) {
 	if(parentNVDIMM->ReturnPowerData!=NULL){
