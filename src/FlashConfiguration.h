@@ -125,6 +125,7 @@ extern uint WRITE_TIME;
 extern uint ERASE_TIME;
 extern uint COMMAND_LENGTH; //in bits, including address
 extern uint LOOKUP_TIME;
+extern uint QUEUE_ACCESS_TIME; //time it takes to read data out of the write queue
 // in nanoseconds
 extern float CYCLE_TIME;
 

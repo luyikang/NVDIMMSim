@@ -45,6 +45,9 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 	// Counter to keep track of succesful writes.
 	write_counter = 0;
 
+	// Counter to keep track of how long we've been access data in the write queue
+	queue_access_counter = 0;
+
 	// Counter to keep track of cycles we spend waiting on erases
 	// if we wait longer than the length of an erase, we've probably deadlocked
 	deadlock_counter = 0;
@@ -113,7 +116,7 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t p
 }
 
 bool Ftl::addTransaction(FlashTransaction &t){
-    if(t.address <= (VIRTUAL_TOTAL_SIZE*1024))
+    if(t.address < (VIRTUAL_TOTAL_SIZE*1024))
     {
 	// we are going to favor reads over writes
 	// so writes get put into a special lower prioirty queue
@@ -272,28 +275,43 @@ void Ftl::handle_read(bool gc)
     //Check to see if the vAddr corresponds to the write waiting in the write queue
     if(!gc)
     {
-	list<FlashTransaction>::iterator it;
-	for (it = writeQueue.begin(); it != writeQueue.end(); it++)
+	if(queue_access_counter == 0)
 	{
-	    if((*it).address == vAddr)
+	    for (reading_write = writeQueue.begin(); reading_write != writeQueue.end(); reading_write++)
+	    {
+		if((*reading_write).address == vAddr)
+		{
+		    queue_access_counter = QUEUE_ACCESS_TIME;
+		    write_queue_handled = true;
+		    if(LOGGING)
+		    {
+
+			// Update the logger.
+			log->read_mapped();
+
+			// access_process for this read is called here since it starts here
+			log->access_process(vAddr, vAddr, 0, READ);
+		    }
+
+		    break;
+		}
+	    }
+	}
+	else if(queue_access_counter > 0)
+	{
+	    queue_access_counter--;
+	    write_queue_handled = true;
+	    if(queue_access_counter == 0)
 	    {
 		if(LOGGING)
 		{
-		    // Update the logger (but not for GC_READ).
-		    log->read_mapped();
-
-		    // access_process for this read is called here since this ends now.
-		    log->access_process(vAddr, vAddr, 0, READ);
-
 		    // stop_process for this read is called here since this ends now.
 		    log->access_stop(vAddr, vAddr);
 		}
 
-		controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (*it).data));
+		controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (*reading_write).data));
 		readQueue.pop_front();
 		busy = 0;
-		write_queue_handled = true;
-		break;
 	    }
 	}
     }
