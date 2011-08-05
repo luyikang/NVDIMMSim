@@ -86,17 +86,17 @@ extern bool ENABLE_NV_RESTORE;
 extern std::string NV_RESTORE_FILE;
 
 extern std::string DEVICE_TYPE;
-extern uint NUM_PACKAGES;
-extern uint DIES_PER_PACKAGE;
-extern uint PLANES_PER_DIE;
-extern uint BLOCKS_PER_PLANE;
-extern uint VIRTUAL_BLOCKS_PER_PLANE;
-extern uint PAGES_PER_BLOCK;
-extern uint NV_PAGE_SIZE;
+extern uint64_t NUM_PACKAGES;
+extern uint64_t DIES_PER_PACKAGE;
+extern uint64_t PLANES_PER_DIE;
+extern uint64_t BLOCKS_PER_PLANE;
+extern uint64_t VIRTUAL_BLOCKS_PER_PLANE;
+extern uint64_t PAGES_PER_BLOCK;
+extern uint64_t NV_PAGE_SIZE;
 extern float DEVICE_CYCLE;
 extern float CHANNEL_CYCLE;
-extern uint DEVICE_WIDTH;
-extern uint CHANNEL_WIDTH;
+extern uint64_t DEVICE_WIDTH;
+extern uint64_t CHANNEL_WIDTH;
 // does the device use garbage collection 
 extern bool GARBAGE_COLLECT;
 
@@ -122,6 +122,7 @@ extern uint WRITE_TIME;
 extern uint ERASE_TIME;
 extern uint COMMAND_LENGTH; //in bits, including address
 extern uint LOOKUP_TIME;
+extern uint QUEUE_ACCESS_TIME; //time it takes to read data out of the write queue
 // in nanoseconds
 extern float CYCLE_TIME;
 

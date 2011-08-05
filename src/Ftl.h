@@ -66,6 +66,9 @@ namespace NVDSim{
 			bool loaded;
 			bool queues_full;
 
+			uint queue_access_counter;
+			std::list<FlashTransaction>::iterator reading_write;
+
 			std::unordered_map<uint64_t,uint64_t> addressMap;
 			std::vector<vector<bool>> used;
 			std::list<FlashTransaction> readQueue;

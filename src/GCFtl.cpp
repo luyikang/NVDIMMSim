@@ -29,7 +29,7 @@ GCFtl::GCFtl(Controller *c, Logger *l, NVDIMM *p)
 }
 
 bool GCFtl::addTransaction(FlashTransaction &t){
-    if(t.address <= (VIRTUAL_TOTAL_SIZE/NV_PAGE_SIZE))
+    if(t.address < (VIRTUAL_TOTAL_SIZE*1024))
     {
 	// we are going to favor reads over writes
 	// so writes get put into a special lower prioirty queue
