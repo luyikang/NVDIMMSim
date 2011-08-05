@@ -7,7 +7,7 @@
 using namespace NVDSim;
 using namespace std;
 
-uint BLOCKS_PER_PLANE;
+uint64_t BLOCKS_PER_PLANE;
 
 NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string trc) :
 	dev(deviceFile),
@@ -38,7 +38,7 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 		 exit(-1);
 	 }
 	
-	BLOCKS_PER_PLANE = (uint) VIRTUAL_BLOCKS_PER_PLANE * PBLOCKS_PER_VBLOCK;
+	BLOCKS_PER_PLANE = (uint64_t) VIRTUAL_BLOCKS_PER_PLANE * PBLOCKS_PER_VBLOCK;
 	if(LOGGING == 1)
 	{
 	    PRINT("Logs are being generated");

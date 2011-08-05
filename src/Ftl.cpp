@@ -113,7 +113,7 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t p
 }
 
 bool Ftl::addTransaction(FlashTransaction &t){
-    if(t.address <= (VIRTUAL_TOTAL_SIZE/NV_PAGE_SIZE))
+    if(t.address <= (VIRTUAL_TOTAL_SIZE*1024))
     {
 	// we are going to favor reads over writes
 	// so writes get put into a special lower prioirty queue
