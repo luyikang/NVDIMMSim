@@ -5,12 +5,26 @@
  * provide all necessary functionality to talk to an external simulator
  */
 
+#include "FlashTransaction.h"
 #include "Callbacks.h"
+
+#include <iostream>
+#include <cstdlib>
+#include <string>
+
+#include <vector>
+#include <unordered_map>
+#include <queue>
+#include <list>
+#include <stdint.h>
+#include <limits.h>
 
 using std::string;
 
 namespace NVDSim
 {
+    typedef CallbackBase<void,uint,uint64_t,uint64_t> Callback_t;
+    typedef CallbackBase<void,uint,std::vector<std::vector<double>>,uint64_t> Callback_v;
     class NVDIMM
     {
     public:
@@ -24,6 +38,7 @@ namespace NVDSim
 	void saveNVState(string filename);
 	void loadNVState(string filename);
     };
+
     NVDIMM *getNVDIMMInstance(uint id, string deviceFile, string sysFile, string pwd, string trc);
 }
 
