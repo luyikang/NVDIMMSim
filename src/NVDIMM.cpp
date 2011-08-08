@@ -180,6 +180,12 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	ftl->loadNVState();
 }
 
+// static allocator for the library interface
+NVDIMM *getNVDIMMInstance(uint id, string deviceFile, string sysFile, string pwd, string trc)
+{
+    return new NVDIMM(id, deviceFile, sysFile, pwd, trc);
+}
+
 bool NVDIMM::add(FlashTransaction &trans){
 	return ftl->addTransaction(trans);	
 }
