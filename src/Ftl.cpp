@@ -351,6 +351,7 @@ void Ftl::handle_read(bool gc)
 		if(gc)
 		{
 		    ERROR("GC tried to read upmapped data at address " << vAddr);
+		    exit(2001);
 		}
 		else
 		{
