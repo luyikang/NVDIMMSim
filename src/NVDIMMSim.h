@@ -5,7 +5,6 @@
  * provide all necessary functionality to talk to an external simulator
  */
 
-#include "FlashTransaction.h"
 #include "Callbacks.h"
 
 #include <iostream>
@@ -29,7 +28,6 @@ namespace NVDSim
     {
     public:
 	void update(void);
-	bool add(FlashTransaction &trans);
 	bool addTransaction(bool isWrite, uint64_t addr);
 	void printStats(void);
 	void saveStats(void);
