@@ -67,6 +67,22 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 		{
 		    if (!panic_mode)
 		    {
+			// see if this write replaces another already in the write queue
+			// if it does remove that other write from the queue
+			list<FlashTransaction>::iterator it;
+			for (it = writeQueue.begin(); it != writeQueue.end(); it++)
+			{
+			    if((*it).address == t.address)
+			    {
+				// access_process for that write is called here since its over now.
+				log->access_process(t.address, t.address, 0, WRITE);
+
+				// stop_process for that write is called here since its over now.
+				log->access_stop(t.address, t.address);
+				writeQueue.erase(it);
+				break;
+			    }
+			}
 			writeQueue.push_back(t);
 			if(LOGGING == true)
 			{
