@@ -342,7 +342,7 @@ void Ftl::handle_read(bool gc)
 		}
 
 		// Miss, nothing to read so return garbage.
-		controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
+		controller->returnUnmappedData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
 		if(gc)
 		{
 		    popFront(GC_READ);

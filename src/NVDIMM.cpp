@@ -203,6 +203,18 @@ string NVDIMM::SetOutputFileName(string tracefilename){
 
 void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback_v *Power){
 	ReturnReadData = readCB;
+	UnmappedReadDone = NULL;
+	CriticalLineDone = NULL;
+	WriteDataDone = writeCB;
+	ReturnPowerData = Power;
+}
+
+void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *unmappedCB, Callback_t *critLineCB, 
+		       Callback_t *writeCB, Callback_v *Power)
+{
+    	ReturnReadData = readCB;
+	UnmappedReadDone = unmappedCB;
+	CriticalLineDone = critLineCB;
 	WriteDataDone = writeCB;
 	ReturnPowerData = Power;
 }

@@ -45,6 +45,7 @@ namespace NVDSim{
 	    uint** cyclesLeft;	    
 	    uint** deviceWriting;
 	    uint** outDataLeft;
+	    uint** critData; // burst on which the critical line will be done
 	    uint** inDataLeft;
 
 	    uint sendingDie;

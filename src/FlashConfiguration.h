@@ -73,6 +73,9 @@ extern bool IDLE_WRITE;
 // Buffering Options
 extern bool BUFFERED;
 
+// Critical Cache Line First Options 
+extern bool CRIT_LINE_FIRST;
+
 // Logging Options
 extern bool LOGGING;
 extern bool WEAR_LEVEL_LOG;

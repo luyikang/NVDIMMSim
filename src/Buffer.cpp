@@ -16,6 +16,7 @@ Buffer::Buffer(uint id){
     cyclesLeft = new uint *[DIES_PER_PACKAGE];
     deviceWriting = new uint *[DIES_PER_PACKAGE];
     outDataLeft = new uint *[DIES_PER_PACKAGE];
+    critData = new uint *[DIES_PER_PACKAGE];
     inDataLeft = new uint *[DIES_PER_PACKAGE];
     writing_busy = new int *[DIES_PER_PACKAGE];
 
@@ -23,6 +24,7 @@ Buffer::Buffer(uint id){
 	cyclesLeft[i] = new uint [PLANES_PER_DIE];
 	deviceWriting[i] = new uint[PLANES_PER_DIE];
 	outDataLeft[i] = new uint [PLANES_PER_DIE];
+	critData[i] = new uint [PLANES_PER_DIE];
 	inDataLeft[i] = new uint [PLANES_PER_DIE];
 	writing_busy[i] = new int [PLANES_PER_DIE];
 	
@@ -30,6 +32,7 @@ Buffer::Buffer(uint id){
 	    cyclesLeft[i][j] = 0;
 	    deviceWriting[i][j] = 0;
 	    outDataLeft[i][j] = 0;
+	    critData[i][j] = 0;
 	    inDataLeft[i][j] = 0;
 	    writing_busy[i][j] = 0;
 	}
@@ -39,6 +42,7 @@ Buffer::Buffer(uint id){
 
     sendingDie = 0;
     sendingPlane = 0;
+
 }
 
 void Buffer::attachDie(Die *d){
@@ -153,6 +157,12 @@ void Buffer::update(void){
 		{
 		    // then see if we have control of the channel
 		    if (channel->hasChannel(BUFFER, id) && sendingDie == i && sendingPlane == j){
+
+			if(critData[i][j] >= 512 && critData[i][j] < 512+CHANNEL_WIDTH && channel->notBusy())
+			{
+			    dies[i]->critLineDone();
+			}
+
 			if(outDataLeft[i][j] > 0 && channel->notBusy()){
 			    channel->sendPiece(BUFFER,outData[i][j].front()->type,i,j);
 			    outData[i][j].front()->number = outData[i][j].front()->number - CHANNEL_WIDTH;
@@ -164,12 +174,14 @@ void Buffer::update(void){
 			    {
 				outDataLeft[i][j] = 0;
 			    }
+			    critData[i][j] = critData[i][j] + CHANNEL_WIDTH;
 			}
 
-			if(outDataLeft[i][j] == 0)
+			if(outDataLeft[i][j] == 0 && channel->notBusy())
 			{
 			    dies[i]->bufferDone();
 			    channel->releaseChannel(BUFFER,id);
+			    critData[i][j] = 0;
 			    outData[i][j].pop_front();
 			}
 		    }		

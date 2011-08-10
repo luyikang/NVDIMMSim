@@ -31,6 +31,8 @@ namespace NVDSim{
 			void saveStats(void);
 			string SetOutputFileName(string tracefilename);
 			void RegisterCallbacks(Callback_t *readDone, Callback_t *writeDone, Callback_v *Power);
+			void RegisterCallbacks(Callback_t *readDone, Callback_t *unmappedRead, Callback_t *critLine, 
+					       Callback_t *writeDone, Callback_v *Power); 
 
 			void powerCallback(void);
 
@@ -48,6 +50,8 @@ namespace NVDSim{
 			vector<Package> *packages;
 
 			Callback_t* ReturnReadData;
+			Callback_t* UnmappedReadDone;
+			Callback_t* CriticalLineDone;
 			Callback_t* WriteDataDone;
 			Callback_v* ReturnPowerData;
 

@@ -25,6 +25,8 @@ Die::Die(NVDIMM *parent, Logger *l, uint idNum){
 	controlCyclesLeft= new uint[PLANES_PER_DIE];
 
 	currentClockCycle= 0;
+
+	critBeat = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH)-(divide_params((uint)512,DEVICE_WIDTH)) * DEVICE_CYCLE) / CYCLE_TIME; // cache line is 64 bytes
 }
 
 void Die::attachToBuffer(Buffer *buff){
@@ -182,12 +184,17 @@ void Die::update(void){
 					buffer->channel->releaseChannel(BUFFER, id);
 					returnDataPackets.pop();
 				}
+				if(CRIT_LINE_FIRST && dataCyclesLeft == critBeat)
+				{
+				    buffer->channel->controller->returnCritLine(returnDataPackets.front());
+				}
 
 				dataCyclesLeft--;
 			}else{
 				if(buffer->channel->obtainChannel(id, BUFFER, NULL))
 				{
 					dataCyclesLeft = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
+   
 				}
 			}
 		}
@@ -199,6 +206,14 @@ void Die::bufferDone()
 	buffer->sendToController(returnDataPackets.front());
 	returnDataPackets.pop();			
 	sending = false;
+}
+
+void Die::critLineDone()
+{
+    if(CRIT_LINE_FIRST)
+    {
+	buffer->channel->controller->returnCritLine(returnDataPackets.front());
+    }
 }
 
 void Die::writeToPlane(ChannelPacket *packet)
