@@ -4,12 +4,13 @@
 #include "NVDIMM.h"
 #include "Init.h"
 
-using namespace NVDSim;
 using namespace std;
 
 uint64_t BLOCKS_PER_PLANE;
 
-NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string trc) :
+namespace NVDSim
+{
+    NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string trc) :
 	dev(deviceFile),
 	sys(sysFile),
 	cDirectory(pwd)
@@ -178,10 +179,16 @@ NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string tr
 	currentClockCycle= 0;
 
 	ftl->loadNVState();
+	}
+
+// static allocator for the library interface
+NVDIMM *getNVDIMMInstance(uint id, string deviceFile, string sysFile, string pwd, string trc)
+{
+    return new NVDIMM(id, deviceFile, sysFile, pwd, trc);
 }
 
 bool NVDIMM::add(FlashTransaction &trans){
-	return ftl->addTransaction(trans);	
+    return ftl->addTransaction(trans);	
 }
 
 bool NVDIMM::addTransaction(bool isWrite, uint64_t addr){
@@ -305,4 +312,5 @@ void NVDIMM::queuesNotFull(void)
 void NVDIMM::GCReadDone(uint64_t vAddr)
 {
     ftl->GCReadDone(vAddr);
+}
 }

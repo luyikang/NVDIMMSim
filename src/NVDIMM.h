@@ -61,5 +61,7 @@ namespace NVDSim{
 		private:
 			string dev, sys, cDirectory;
 	};
+
+	NVDIMM *getNVDIMMInstance(uint id, string deviceFile, string sysFile, string pwd, string trc);
 }
 #endif
