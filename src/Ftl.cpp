@@ -155,6 +155,11 @@ bool Ftl::addTransaction(FlashTransaction &t){
 		    {
 			if((*it).address == t.address)
 			{
+			    // access_process for that write is called here since its over now.
+			    log->access_process(t.address, t.address, 0, WRITE);
+
+			    // stop_process for that write is called here since its over now.
+			    log->access_stop(t.address, t.address);
 			    writeQueue.erase(it);
 			    break;
 			}
@@ -345,7 +350,8 @@ void Ftl::handle_read(bool gc)
 		controller->returnUnmappedData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
 		if(gc)
 		{
-		    popFront(GC_READ);
+		    ERROR("GC tried to read upmapped data at address " << vAddr);
+		    exit(2001);
 		}
 		else
 		{

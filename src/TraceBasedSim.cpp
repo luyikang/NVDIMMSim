@@ -48,23 +48,19 @@ int main(void){
 	return 0;
 }
 
-void test_obj::read_cb(uint id, uint64_t address, uint64_t cycle){
+void test_obj::read_cb(uint id, uint64_t address, uint64_t cycle, bool mapped){
 	cout<<"[Callback] read complete: "<<id<<" "<<address<<" cycle="<<cycle<<endl;
 }
 
-void test_obj::unmapped_cb(uint id, uint64_t address, uint64_t cycle){
-	cout<<"[Callback] unmapped read complete: "<<id<<" "<<address<<" cycle="<<cycle<<endl;
-}
-
-void test_obj::crit_cb(uint id, uint64_t address, uint64_t cycle){
+void test_obj::crit_cb(uint id, uint64_t address, uint64_t cycle, bool mapped){
 	cout<<"[Callback] crit line done: "<<id<<" "<<address<<" cycle="<<cycle<<endl;
 }
 
-void test_obj::write_cb(uint id, uint64_t address, uint64_t cycle){
+void test_obj::write_cb(uint id, uint64_t address, uint64_t cycle, bool mapped){
 	cout<<"[Callback] write complete: "<<id<<" "<<address<<" cycle="<<cycle<<endl;
 }
 
-void test_obj::power_cb(uint id, vector<vector<double>> data, uint64_t cycle){
+void test_obj::power_cb(uint id, vector<vector<double>> data, uint64_t cycle, bool mapped){
         cout<<"[Callback] Power Data for cycle: "<<cycle<<endl;
 	for(uint i = 0; i < NUM_PACKAGES; i++){
 	  for(uint j = 0; j < data.size(); j++){
@@ -107,15 +103,14 @@ void test_obj::power_cb(uint id, vector<vector<double>> data, uint64_t cycle){
 void test_obj::run_test(void){
 	clock_t start= clock(), end;
 	uint write, cycle;
-	NVDIMM *NVDimm= new NVDIMM(1,"ini/samsung_K9XXG08UXM(gc_test).ini","ini/def_system.ini","","");
+	NVDIMM *NVDimm= new NVDIMM(1,"ini/samsung_K9XXG08UXM_gc_test.ini","ini/def_system.ini","","");
 	//NVDIMM *NVDimm= new NVDIMM(1,"ini/PCM_TEST.ini","ini/def_system.ini","","");
-	typedef CallbackBase<void,uint,uint64_t,uint64_t> Callback_t;
-	Callback_t *r = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::read_cb);
-	Callback_t *u = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::unmapped_cb);
-	Callback_t *c = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::crit_cb);
-	Callback_t *w = new Callback<test_obj, void, uint, uint64_t, uint64_t>(this, &test_obj::write_cb);
-	Callback_v *p = new Callback<test_obj, void, uint, vector<vector<double>>, uint64_t>(this, &test_obj::power_cb);
-	NVDimm->RegisterCallbacks(r, u, c, w, p);
+	typedef CallbackBase<void,uint,uint64_t,uint64_t,bool> Callback_t;
+	Callback_t *r = new Callback<test_obj, void, uint, uint64_t, uint64_t, bool>(this, &test_obj::read_cb);
+	Callback_t *c = new Callback<test_obj, void, uint, uint64_t, uint64_t, bool>(this, &test_obj::crit_cb);
+	Callback_t *w = new Callback<test_obj, void, uint, uint64_t, uint64_t, bool>(this, &test_obj::write_cb);
+	Callback_v *p = new Callback<test_obj, void, uint, vector<vector<double>>, uint64_t, bool>(this, &test_obj::power_cb);
+	NVDimm->RegisterCallbacks(r, c, w, p);
 	
 	FlashTransaction t;
 
@@ -132,7 +127,7 @@ void test_obj::run_test(void){
 	
 	for (cycle= 0; cycle<SIM_CYCLES; cycle++){
 	  if(writes < NUM_WRITES){
-	      t = FlashTransaction(DATA_WRITE, write_addr, (void *)0xdeadbeef);
+	      t = FlashTransaction(DATA_READ, write_addr, (void *)0xdeadbeef);
 	      result = (*NVDimm).add(t);
 	      if(result == 1)
 	      {
