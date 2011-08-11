@@ -19,8 +19,8 @@
 using std::string;
 
 namespace NVDSim{
-	typedef CallbackBase<void,uint,uint64_t,uint64_t> Callback_t;
-	typedef CallbackBase<void,uint,vector<vector<double>>,uint64_t> Callback_v;
+    typedef CallbackBase<void,uint,uint64_t,uint64_t,bool> Callback_t;
+    typedef CallbackBase<void,uint,vector<vector<double>>,uint64_t,bool> Callback_v;
 	class NVDIMM : public SimObj{
 		public:
 			NVDIMM(uint id, string dev, string sys, string pwd, string trc);
@@ -31,8 +31,7 @@ namespace NVDSim{
 			void saveStats(void);
 			string SetOutputFileName(string tracefilename);
 			void RegisterCallbacks(Callback_t *readDone, Callback_t *writeDone, Callback_v *Power);
-			void RegisterCallbacks(Callback_t *readDone, Callback_t *unmappedRead, Callback_t *critLine, 
-					       Callback_t *writeDone, Callback_v *Power); 
+			void RegisterCallbacks(Callback_t *readDone, Callback_t *critLine, Callback_t *writeDone, Callback_v *Power); 
 
 			void powerCallback(void);
 
@@ -50,7 +49,6 @@ namespace NVDSim{
 			vector<Package> *packages;
 
 			Callback_t* ReturnReadData;
-			Callback_t* UnmappedReadDone;
 			Callback_t* CriticalLineDone;
 			Callback_t* WriteDataDone;
 			Callback_v* ReturnPowerData;
