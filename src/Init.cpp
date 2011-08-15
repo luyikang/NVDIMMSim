@@ -5,6 +5,9 @@ using namespace std;
 // these are the values that are extern'd in FlashConfiguration.h so that they
 // have global scope even though they are set by Init
 
+namespace NVDSim 
+{
+
 bool SCHEDULE;
 bool WRITE_ON_QUEUE_SIZE;
 uint WRITE_QUEUE_LIMIT;
@@ -28,7 +31,7 @@ std::string DEVICE_TYPE;
 uint64_t NUM_PACKAGES;
 uint64_t DIES_PER_PACKAGE;
 uint64_t PLANES_PER_DIE;
-//uint64_t BLOCKS_PER_PLANE;
+uint64_t BLOCKS_PER_PLANE;
 uint64_t VIRTUAL_BLOCKS_PER_PLANE;
 uint64_t PAGES_PER_BLOCK;
 uint64_t NV_PAGE_SIZE;
@@ -71,8 +74,8 @@ float PBLOCKS_PER_VBLOCK;
 
 uint DEBUG_INIT= 0;
 
-namespace NVDSim 
-{
+//namespace NVDSim 
+//{
 		
 	//Map the string names to the variables they set
 	static ConfigMap configMap[] = {
