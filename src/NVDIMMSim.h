@@ -22,8 +22,8 @@ using std::string;
 
 namespace NVDSim
 {
-    typedef CallbackBase<void,uint,uint64_t,uint64_t> Callback_t;
-    typedef CallbackBase<void,uint,std::vector<std::vector<double>>,uint64_t> Callback_v;
+    typedef CallbackBase<void,uint,uint64_t,uint64_t,bool> Callback_t;
+    typedef CallbackBase<void,uint,std::vector<std::vector<double>>,uint64_t,bool> Callback_v;
     class NVDIMM
     {
     public:
@@ -32,6 +32,7 @@ namespace NVDSim
 	void printStats(void);
 	void saveStats(void);
 	void RegisterCallbacks(Callback_t *readDone, Callback_t *writeDone, Callback_v *Power);
+	void RegisterCallbacks(Callback_t *readDone, Callback_t *critLine, Callback_t *writeDone, Callback_v *Power); 
 
 	void saveNVState(string filename);
 	void loadNVState(string filename);
