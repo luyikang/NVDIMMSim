@@ -134,8 +134,10 @@ extern float CYCLE_TIME;
 
 extern uint EPOCH_TIME;
 #define USE_EPOCHS (EPOCH_TIME > 0)
-extern uint FTL_QUEUE_LENGTH;
-extern uint CTRL_QUEUE_LENGTH;
+extern uint FTL_READ_QUEUE_LENGTH;
+extern uint FTL_WRITE_QUEUE_LENGTH;
+extern uint CTRL_READ_QUEUE_LENGTH;
+extern uint CTRL_WRITE_QUEUE_LENGTH;
 
 // Power stuff
 extern double READ_I;

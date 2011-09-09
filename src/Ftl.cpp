@@ -124,7 +124,7 @@ bool Ftl::addTransaction(FlashTransaction &t){
 	{
 	    if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
 	    {
-		if(readQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+		if(readQueue.size() >= FTL_READ_QUEUE_LENGTH && FTL_READ_QUEUE_LENGTH != 0)
 		{
 		    return false;
 		}
@@ -142,7 +142,7 @@ bool Ftl::addTransaction(FlashTransaction &t){
 	    }
 	    else if(t.transactionType == DATA_WRITE)
 	    {
-		if(writeQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+		if(writeQueue.size() >= FTL_WRITE_QUEUE_LENGTH && FTL_WRITE_QUEUE_LENGTH != 0)
 		{
 		    return false;
 		}
@@ -179,7 +179,7 @@ bool Ftl::addTransaction(FlashTransaction &t){
 	// no scheduling, so just shove everything into the read queue
 	else
 	{
-	    if(readQueue.size() >= FTL_QUEUE_LENGTH && FTL_QUEUE_LENGTH != 0)
+	    if(readQueue.size() >= FTL_READ_QUEUE_LENGTH && FTL_READ_QUEUE_LENGTH != 0)
 	    {
 		return false;
 	    }
@@ -235,7 +235,7 @@ void Ftl::update(void){
 	    {
 		// do we need to issue a write?
 		if((WRITE_ON_QUEUE_SIZE == true && writeQueue.size() >= WRITE_QUEUE_LIMIT) ||
-		   (WRITE_ON_QUEUE_SIZE == false && writeQueue.size() >= FTL_QUEUE_LENGTH))
+		   (WRITE_ON_QUEUE_SIZE == false && writeQueue.size() >= FTL_WRITE_QUEUE_LENGTH))
 		{
 		    busy = 1;
 		    currentTransaction = writeQueue.front();

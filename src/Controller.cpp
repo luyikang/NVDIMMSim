@@ -137,19 +137,36 @@ void Controller::receiveFromChannel(ChannelPacket *busPacket){
 	delete(busPacket);
 }
 
+// this is only called on a write as the name suggests
 bool Controller::checkQueueWrite(ChannelPacket *p)
 {
-	if (!((channelQueues[p->package].size() + 1 < CTRL_QUEUE_LENGTH) || (CTRL_QUEUE_LENGTH == 0)))
-		return false;
-	else
-		return true;
+    if (!((channelQueues[p->package].size() + 1 < CTRL_WRITE_QUEUE_LENGTH) || (CTRL_WRITE_QUEUE_LENGTH == 0)))
+	return false;
+    else
+	return true;
 }
 
 bool Controller::addPacket(ChannelPacket *p){
-	// If there is not room in the command queue for this packet, then return false.
-	// If CTRL_QUEUE_LENGTH is 0, then infinite queues are allowed.
-	if (!((channelQueues[p->package].size() < CTRL_QUEUE_LENGTH) || (CTRL_QUEUE_LENGTH == 0)))
+    // If there is not room in the command queue for this packet, then return false.
+    // If CTRL_QUEUE_LENGTH is 0, then infinite queues are allowed.
+    switch (p->busPacketType)
+    {
+	case READ:
+        case GC_READ:
+        case ERASE:
+	    if (!((channelQueues[p->package].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0)))
 		return false;
+	    break;
+        case WRITE:
+        case GC_WRITE:
+        case DATA:
+	    if (!((channelQueues[p->package].size() < CTRL_WRITE_QUEUE_LENGTH) || (CTRL_WRITE_QUEUE_LENGTH == 0)))
+		return false;
+            break;
+	default:
+	    ERROR("Illegal busPacketType " << p->busPacketType << " in Controller::receiveFromChannel\n");
+	    break;
+    }
 
 	channelQueues[p->package].push(p);
 	return true;

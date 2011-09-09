@@ -53,7 +53,7 @@ int main(void){
 }
 
 void test_obj::read_cb(uint id, uint64_t address, uint64_t cycle, bool mapped){
-	cout<<"[Callback] read complete: "<<id<<" "<<address<<" cycle="<<cycle<<endl;
+    cout<<"[Callback] read complete: "<<id<<" "<<address<<" cycle="<<cycle<<" mapped="<<mapped<<endl;
 }
 
 void test_obj::crit_cb(uint id, uint64_t address, uint64_t cycle, bool mapped){
