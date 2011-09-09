@@ -28,8 +28,28 @@ Logger::Logger()
 	max_ftl_queue_length = 0;
 	max_ctrl_queue_length = vector<uint64_t>(NUM_PACKAGES, 0);
 
+	if(PLANE_STATE_LOG == 1)
+	{
+	    first_ftl_read_log = 0;
+	    first_ftl_write_log = 0;
+	    first_ctrl_read_log = 0;
+	    first_crtl_write_log = 0;
+	    first_state_log = 0;
+	
+	    plane_states = new PlaneStateType **[NUM_PACKAGES];
+	    for(uint i = 0; i < NUM_PACKAGES; i++){
+		plane_states[i] = new PlaneStateType *[DIES_PER_PACKAGE];
+		for(uint j = 0; j < DIES_PER_PACKAGE; j++){
+		    plane_states[i][j] = new PlaneStateType[PLANES_PER_DIE];
+		    for(uint k = 0; k < PLANES_PER_DIE; k++){
+			plane_states[i][j][k] = IDLE;
+		    }
+		}
+	    }
+	}
+
 	idle_energy = vector<double>(NUM_PACKAGES, 0.0); 
-	access_energy = vector<double>(NUM_PACKAGES, 0.0); 
+	access_energy = vector<double>(NUM_PACKAGES, 0.0);        
 }
 
 void Logger::update()
@@ -140,6 +160,39 @@ void Logger::access_stop(uint64_t addr, uint64_t paddr)
 	{
 	    access_map.erase(addr);
 	}
+}
+
+void Logger::log_queue_event(bool ftl, bool write, std::list<FlashTransaction> *queue)
+{
+}
+
+void Logger::log_plane_state(uint64_t package, uint64_t die, uint64_t plane, PlaneStateType op)
+{
+    plane_states[package][die][plane] = op;
+    
+    if(first_state_log == 0)
+    {
+	savefile.open("PlaneState.log", ios_base::out | ios_base::trunc);
+	savefile<<"Plane State Log \n";
+	first_state_log = 1;
+    }
+    else
+    {
+	savefile.open("PlaneState.log", ios_base::out | ios_base::app);
+    }
+
+    for(uint i = 0; i < NUM_PACKAGES; i++){
+	for(uint j = 0; j < DIES_PER_PACKAGE; j++){
+	    for(uint k = 0; k < PLANES_PER_DIE; k++){
+		savefile<<plane_states[i][j][k]<<" ";
+	    }
+	    savefile<<"   ";
+	}
+	savefile<<"\n";
+    }
+    savefile<<"\n";
+
+    savefile.close();
 }
 
 void Logger::read()

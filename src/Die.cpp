@@ -40,9 +40,8 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 		currentCommands[busPacket->plane] = busPacket;
 		if (LOGGING)
 		{
-			// Tell the logger the access has now been processed.
-		        
-			log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, busPacket->busPacketType);
+			// Tell the logger the access has now been processed.		        
+			log->access_process(busPacket->virtualAddress, busPacket->physicalAddress, busPacket->package, busPacket->busPacketType);		
 		}
 		switch (busPacket->busPacketType){
 			case READ:
@@ -55,6 +54,18 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				{
 					controlCyclesLeft[busPacket->plane]= READ_TIME;
 				}
+				// log the new state of this plane
+				if(LOGGING && PLANE_STATE_LOG)
+				{
+				    if(busPacket->busPacketType == READ)
+				    {
+					log->log_plane_state(busPacket->package, busPacket->die, busPacket->plane, READING);
+				    }
+				    else if(busPacket->busPacketType == GC_READ)
+				    {
+					log->log_plane_state(busPacket->package, busPacket->die, busPacket->plane, GC_READING);
+				    }
+				}
 				break;
 			case WRITE:
 			case GC_WRITE:
@@ -66,6 +77,18 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				{
 					controlCyclesLeft[busPacket->plane]= WRITE_TIME;
 				}
+				// log the new state of this plane
+				if(LOGGING && PLANE_STATE_LOG)
+				{
+				    if(busPacket->busPacketType == WRITE)
+				    {
+					log->log_plane_state(busPacket->package, busPacket->die, busPacket->plane, WRITING);
+				    }
+				    else if(busPacket->busPacketType == GC_WRITE)
+				    {
+					log->log_plane_state(busPacket->package, busPacket->die, busPacket->plane, GC_WRITING);
+				    }
+				}
 				break;
 			case ERASE:
 				if(DEVICE_TYPE.compare("PCM") == 0)
@@ -75,6 +98,11 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				else
 				{
 					controlCyclesLeft[busPacket->plane]= ERASE_TIME;
+				}
+				// log the new state of this plane
+				if(LOGGING && PLANE_STATE_LOG)
+				{
+				    log->log_plane_state(busPacket->package, busPacket->die, busPacket->plane, ERASING);
 				}
 				break;
 			default:
@@ -146,6 +174,10 @@ void Die::update(void){
 					if (LOGGING)
 					{
 					    log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
+					    if(PLANE_STATE_LOG)
+					    {
+						log->log_plane_state(currentCommand->package, currentCommand->die, currentCommand->plane, IDLE);
+					    }
 					}
 
 					// Delete the memory allocated for the current command to prevent memory leaks.
@@ -168,7 +200,11 @@ void Die::update(void){
 				dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 			}
 
-			if(dataCyclesLeft > 0){
+			if(dataCyclesLeft > 0 && deviceBeatsLeft == 0 && LOGGING && PLANE_STATE_LOG){
+			    log->log_plane_state(currentCommand->package, currentCommand->die, currentCommand->plane, IDLE);
+			}
+
+			if(dataCyclesLeft > 0 && deviceBeatsLeft > 0){
 				dataCyclesLeft--;
 			}
 
@@ -182,6 +218,10 @@ void Die::update(void){
 				if(dataCyclesLeft == 0){
 					buffer->channel->sendToController(returnDataPackets.front());
 					buffer->channel->releaseChannel(BUFFER, id);
+					if(LOGGING && PLANE_STATE_LOG)
+					{
+					    log->log_plane_state(currentCommand->package, currentCommand->die, currentCommand->plane, IDLE);
+					}
 					returnDataPackets.pop();
 				}
 				if(CRIT_LINE_FIRST && dataCyclesLeft == critBeat)

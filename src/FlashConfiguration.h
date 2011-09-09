@@ -81,6 +81,8 @@ extern bool LOGGING;
 extern bool WEAR_LEVEL_LOG;
 extern bool RUNTIME_WRITE;
 extern bool PER_PACKAGE;
+extern bool QUEUE_EVENT_LOG;
+extern bool PLANE_STATE_LOG;
 
 // Save and Restore Options
 extern bool ENABLE_NV_SAVE;
