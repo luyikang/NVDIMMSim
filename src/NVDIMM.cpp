@@ -119,27 +119,56 @@ namespace NVDSim
 		
 	if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 1)
 	{
-	  log = new PCMGCLogger();
-	  controller= new Controller(this, log);
-	  ftl = new GCFtl(controller, log, this);
+	    // if we're not logging we probably shouldn't even initialize the logger
+	    if(LOGGING)
+	    {
+		log = new PCMGCLogger();
+	    }
+	    else
+	    {
+		log = NULL;
+	    }
+	    controller= new Controller(this, log);
+	    ftl = new GCFtl(controller, log, this);
 	}
 	else if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
 	{
-	  log = new PCMLogger();
-	  controller= new Controller(this, log);
-	  ftl = new Ftl(controller, log, this);
+	    if(LOGGING)
+	    {
+		log = new PCMLogger();
+	    }
+	    else
+	    {
+		log = NULL;
+	    }
+	    controller= new Controller(this, log);
+	    ftl = new Ftl(controller, log, this);
 	}
 	else if(GARBAGE_COLLECT == 1)
 	{
-	  log = new GCLogger();
-	  controller= new Controller(this, log);
-	  ftl = new GCFtl(controller, log, this);
+	    if(LOGGING)
+	    {
+		log = new GCLogger();
+	    }
+	    else
+	    {
+		log = NULL;
+	    }
+	    controller= new Controller(this, log);
+	    ftl = new GCFtl(controller, log, this);
 	}
 	else
 	{
-	  log = new Logger();
-	  controller= new Controller(this, log);
-	  ftl = new Ftl(controller, log, this);
+	    if(LOGGING)
+	    {
+		log = new Logger();
+	    }
+	    else
+	    {
+		log = NULL;
+	    }
+	    controller= new Controller(this, log);
+	    ftl = new Ftl(controller, log, this);
 	}
 	packages= new vector<Package>();
 

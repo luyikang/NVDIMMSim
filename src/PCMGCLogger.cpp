@@ -156,11 +156,18 @@ void PCMGCLogger::save(uint64_t cycle, uint epoch)
 
         if(RUNTIME_WRITE)
 	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::app);
+	    savefile.open(LOG_DIR+"NVDIMM.log", ios_base::out | ios_base::app);
 	}
 	else
 	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
+	    string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
+	    const char * command = command_str.c_str();
+	    int sys_done = system(command);
+	    if (sys_done != 0)
+	    {
+		WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
+	    }
+	    savefile.open(LOG_DIR+"NVDIMM.log", ios_base::out | ios_base::trunc);
 	    savefile<<"NVDIMM Log \n";
 	}
 
@@ -446,12 +453,19 @@ void PCMGCLogger::write_epoch(EpochEntry *e)
 {
     	if(e->epoch == 0 && RUNTIME_WRITE)
 	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
+	    string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
+	    const char * command = command_str.c_str();
+	    int sys_done = system(command);
+	    if (sys_done != 0)
+	    {
+		WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
+	    }
+	    savefile.open(LOG_DIR+"NVDIMM.log", ios_base::out | ios_base::trunc);
 	    savefile<<"NVDIMM Log \n";
 	}
 	else
 	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::app);
+	    savefile.open(LOG_DIR+"NVDIMM.log", ios_base::out | ios_base::app);
 	}
 
 	if (!savefile) 

@@ -132,10 +132,14 @@ bool Ftl::addTransaction(FlashTransaction &t){
 		{
 		    readQueue.push_back(t);
 		    
-		    if(LOGGING == true)
+		    if(LOGGING)
 		    {
 			// Start the logging for this access.
 			log->access_start(t.address);
+			if(QUEUE_EVENT_LOG)
+			{
+			    log->log_ftl_queue_event(false, &readQueue);
+			}
 		    }
 		    return true;
 		}
@@ -166,10 +170,14 @@ bool Ftl::addTransaction(FlashTransaction &t){
 		    }
 		    writeQueue.push_back(t);
 		    
-		    if(LOGGING == true)
+		    if(LOGGING)
 		    {
 			// Start the logging for this access.
 			log->access_start(t.address);
+			if(QUEUE_EVENT_LOG)
+			{
+			    log->log_ftl_queue_event(true, &writeQueue);
+			}
 		    }
 		    return true;
 		}
@@ -187,10 +195,14 @@ bool Ftl::addTransaction(FlashTransaction &t){
 	    {
 		readQueue.push_back(t);
 		
-		if(LOGGING == true)
+		if(LOGGING)
 		{
 		    // Start the logging for this access.
 		    log->access_start(t.address);
+		    if(QUEUE_EVENT_LOG)
+		    {
+			log->log_ftl_queue_event(false, &readQueue);
+		    }
 		}
 		return true;
 	    }
@@ -316,6 +328,10 @@ void Ftl::handle_read(bool gc)
 
 		controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (*reading_write).data));
 		readQueue.pop_front();
+		if(LOGGING && QUEUE_EVENT_LOG)
+		{
+		    log->log_ftl_queue_event(false, &readQueue);
+		}
 		busy = 0;
 	    }
 	}
@@ -576,23 +592,32 @@ void Ftl::popFront(ChannelPacketType type)
     // if we've put stuff into different queues we must now figure out which queue to pop from
     if(SCHEDULE)
     {
-	if(type == READ)
+	if(type == READ || type == ERASE)
 	{
-	    readQueue.pop_front();	
+	    readQueue.pop_front();
+	    if(LOGGING && QUEUE_EVENT_LOG)
+	    {
+		log->log_ftl_queue_event(false, &readQueue);
+	    }
+	    
 	}
 	else if(type == WRITE)
 	{
 	    writeQueue.pop_front();
-	}
-	else if(type == ERASE)
-	{
-	    readQueue.pop_front();
+	    if(LOGGING && QUEUE_EVENT_LOG)
+	    {
+		log->log_ftl_queue_event(true, &writeQueue);
+	    }
 	}
     }
     // if we're just putting everything into the read queue, just pop from there
     else
     {
 	readQueue.pop_front();
+	if(LOGGING && QUEUE_EVENT_LOG)
+	{
+	    log->log_ftl_queue_event(false, &readQueue);
+	}
     }
 }
 

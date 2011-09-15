@@ -201,7 +201,7 @@ void Die::update(void){
 			}
 
 			if(dataCyclesLeft > 0 && deviceBeatsLeft == 0 && LOGGING && PLANE_STATE_LOG){
-			    log->log_plane_state(currentCommand->package, currentCommand->die, currentCommand->plane, IDLE);
+			    log->log_plane_state(returnDataPackets.front()->package, returnDataPackets.front()->die, returnDataPackets.front()->plane, IDLE);
 			}
 
 			if(dataCyclesLeft > 0 && deviceBeatsLeft > 0){
@@ -220,7 +220,7 @@ void Die::update(void){
 					buffer->channel->releaseChannel(BUFFER, id);
 					if(LOGGING && PLANE_STATE_LOG)
 					{
-					    log->log_plane_state(currentCommand->package, currentCommand->die, currentCommand->plane, IDLE);
+					    log->log_plane_state(returnDataPackets.front()->package, returnDataPackets.front()->die, returnDataPackets.front()->plane, IDLE);
 					}
 					returnDataPackets.pop();
 				}

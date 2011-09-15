@@ -12,7 +12,7 @@ Controller::Controller(NVDIMM* parent, Logger* l){
 
 	channelBeatsLeft = vector<uint>(NUM_PACKAGES, 0);
 
-	channelQueues = vector<queue <ChannelPacket *> >(NUM_PACKAGES, queue<ChannelPacket *>());
+	channelQueues = vector<list <ChannelPacket *> >(NUM_PACKAGES, list<ChannelPacket *>());
 	outgoingPackets = vector<ChannelPacket *>(NUM_PACKAGES, 0);
 
 	pendingPackets = vector<list <ChannelPacket *> >(NUM_PACKAGES, list<ChannelPacket *>());
@@ -168,8 +168,28 @@ bool Controller::addPacket(ChannelPacket *p){
 	    break;
     }
 
-	channelQueues[p->package].push(p);
-	return true;
+    channelQueues[p->package].push_back(p);
+    
+    if(LOGGING && QUEUE_EVENT_LOG)
+    {
+	switch (p->busPacketType)
+	{
+	case READ:
+        case GC_READ:
+        case ERASE:
+	    log->log_ctrl_queue_event(false, p->package, &channelQueues[p->package]);
+	    break;
+        case WRITE:
+        case GC_WRITE:
+        case DATA:
+	    log->log_ctrl_queue_event(true, p->package, &channelQueues[p->package]);
+            break;
+	default:
+	    ERROR("Illegal busPacketType " << p->busPacketType << " in Controller::receiveFromChannel\n");
+	    break;
+	}
+    }
+    return true;
 }
 
 void Controller::update(void){
@@ -185,7 +205,23 @@ void Controller::update(void){
 					//if we can get the channel
 					if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
 						outgoingPackets[i]= channelQueues[i].front();
-						channelQueues[i].pop();	
+						if(LOGGING && QUEUE_EVENT_LOG)
+						{
+						    switch (channelQueues[i].front()->busPacketType)
+						    {
+						    case READ:
+						    case GC_READ:
+						    case ERASE:
+							log->log_ctrl_queue_event(false, channelQueues[i].front()->package, &channelQueues[i]);
+							break;
+						    case WRITE:
+						    case GC_WRITE:
+						    case DATA:
+							log->log_ctrl_queue_event(true, channelQueues[i].front()->package, &channelQueues[i]);
+							break;
+						    }
+						}
+						channelQueues[i].pop_front();
 						parentNVDIMM->queuesNotFull();
 						switch (outgoingPackets[i]->busPacketType){
 							case DATA:
@@ -242,7 +278,23 @@ void Controller::update(void){
 				//if we can get the channel
 				if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
 					outgoingPackets[i] = channelQueues[i].front();
-					channelQueues[i].pop();	
+					if(LOGGING && QUEUE_EVENT_LOG)
+					{
+					    switch (channelQueues[i].front()->busPacketType)
+					    {
+					    case READ:
+				       	    case GC_READ:
+				       	    case ERASE:
+				       		log->log_ctrl_queue_event(false, channelQueues[i].front()->package, &channelQueues[i]);
+				       		break;
+				       	    case WRITE:
+				       	    case GC_WRITE:
+					    case DATA:
+				       		log->log_ctrl_queue_event(true, channelQueues[i].front()->package, &channelQueues[i]);
+				       		break;
+					    }
+					}
+					channelQueues[i].pop_front();
 					parentNVDIMM->queuesNotFull();
 					switch (outgoingPackets[i]->busPacketType){
 						case DATA:

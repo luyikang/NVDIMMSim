@@ -28,13 +28,9 @@ Logger::Logger()
 	max_ftl_queue_length = 0;
 	max_ctrl_queue_length = vector<uint64_t>(NUM_PACKAGES, 0);
 
-	if(PLANE_STATE_LOG == 1)
+	if(PLANE_STATE_LOG)
 	{
-	    first_ftl_read_log = 0;
-	    first_ftl_write_log = 0;
-	    first_ctrl_read_log = 0;
-	    first_crtl_write_log = 0;
-	    first_state_log = 0;
+	    first_state_log = true;
 	
 	    plane_states = new PlaneStateType **[NUM_PACKAGES];
 	    for(uint i = 0; i < NUM_PACKAGES; i++){
@@ -45,6 +41,19 @@ Logger::Logger()
 			plane_states[i][j][k] = IDLE;
 		    }
 		}
+	    }
+	}
+
+	if(QUEUE_EVENT_LOG)
+	{
+	    first_ftl_read_log = true;
+	    first_ftl_write_log = true;
+	    first_ctrl_read_log = new bool [NUM_PACKAGES];
+	    first_crtl_write_log = new bool [NUM_PACKAGES];
+	    
+	    for(uint i = 0; i < NUM_PACKAGES; i++){
+		first_ctrl_read_log[i] = true;
+		first_crtl_write_log[i] = true;
 	    }
 	}
 
@@ -162,8 +171,122 @@ void Logger::access_stop(uint64_t addr, uint64_t paddr)
 	}
 }
 
-void Logger::log_queue_event(bool ftl, bool write, std::list<FlashTransaction> *queue)
+void Logger::log_ftl_queue_event(bool write, std::list<FlashTransaction> *queue)
 {
+    if(!write)
+    {
+	if(first_ftl_read_log == true)
+	{
+	    string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
+	    const char * command = command_str.c_str();
+	    int sys_done = system(command);
+	    if (sys_done != 0)
+	    {
+		WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
+	    }
+	    savefile.open(LOG_DIR+"FtlReadQueue.log", ios_base::out | ios_base::trunc);
+	    savefile<<"FTL Read Queue Log \n";
+	    first_ftl_read_log = false;
+	}
+	else
+	{
+	    savefile.open(LOG_DIR+"FtlReadQueue.log", ios_base::out | ios_base::app);
+	}
+    }
+    else if(write)
+    {
+	if(first_ftl_write_log == true)
+	{
+	    string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
+	    const char * command = command_str.c_str();
+	    int sys_done = system(command);
+	    if (sys_done != 0)
+	    {
+		WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
+	    }
+	    savefile.open(LOG_DIR+"FtlWriteQueue.log", ios_base::out | ios_base::trunc);
+	    savefile<<"FTL Write Queue Log \n";
+	    first_ftl_write_log = false;
+	}
+	else
+	{
+	    savefile.open(LOG_DIR+"FtlWriteQueue.log", ios_base::out | ios_base::app);
+	}
+    }
+
+    savefile<<"Clock cycle: "<<currentClockCycle<<"\n";
+    std::list<FlashTransaction>::iterator it;
+    for (it = queue->begin(); it != queue->end(); it++)
+    {
+	savefile<<"Address: "<<(*it).address<<", Transaction Type: "<<(*it).transactionType<<"\n";
+    }
+    savefile<<"\n";
+    
+    savefile.close();
+}
+
+void Logger::log_ctrl_queue_event(bool write, uint64_t number, std::list<ChannelPacket*> *queue)
+{
+    if(!write)
+    {					       
+	std::string file = "CtrlReadQueue";
+        std::stringstream temp;
+	temp << number;
+	file += temp.str();
+        file += ".log";
+	if(first_ctrl_read_log[number] == true)
+	{
+	    string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
+	    const char * command = command_str.c_str();
+	    int sys_done = system(command);
+	    if (sys_done != 0)
+	    {
+		WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
+	    }
+	    savefile.open(LOG_DIR+file, ios_base::out | ios_base::trunc);
+	    savefile<<"Controller Read Queue " << number << " Log \n";
+	    first_ctrl_read_log[number] = false;
+	}
+	else
+	{
+	    savefile.open(LOG_DIR+file, ios_base::out | ios_base::app);
+	}
+    }
+    else if(write)
+    {
+	std::string file = "CtrlWriteQueue";
+	std::stringstream temp;
+	temp << number;
+	file += temp.str();
+	file += ".log";
+	if(first_crtl_write_log[number] == true)
+	{
+	    string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
+	    const char * command = command_str.c_str();
+	    int sys_done = system(command);
+	    if (sys_done != 0)
+	    {
+		WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
+	    }
+	    savefile.open(LOG_DIR+file, ios_base::out | ios_base::trunc);
+	    savefile<<"Controller Write Queue " << number << " Log \n";
+	    first_crtl_write_log[number] = false;
+	}
+	else
+	{
+	    savefile.open(LOG_DIR+file, ios_base::out | ios_base::app);
+	}
+    }
+
+    savefile<<"Clock cycle: "<<currentClockCycle<<"\n";
+    std::list<ChannelPacket*>::iterator it;
+    for (it = queue->begin(); it != queue->end(); it++)
+    {
+	savefile<<"Address: "<<(*it)->virtualAddress<<", Transaction Type: "<<(*it)->busPacketType<<"\n";
+    }
+    savefile<<"\n";
+    
+    savefile.close();
 }
 
 void Logger::log_plane_state(uint64_t package, uint64_t die, uint64_t plane, PlaneStateType op)
@@ -172,15 +295,23 @@ void Logger::log_plane_state(uint64_t package, uint64_t die, uint64_t plane, Pla
     
     if(first_state_log == 0)
     {
-	savefile.open("PlaneState.log", ios_base::out | ios_base::trunc);
+	string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
+	const char * command = command_str.c_str();
+	int sys_done = system(command);
+	if (sys_done != 0)
+	{
+	    WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
+	}
+	savefile.open(LOG_DIR+"PlaneState.log", ios_base::out | ios_base::trunc);
 	savefile<<"Plane State Log \n";
 	first_state_log = 1;
     }
     else
     {
-	savefile.open("PlaneState.log", ios_base::out | ios_base::app);
+	savefile.open(LOG_DIR+"PlaneState.log", ios_base::out | ios_base::app);
     }
 
+    savefile<<"Clock cycle: "<<currentClockCycle<<"\n";
     for(uint i = 0; i < NUM_PACKAGES; i++){
 	for(uint j = 0; j < DIES_PER_PACKAGE; j++){
 	    for(uint k = 0; k < PLANES_PER_DIE; k++){
@@ -376,11 +507,18 @@ void Logger::save(uint64_t cycle, uint epoch)
 
         if(RUNTIME_WRITE)
 	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::app);
+	    savefile.open(LOG_DIR+"NVDIMM.log", ios_base::out | ios_base::app);
 	}
 	else
 	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
+	    string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
+	    const char * command = command_str.c_str();
+	    int sys_done = system(command);
+	    if (sys_done != 0)
+	    {
+		WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
+	    }
+	    savefile.open(LOG_DIR+"NVDIMM.log", ios_base::out | ios_base::trunc);
 	    savefile<<"NVDIMM Log \n";
 	}
 
@@ -603,12 +741,19 @@ void Logger::write_epoch(EpochEntry *e)
 {
     	if(e->epoch == 0 && RUNTIME_WRITE)
 	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::trunc);
+	    string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
+	    const char * command = command_str.c_str();
+	    int sys_done = system(command);
+	    if (sys_done != 0)
+	    {
+		WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
+	    }
+	    savefile.open(LOG_DIR+"NVDIMM.log", ios_base::out | ios_base::trunc);
 	    savefile<<"NVDIMM Log \n";
 	}
 	else
 	{
-	    savefile.open("NVDIMM.log", ios_base::out | ios_base::app);
+	    savefile.open(LOG_DIR+"NVDIMM.log", ios_base::out | ios_base::app);
 	}
 
 	if (!savefile) 
