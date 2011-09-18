@@ -517,13 +517,13 @@ void GCFtl::loadNVState(void)
 	cout << "NVDIMM is restoring the system from file " << NV_RESTORE_FILE <<"\n";
 
 	// restore the data
-	uint doing_used = 0;
-	uint doing_dirty = 0;
-	uint doing_addresses = 0;
-	uint row = 0;
-	uint column = 0;
-	uint first = 0;
-	uint key = 0;
+	uint64_t doing_used = 0;
+	uint64_t doing_dirty = 0;
+	uint64_t doing_addresses = 0;
+	uint64_t row = 0;
+	uint64_t column = 0;
+	uint64_t first = 0;
+	uint64_t key = 0;
 	uint64_t pAddr = 0;
 	uint64_t vAddr = 0;
 
@@ -534,9 +534,38 @@ void GCFtl::loadNVState(void)
 	while(!restore_file.eof())
 	{ 
 	    restore_file >> temp;
+	    
+	    // these comparisons make this parser work but they are dependent on the ordering of the data in the state file
+	    // if the state file changes these comparisons may also need to be changed
+	    if(temp.compare("Used") == 0)
+	    {
+		doing_used = 1;
+		doing_addresses = 0;
+		doing_dirty = 0;
+		
+		row = 0;
+		column = 0;
+	    }
+	    else if(temp.compare("Dirty") == 0)
+	    {
+		doing_used = 0;
+		doing_dirty = 1;
+		doing_addresses = 0;
+		
+		row = 0;
+		column = 0;
+	    }
+	    else if(temp.compare("AddressMap") == 0)
+	    {
+		doing_used = 0;
+		doing_dirty = 0;
+		doing_addresses = 1;
 
+		row = 0;
+		column = 0;
+	    }
 	    // restore used data
-	    if(doing_used == 1)
+	    else if(doing_used == 1)
 	    {
 		used[row][column] = convert_uint64_t(temp);
 
@@ -558,19 +587,8 @@ void GCFtl::loadNVState(void)
 		    column = 0;
 		}
 	    }
-	    
-	    if(temp.compare("Used") == 0)
-	    {
-		doing_used = 1;
-		doing_addresses = 0;
-		doing_dirty = 0;
-		
-		row = 0;
-		column = 0;
-	    }
-
 	    // restore dirty data
-	    if(doing_dirty == 1)
+	    else if(doing_dirty == 1)
 	    {
 		dirty[row][column] = convert_uint64_t(temp);
 		column++;
@@ -579,18 +597,10 @@ void GCFtl::loadNVState(void)
 		    row++;
 		    column = 0;
 		}
-		}
-
-	    if(temp.compare("Dirty") == 0)
-	    {
-		doing_used = 0;
-		doing_dirty = 1;
-		doing_addresses = 0;
 	    }
-
 	    // restore address map data
-	    if(doing_addresses == 1)
-	    {
+	    else if(doing_addresses == 1)
+	    {	
 		if(first == 0)
 		{
 		    first = 1;
@@ -602,13 +612,7 @@ void GCFtl::loadNVState(void)
 		    tempMap[convert_uint64_t(temp)] = key;
 		    first = 0;
 		}
-	    }
-
-	    if(temp.compare("AddressMap") == 0)
-	    {
-		doing_addresses = 1;
-	    }
-
+	    }   
 	}
 
 	restore_file.close();

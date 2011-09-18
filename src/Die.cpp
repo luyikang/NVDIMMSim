@@ -46,14 +46,8 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 		switch (busPacket->busPacketType){
 			case READ:
 			case GC_READ:
-				if(DEVICE_TYPE.compare("PCM") == 0)
-				{
-					controlCyclesLeft[busPacket->plane]= READ_TIME * ((NV_PAGE_SIZE*8192) / 8);
-				}
-				else
-				{
-					controlCyclesLeft[busPacket->plane]= READ_TIME;
-				}
+				controlCyclesLeft[busPacket->plane]= READ_TIME;
+				
 				// log the new state of this plane
 				if(LOGGING && PLANE_STATE_LOG)
 				{
@@ -69,7 +63,7 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				break;
 			case WRITE:
 			case GC_WRITE:
-				if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
+			        if((DEVICE_TYPE.compare("PCM") == 0 || DEVICE_TYPE.compare("P8P") == 0) && GARBAGE_COLLECT == 0)
 				{
 					controlCyclesLeft[busPacket->plane]= ERASE_TIME;
 				}
@@ -91,14 +85,8 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				}
 				break;
 			case ERASE:
-				if(DEVICE_TYPE.compare("PCM") == 0)
-				{
-					controlCyclesLeft[busPacket->plane]= ERASE_TIME * (BLOCK_SIZE / NV_PAGE_SIZE);
-				}
-				else
-				{
-					controlCyclesLeft[busPacket->plane]= ERASE_TIME;
-				}
+			        controlCyclesLeft[busPacket->plane]= ERASE_TIME;
+
 				// log the new state of this plane
 				if(LOGGING && PLANE_STATE_LOG)
 				{

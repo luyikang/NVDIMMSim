@@ -704,12 +704,12 @@ void Ftl::loadNVState(void)
 		cout << "NVDIMM is restoring the system from file " << NV_RESTORE_FILE <<"\n";
 
 		// restore the data
-		uint doing_used = 0;
-		uint doing_addresses = 0;
-		uint row = 0;
-		uint column = 0;
-		uint first = 0;
-		uint key = 0;
+		bool doing_used = 0;
+	        bool doing_addresses = 0;
+		uint64_t row = 0;
+		uint64_t column = 0;
+		bool first = 0;
+		uint64_t key = 0;
 		uint64_t pAddr, vAddr = 0;
 
 		std::unordered_map<uint64_t,uint64_t> tempMap;
@@ -719,10 +719,22 @@ void Ftl::loadNVState(void)
 		while(!restore_file.eof())
 		{ 
 			restore_file >> temp;
-
+			
+			// these comparisons make this parser work but they are dependent on the ordering of the data in the state file
+			// if the state file changes these comparisons may also need to be changed
+			if(temp.compare("Used") == 0)
+			{
+				doing_used = 1;
+				doing_addresses = 0;
+			}
+			else if(temp.compare("AddressMap") == 0)
+			{
+			        doing_used = 0;
+				doing_addresses = 1;
+			}
 			// restore used data
 			// have the row check cause eof sux
-			if(doing_used == 1)
+			else if(doing_used == 1)
 			{
 				used[row][column] = convert_uint64_t(temp);
 
@@ -742,15 +754,8 @@ void Ftl::loadNVState(void)
 					column = 0;
 				}
 			}
-
-			if(temp.compare("Used") == 0)
-			{
-				doing_used = 1;
-				doing_addresses = 0;
-			}
-
 			// restore address map data
-			if(doing_addresses == 1)
+			else if(doing_addresses == 1)
 			{
 				if(first == 0)
 				{
@@ -763,11 +768,6 @@ void Ftl::loadNVState(void)
 					tempMap[convert_uint64_t(temp)] = key;
 					first = 0;
 				}
-			}
-
-			if(temp.compare("AddressMap") == 0)
-			{
-				doing_addresses = 1;
 			}
 		}
 

@@ -89,7 +89,7 @@ namespace NVDSim
 	  exit(-1);
 	}
 
-	if(DEVICE_TYPE.compare("PCM") == 0)
+	if(DEVICE_TYPE.compare("P8P") == 0)
 	  {
 	    if(ASYNC_READ_I == 0.0)
 	      {
@@ -97,32 +97,32 @@ namespace NVDSim
 	      }
 	    else if(VPP_STANDBY_I == 0.0)
 	       {
-		PRINT("VPP standby current data missing for PCM, using 0.0");
+		PRINT("VPP standby current data missing for P8P, using 0.0");
 	      }
 	    else if(VPP_READ_I == 0.0)
 	      {
-		PRINT("VPP read current data missing for PCM, using 0.0");
+		PRINT("VPP read current data missing for P8P, using 0.0");
 	      }
 	    else if(VPP_WRITE_I == 0.0)
 	       {
-		PRINT("VPP write current data missing for PCM, using 0.0");
+		PRINT("VPP write current data missing for P8P, using 0.0");
 	      }
 	    else if(VPP_ERASE_I == 0.0)
 	       {
-		PRINT("VPP erase current data missing for PCM, using 0.0");
+		PRINT("VPP erase current data missing for P8P, using 0.0");
 	      }
 	    else if(VPP == 0.0)
 	      {
-		PRINT("VPP power data missing for PCM, using 0.0");
+		PRINT("VPP power data missing for P8P, using 0.0");
 	      }
 	  }
 		
-	if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 1)
+	if(DEVICE_TYPE.compare("P8P") == 0 && GARBAGE_COLLECT == 1)
 	{
 	    // if we're not logging we probably shouldn't even initialize the logger
 	    if(LOGGING)
 	    {
-		log = new PCMGCLogger();
+		log = new P8PGCLogger();
 	    }
 	    else
 	    {
@@ -131,11 +131,11 @@ namespace NVDSim
 	    controller= new Controller(this, log);
 	    ftl = new GCFtl(controller, log, this);
 	}
-	else if(DEVICE_TYPE.compare("PCM") == 0 && GARBAGE_COLLECT == 0)
+	else if(DEVICE_TYPE.compare("P8P") == 0 && GARBAGE_COLLECT == 0)
 	{
 	    if(LOGGING)
 	    {
-		log = new PCMLogger();
+		log = new P8PLogger();
 	    }
 	    else
 	    {

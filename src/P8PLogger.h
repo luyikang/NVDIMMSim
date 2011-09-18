@@ -1,5 +1,5 @@
-#ifndef NVPCMLOGGER_H
-#define NVPCMLOGGER_H
+#ifndef NVP8PLOGGER_H
+#define NVP8PLOGGER_H
 
 #include <iostream>
 #include <fstream>
@@ -10,10 +10,10 @@
 
 namespace NVDSim
 {
-    class PCMLogger: public Logger
+    class P8PLogger: public Logger
     {
     public:
-	PCMLogger();
+	P8PLogger();
 	
 	void save(uint64_t cycle, uint epoch);
 	void print(uint64_t cycle);

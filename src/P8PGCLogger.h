@@ -1,5 +1,5 @@
-#ifndef NVPCMGCLOGGER_H
-#define NVPCMGCLOGGER_H
+#ifndef NVP8PGCLOGGER_H
+#define NVP8PGCLOGGER_H
 
 #include <iostream>
 #include <fstream>
@@ -10,10 +10,10 @@
 
 namespace NVDSim
 {
-    class PCMGCLogger: public GCLogger
+    class P8PGCLogger: public GCLogger
     {
     public:
-	PCMGCLogger();
+	P8PGCLogger();
 	
 	void save(uint64_t cycle, uint epoch);
 	void print(uint64_t cycle);
