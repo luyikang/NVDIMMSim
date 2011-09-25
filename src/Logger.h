@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <unordered_map>
 #include <queue>
@@ -11,13 +12,28 @@
 #include "SimObj.h"
 #include "FlashConfiguration.h"
 #include "ChannelPacket.h"
+#include "FlashTransaction.h"
 
 namespace NVDSim
 {
+    enum PlaneStateType{
+	IDLE,
+	READING,
+	GC_READING,
+	WRITING,
+	GC_WRITING,
+	ERASING
+    };
+    
     class Logger: public SimObj
     {
     public:
 	Logger();
+
+	// extended logging options
+	void log_ftl_queue_event(bool write, std::list<FlashTransaction> *queue);
+	void log_ctrl_queue_event(bool write, uint64_t number, std::list<ChannelPacket*> *queue);
+	void log_plane_state(uint64_t package, uint64_t die, uint64_t plane, PlaneStateType op);
 	
 	// operations
 	void read();
@@ -90,6 +106,14 @@ namespace NVDSim
 	std::vector<uint64_t> max_ctrl_queue_length;
 
 	std::unordered_map<uint64_t, uint64_t> writes_per_address;
+
+	// Extended logging state
+	bool first_ftl_read_log;
+	bool first_ftl_write_log;
+	bool* first_ctrl_read_log;
+	bool* first_crtl_write_log;
+	bool first_state_log;
+	PlaneStateType*** plane_states;
 
 	// Power Stuff
 	// This is computed per package

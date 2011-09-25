@@ -81,9 +81,12 @@ extern bool CRIT_LINE_FIRST;
 
 // Logging Options
 extern bool LOGGING;
+extern std::string LOG_DIR;
 extern bool WEAR_LEVEL_LOG;
 extern bool RUNTIME_WRITE;
 extern bool PER_PACKAGE;
+extern bool QUEUE_EVENT_LOG;
+extern bool PLANE_STATE_LOG;
 
 // Save and Restore Options
 extern bool ENABLE_NV_SAVE;

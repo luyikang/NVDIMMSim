@@ -132,10 +132,14 @@ bool Ftl::addTransaction(FlashTransaction &t){
 		{
 		    readQueue.push_back(t);
 		    
-		    if(LOGGING == true)
+		    if(LOGGING)
 		    {
 			// Start the logging for this access.
 			log->access_start(t.address);
+			if(QUEUE_EVENT_LOG)
+			{
+			    log->log_ftl_queue_event(false, &readQueue);
+			}
 		    }
 		    return true;
 		}
@@ -166,10 +170,14 @@ bool Ftl::addTransaction(FlashTransaction &t){
 		    }
 		    writeQueue.push_back(t);
 		    
-		    if(LOGGING == true)
+		    if(LOGGING)
 		    {
 			// Start the logging for this access.
 			log->access_start(t.address);
+			if(QUEUE_EVENT_LOG)
+			{
+			    log->log_ftl_queue_event(true, &writeQueue);
+			}
 		    }
 		    return true;
 		}
@@ -187,10 +195,14 @@ bool Ftl::addTransaction(FlashTransaction &t){
 	    {
 		readQueue.push_back(t);
 		
-		if(LOGGING == true)
+		if(LOGGING)
 		{
 		    // Start the logging for this access.
 		    log->access_start(t.address);
+		    if(QUEUE_EVENT_LOG)
+		    {
+			log->log_ftl_queue_event(false, &readQueue);
+		    }
 		}
 		return true;
 	    }
@@ -316,6 +328,10 @@ void Ftl::handle_read(bool gc)
 
 		controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (*reading_write).data));
 		readQueue.pop_front();
+		if(LOGGING && QUEUE_EVENT_LOG)
+		{
+		    log->log_ftl_queue_event(false, &readQueue);
+		}
 		busy = 0;
 	    }
 	}
@@ -576,23 +592,32 @@ void Ftl::popFront(ChannelPacketType type)
     // if we've put stuff into different queues we must now figure out which queue to pop from
     if(SCHEDULE)
     {
-	if(type == READ)
+	if(type == READ || type == ERASE)
 	{
-	    readQueue.pop_front();	
+	    readQueue.pop_front();
+	    if(LOGGING && QUEUE_EVENT_LOG)
+	    {
+		log->log_ftl_queue_event(false, &readQueue);
+	    }
+	    
 	}
 	else if(type == WRITE)
 	{
 	    writeQueue.pop_front();
-	}
-	else if(type == ERASE)
-	{
-	    readQueue.pop_front();
+	    if(LOGGING && QUEUE_EVENT_LOG)
+	    {
+		log->log_ftl_queue_event(true, &writeQueue);
+	    }
 	}
     }
     // if we're just putting everything into the read queue, just pop from there
     else
     {
 	readQueue.pop_front();
+	if(LOGGING && QUEUE_EVENT_LOG)
+	{
+	    log->log_ftl_queue_event(false, &readQueue);
+	}
     }
 }
 
@@ -679,12 +704,12 @@ void Ftl::loadNVState(void)
 		cout << "NVDIMM is restoring the system from file " << NV_RESTORE_FILE <<"\n";
 
 		// restore the data
-		uint doing_used = 0;
-		uint doing_addresses = 0;
-		uint row = 0;
-		uint column = 0;
-		uint first = 0;
-		uint key = 0;
+		bool doing_used = 0;
+	        bool doing_addresses = 0;
+		uint64_t row = 0;
+		uint64_t column = 0;
+		bool first = 0;
+		uint64_t key = 0;
 		uint64_t pAddr, vAddr = 0;
 
 		std::unordered_map<uint64_t,uint64_t> tempMap;
@@ -694,10 +719,22 @@ void Ftl::loadNVState(void)
 		while(!restore_file.eof())
 		{ 
 			restore_file >> temp;
-
+			
+			// these comparisons make this parser work but they are dependent on the ordering of the data in the state file
+			// if the state file changes these comparisons may also need to be changed
+			if(temp.compare("Used") == 0)
+			{
+				doing_used = 1;
+				doing_addresses = 0;
+			}
+			else if(temp.compare("AddressMap") == 0)
+			{
+			        doing_used = 0;
+				doing_addresses = 1;
+			}
 			// restore used data
 			// have the row check cause eof sux
-			if(doing_used == 1)
+			else if(doing_used == 1)
 			{
 				used[row][column] = convert_uint64_t(temp);
 
@@ -717,15 +754,8 @@ void Ftl::loadNVState(void)
 					column = 0;
 				}
 			}
-
-			if(temp.compare("Used") == 0)
-			{
-				doing_used = 1;
-				doing_addresses = 0;
-			}
-
 			// restore address map data
-			if(doing_addresses == 1)
+			else if(doing_addresses == 1)
 			{
 				if(first == 0)
 				{
@@ -738,11 +768,6 @@ void Ftl::loadNVState(void)
 					tempMap[convert_uint64_t(temp)] = key;
 					first = 0;
 				}
-			}
-
-			if(temp.compare("AddressMap") == 0)
-			{
-				doing_addresses = 1;
 			}
 		}
 

@@ -13,8 +13,8 @@
 #include "Callbacks.h"
 #include "Logger.h"
 #include "GCLogger.h"
-#include "PCMLogger.h"
-#include "PCMGCLogger.h"
+#include "P8PLogger.h"
+#include "P8PGCLogger.h"
 
 using std::string;
 
