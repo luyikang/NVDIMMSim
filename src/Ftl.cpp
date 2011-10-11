@@ -159,11 +159,14 @@ bool Ftl::addTransaction(FlashTransaction &t){
 		    {
 			if((*it).address == t.address)
 			{
-			    // access_process for that write is called here since its over now.
-			    log->access_process(t.address, t.address, 0, WRITE);
+			    if(LOGGING)
+			    {
+				// access_process for that write is called here since its over now.
+				log->access_process(t.address, t.address, 0, WRITE);
 
-			    // stop_process for that write is called here since its over now.
-			    log->access_stop(t.address, t.address);
+				// stop_process for that write is called here since its over now.
+				log->access_stop(t.address, t.address);
+			    }
 			    writeQueue.erase(it);
 			    break;
 			}
@@ -623,6 +626,8 @@ void Ftl::popFront(ChannelPacketType type)
 
 void Ftl::powerCallback(void) 
 {
+    if(LOGGING)
+    {
 	vector<vector<double> > temp = log->getEnergyData();
 	if(temp.size() == 2)
 	{
@@ -640,6 +645,7 @@ void Ftl::powerCallback(void)
 	{
 		controller->returnPowerData(temp[0], temp[1], temp[2], temp[3], temp[4], temp[5]);
 	}
+    }
 }
 
 void Ftl::sendQueueLength(void)

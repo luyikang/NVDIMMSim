@@ -41,6 +41,7 @@ namespace NVDSim{
 			virtual void loadNVState(void);
 
 			void queuesNotFull(void);
+			void flushWriteQueues(void);
 
 			virtual void GCReadDone(uint64_t vAddr);
 		       
@@ -65,6 +66,7 @@ namespace NVDSim{
 
 			bool loaded;
 			bool queues_full;
+			bool flushing_write;
 
 			uint queue_access_counter;
 			std::list<FlashTransaction>::iterator reading_write;
