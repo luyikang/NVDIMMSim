@@ -74,11 +74,14 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 			{
 			    if((*it).address == t.address)
 			    {
-				// access_process for that write is called here since its over now.
-				log->access_process(t.address, t.address, 0, WRITE);
+				if(LOGGING)
+				{
+				    // access_process for that write is called here since its over now.
+				    log->access_process(t.address, t.address, 0, WRITE);
 
-				// stop_process for that write is called here since its over now.
-				log->access_stop(t.address, t.address);
+				    // stop_process for that write is called here since its over now.
+				    log->access_stop(t.address, t.address);
+				}
 				writeQueue.erase(it);
 				break;
 			    }
