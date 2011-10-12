@@ -320,7 +320,7 @@ void NVDIMM::saveNVState(string filename){
     ENABLE_NV_SAVE = 1;
     NV_SAVE_FILE = filename;
     cout << "got to save state in nvdimm \n";
-    cout << "save file was" << NV_SAVE_FILE << "\n";
+    cout << "save file was " << NV_SAVE_FILE << "\n";
     ftl->saveNVState();
 }
 

@@ -217,7 +217,7 @@ void GCLogger::save(uint64_t cycle, uint epoch)
 
 	if (!savefile) 
 	{
-	    ERROR("Cannot open PowerStats.log");
+	    ERROR("Cannot open NVDIMM.log");
 	    exit(-1); 
 	}
 

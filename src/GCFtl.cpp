@@ -458,7 +458,7 @@ void GCFtl::sendQueueLength(void)
 
 void GCFtl::saveNVState(void)
 {
-     if(ENABLE_NV_SAVE)
+     if(ENABLE_NV_SAVE && !saved)
     {
 	ofstream save_file;
 	save_file.open(NV_SAVE_FILE, ios_base::out | ios_base::trunc);
@@ -502,6 +502,7 @@ void GCFtl::saveNVState(void)
 	}
 
 	save_file.close();
+	saved = true;
     }
 }
 

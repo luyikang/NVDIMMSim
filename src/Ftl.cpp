@@ -39,6 +39,7 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 
 	log = l;
 	
+	saved = false;
 	loaded = false;
 	queues_full = false;
 
@@ -658,7 +659,7 @@ void Ftl::sendQueueLength(void)
 
 void Ftl::saveNVState(void)
 {
-	if(ENABLE_NV_SAVE)
+	if(ENABLE_NV_SAVE && !saved)
 	{
 		ofstream save_file;
 		save_file.open(NV_SAVE_FILE, ios_base::out | ios_base::trunc);
@@ -669,7 +670,7 @@ void Ftl::saveNVState(void)
 		}
 
 		cout << "NVDIMM is saving the used table and address map \n";
-		cout << "save file is" << NV_SAVE_FILE << "\n";
+		cout << "save file is " << NV_SAVE_FILE << "\n";
 
 		// save the address map
 		save_file << "AddressMap \n";
@@ -692,6 +693,7 @@ void Ftl::saveNVState(void)
 		}
 
 		save_file.close();
+		saved = true;
 	}
 }
 

@@ -64,6 +64,7 @@ namespace NVDSim{
 			uint64_t write_counter;
 			uint64_t used_page_count;
 
+			bool saved;
 			bool loaded;
 			bool queues_full;
 			bool flushing_write;
