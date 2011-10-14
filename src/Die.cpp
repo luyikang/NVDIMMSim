@@ -9,7 +9,7 @@
 using namespace NVDSim;
 using namespace std;
 
-Die::Die(NVDIMM *parent, Logger *l, uint idNum){
+Die::Die(NVDIMM *parent, Logger *l, uint64_t idNum){
 	id = idNum;
 	parentNVDIMM = parent;
 	log = l;
@@ -180,52 +180,56 @@ void Die::update(void){
 	}
 
 	if (!returnDataPackets.empty()){
-		if( BUFFERED == true)
-		{
-			if(dataCyclesLeft == 0 && deviceBeatsLeft > 0){
-				deviceBeatsLeft--;
-				buffer->sendPiece(BUFFER, 0, id, returnDataPackets.front()->plane);
-				dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
-			}
-
-			if(dataCyclesLeft > 0 && deviceBeatsLeft == 0 && LOGGING && PLANE_STATE_LOG){
+	    if( BUFFERED == true)
+	    {
+		if(dataCyclesLeft == 0 && deviceBeatsLeft > 0){
+		    bool success = false;
+		    success = buffer->sendPiece(BUFFER, 0, id, returnDataPackets.front()->plane);
+		    if(success == true)
+		    {
+			deviceBeatsLeft--;
+			dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+		    }
+		}
+		
+		if(dataCyclesLeft > 0 && deviceBeatsLeft == 0 && LOGGING && PLANE_STATE_LOG){
+		    log->log_plane_state(returnDataPackets.front()->package, returnDataPackets.front()->die, returnDataPackets.front()->plane, IDLE);
+		}
+		
+		if(dataCyclesLeft > 0 && deviceBeatsLeft > 0){
+		    dataCyclesLeft--;
+		}
+		
+		if(deviceBeatsLeft == 0 && sending == false){
+		    dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+		    deviceBeatsLeft = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
+		    sending = true;
+		}
+	    }else{
+		if(buffer->channel->hasChannel(BUFFER, id)){
+		    if(dataCyclesLeft == 0){
+			buffer->channel->sendToController(returnDataPackets.front());
+			buffer->channel->releaseChannel(BUFFER, id);
+			if(LOGGING && PLANE_STATE_LOG)
+			{
 			    log->log_plane_state(returnDataPackets.front()->package, returnDataPackets.front()->die, returnDataPackets.front()->plane, IDLE);
 			}
-
-			if(dataCyclesLeft > 0 && deviceBeatsLeft > 0){
-				dataCyclesLeft--;
-			}
-
-			if(deviceBeatsLeft == 0 && sending == false){
-				dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
-				deviceBeatsLeft = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
-				sending = true;
-			}
+			returnDataPackets.pop();
+		    }
+		    if(CRIT_LINE_FIRST && dataCyclesLeft == critBeat)
+		    {
+			buffer->channel->controller->returnCritLine(returnDataPackets.front());
+		    }
+		    
+		    dataCyclesLeft--;
 		}else{
-			if(buffer->channel->hasChannel(BUFFER, id)){
-				if(dataCyclesLeft == 0){
-					buffer->channel->sendToController(returnDataPackets.front());
-					buffer->channel->releaseChannel(BUFFER, id);
-					if(LOGGING && PLANE_STATE_LOG)
-					{
-					    log->log_plane_state(returnDataPackets.front()->package, returnDataPackets.front()->die, returnDataPackets.front()->plane, IDLE);
-					}
-					returnDataPackets.pop();
-				}
-				if(CRIT_LINE_FIRST && dataCyclesLeft == critBeat)
-				{
-				    buffer->channel->controller->returnCritLine(returnDataPackets.front());
-				}
-
-				dataCyclesLeft--;
-			}else{
-				if(buffer->channel->obtainChannel(id, BUFFER, NULL))
-				{
-					dataCyclesLeft = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
-   
-				}
-			}
+		    if(buffer->channel->obtainChannel(id, BUFFER, NULL))
+		    {
+			dataCyclesLeft = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
+			
+		    }
 		}
+	    }
 	}
 }
 

@@ -72,6 +72,8 @@ extern bool IDLE_WRITE;
 
 // Buffering Options
 extern bool BUFFERED;
+extern uint64_t IN_BUFFER_SIZE;
+extern uint64_t OUT_BUFFER_SIZE;
 
 // Critical Cache Line First Options 
 extern bool CRIT_LINE_FIRST;

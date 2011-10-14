@@ -69,7 +69,6 @@ namespace NVDSim{
 			std::vector<uint> channelXferCyclesLeft; //cycles per channel beat
 			std::vector<uint> channelBeatsLeft; //channel beats per page
 
-			uint*** busyPlanes;
 	};
 }
 #endif

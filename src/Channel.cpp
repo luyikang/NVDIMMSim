@@ -75,9 +75,17 @@ int Channel::notBusy(void){
 void Channel::update(void){
         if(cyclesLeft == 0 && busy == 1){
 	    if(sType == CONTROLLER){
-		buffer->sendPiece(CONTROLLER, packetType, currentDie, currentPlane);
+		bool success = false;
+		success = buffer->sendPiece(CONTROLLER, packetType, currentDie, currentPlane);
+		if(success == true)
+		{
+		    busy = 0;
+		}
 	    }
-	    busy = 0;
+	    else
+	    {
+		busy = 0;
+	    }
 	}
 	    
 	if(cyclesLeft > 0){

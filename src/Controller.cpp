@@ -18,17 +18,6 @@ Controller::Controller(NVDIMM* parent, Logger* l){
 	pendingPackets = vector<list <ChannelPacket *> >(NUM_PACKAGES, list<ChannelPacket *>());
 
 	currentClockCycle = 0;
-
-	busyPlanes = new uint **[NUM_PACKAGES];
-	for(uint i = 0; i < NUM_PACKAGES; i++){
-		busyPlanes[i] = new uint *[DIES_PER_PACKAGE];
-		for(uint j = 0; j < DIES_PER_PACKAGE; j++){
-			busyPlanes[i][j] = new uint[PLANES_PER_DIE];
-			for(uint k = 0; k < PLANES_PER_DIE; k++){
-				busyPlanes[i][j][k] = 0;
-			}
-		}
-	}
 }
 
 void Controller::attachPackages(vector<Package> *packages){
@@ -200,123 +189,120 @@ void Controller::update(void){
 		//Look through queues and send oldest packets to the appropriate channel
 		for (i = 0; i < channelQueues.size(); i++){
 			if (!channelQueues[i].empty() && outgoingPackets[i]==NULL){
-				// don't send to busy planes
-				if(busyPlanes[channelQueues[i].front()->package][channelQueues[i].front()->die][channelQueues[i].front()->plane] != 1){
-					//if we can get the channel
-					if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
-						outgoingPackets[i]= channelQueues[i].front();
-						if(LOGGING && QUEUE_EVENT_LOG)
-						{
-						    switch (channelQueues[i].front()->busPacketType)
-						    {
-						    case READ:
-						    case GC_READ:
-						    case ERASE:
-							log->log_ctrl_queue_event(false, channelQueues[i].front()->package, &channelQueues[i]);
-							break;
-						    case WRITE:
-						    case GC_WRITE:
-						    case DATA:
-							log->log_ctrl_queue_event(true, channelQueues[i].front()->package, &channelQueues[i]);
-							break;
-						    }
-						}
-						channelQueues[i].pop_front();
-						parentNVDIMM->queuesNotFull();
-						switch (outgoingPackets[i]->busPacketType){
-							case DATA:
-								// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
-								// are in 1 KB (1024 * 8).
-								channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
-								break;
-							default:
-								channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
-								break;
-						}
-					}
+			    //if we can get the channel
+			    if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
+				outgoingPackets[i]= channelQueues[i].front();
+				if(LOGGING && QUEUE_EVENT_LOG)
+				{
+				    switch (channelQueues[i].front()->busPacketType)
+				    {
+				    case READ:
+				    case GC_READ:
+				    case ERASE:
+					log->log_ctrl_queue_event(false, channelQueues[i].front()->package, &channelQueues[i]);
+					break;
+				    case WRITE:
+				    case GC_WRITE:
+				    case DATA:
+					log->log_ctrl_queue_event(true, channelQueues[i].front()->package, &channelQueues[i]);
+					break;
+				    }
 				}
+				channelQueues[i].pop_front();
+				parentNVDIMM->queuesNotFull();
+				switch (outgoingPackets[i]->busPacketType){
+				case DATA:
+				    // Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
+				    // are in 1 KB (1024 * 8).
+				    channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
+				    break;
+				default:
+				    channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
+				    break;
+				}
+			    }
 			}
 		}
-
+	
+		
 		//Check for commands/data on a channel. If there is, see if it is done on channel
 		for (i= 0; i < outgoingPackets.size(); i++){
-			if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
-				if (channelBeatsLeft[i] == 0){
-					(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
-					pendingPackets[i].push_back(outgoingPackets[i]);
-					busyPlanes[outgoingPackets[i]->package][outgoingPackets[i]->die][outgoingPackets[i]->plane] = 1;
-					outgoingPackets[i] = NULL;
-				}else if ((*packages)[outgoingPackets[i]->package].channel->notBusy()){
-					(*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, outgoingPackets[i]->busPacketType, 
-							outgoingPackets[i]->die, outgoingPackets[i]->plane);
-					channelBeatsLeft[i]--;
-				}
+		    if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
+			if (channelBeatsLeft[i] == 0){
+			    (*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
+			    pendingPackets[i].push_back(outgoingPackets[i]);
+			    outgoingPackets[i] = NULL;
+			}else if ((*packages)[outgoingPackets[i]->package].channel->notBusy()){
+			    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, outgoingPackets[i]->busPacketType, 
+											outgoingPackets[i]->die, outgoingPackets[i]->plane);
+			    channelBeatsLeft[i]--;
 			}
+		    }
 		}
 		//Directly calculate the expected transfer time 
 	}
 	else
 	{
-		// BUFFERED NOT TRUE CASE...
-
-		uint i;
-		//Check for commands/data on a channel. If there is, see if it is done on channel
-		for (i= 0; i < outgoingPackets.size(); i++){
-			if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
-				channelBeatsLeft[i]--;
-				if (channelBeatsLeft[i] == 0){
-					(*packages)[outgoingPackets[i]->package].channel->sendToBuffer(outgoingPackets[i]);
-					(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
-					outgoingPackets[i] = NULL;
-				}
-			}
+	    // BUFFERED NOT TRUE CASE...
+	    
+	    uint i;
+	    //Check for commands/data on a channel. If there is, see if it is done on channel
+	    for (i= 0; i < outgoingPackets.size(); i++){
+		if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
+		    channelBeatsLeft[i]--;
+		    if (channelBeatsLeft[i] == 0){
+			(*packages)[outgoingPackets[i]->package].channel->sendToBuffer(outgoingPackets[i]);
+			(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
+			outgoingPackets[i] = NULL;
+		    }
 		}
-
-		//Look through queues and send oldest packets to the appropriate channel
-		for (i = 0; i < channelQueues.size(); i++){
-			if (!channelQueues[i].empty() && outgoingPackets[i]==NULL){
-				//if we can get the channel
-				if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
-					outgoingPackets[i] = channelQueues[i].front();
-					if(LOGGING && QUEUE_EVENT_LOG)
-					{
-					    switch (channelQueues[i].front()->busPacketType)
-					    {
-					    case READ:
-				       	    case GC_READ:
-				       	    case ERASE:
-				       		log->log_ctrl_queue_event(false, channelQueues[i].front()->package, &channelQueues[i]);
-				       		break;
-				       	    case WRITE:
-				       	    case GC_WRITE:
-					    case DATA:
-				       		log->log_ctrl_queue_event(true, channelQueues[i].front()->package, &channelQueues[i]);
-				       		break;
-					    }
-					}
-					channelQueues[i].pop_front();
-					parentNVDIMM->queuesNotFull();
-					switch (outgoingPackets[i]->busPacketType){
-						case DATA:
-							// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
-							// are in 1 KB (1024 * 8).
-							channelBeatsLeft[i] = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
-							break;
-						default:
-							channelBeatsLeft[i] = (divide_params(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
-							break;
-					}
-				}
+	    }
+	    
+	    //Look through queues and send oldest packets to the appropriate channel
+	    for (i = 0; i < channelQueues.size(); i++){
+		if (!channelQueues[i].empty() && outgoingPackets[i]==NULL){
+		    //if we can get the channel
+		    if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, channelQueues[i].front())){
+			outgoingPackets[i] = channelQueues[i].front();
+			if(LOGGING && QUEUE_EVENT_LOG)
+			{
+			    switch (channelQueues[i].front()->busPacketType)
+			    {
+			    case READ:
+			    case GC_READ:
+			    case ERASE:
+				log->log_ctrl_queue_event(false, channelQueues[i].front()->package, &channelQueues[i]);
+				break;
+			    case WRITE:
+			    case GC_WRITE:
+			    case DATA:
+				log->log_ctrl_queue_event(true, channelQueues[i].front()->package, &channelQueues[i]);
+				break;
+			    }
 			}
+			channelQueues[i].pop_front();
+			parentNVDIMM->queuesNotFull();
+			switch (outgoingPackets[i]->busPacketType){
+			case DATA:
+			    // Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
+			    // are in 1 KB (1024 * 8).
+			    channelBeatsLeft[i] = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
+			    break;
+			default:
+			    channelBeatsLeft[i] = (divide_params(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
+			    break;
+			}
+		    }
 		}
+	    }
 	}
 
 
 	//See if any read data is ready to return
 	while (!returnTransaction.empty()){
-		//call return callback
-		returnReadData(returnTransaction.back());
-		returnTransaction.pop_back();
+	    //call return callback
+	    returnReadData(returnTransaction.back());
+	    returnTransaction.pop_back();
 	}
 }
 
@@ -345,7 +331,6 @@ void Controller::bufferDone(uint die, uint plane)
 		for(it = pendingPackets[i].begin(); it != pendingPackets[i].end(); it++){
 			if ((*it) != NULL && (*it)->die == die && (*it)->plane == plane){
 				(*packages)[(*it)->package].channel->sendToBuffer((*it));
-				busyPlanes[(*it)->package][(*it)->die][(*it)->plane] = 0;
 				pendingPackets[i].erase(it);
 				break;
 			}

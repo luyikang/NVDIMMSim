@@ -15,7 +15,7 @@ namespace NVDSim
 	sys(sysFile),
 	cDirectory(pwd)
 	{
-	uint i, j;
+	uint64_t i, j;
 	systemID = id;
 	
 	 if (cDirectory.length() > 0)

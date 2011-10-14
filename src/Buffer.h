@@ -12,15 +12,18 @@
 namespace NVDSim{
     class Buffer : public SimObj{
         public:
-	    Buffer(uint id);
+	    Buffer(uint64_t id);
 	    void attachDie(Die *d);
 	    void attachChannel(Channel *c);
 	    void sendToDie(ChannelPacket *busPacket);
 	    void sendToController(ChannelPacket *busPacket);
 
-	    void sendPiece(SenderType t, uint type, uint die, uint plane);
+	    bool sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane);
 	    
 	    void update(void);
+
+	    void processInData(uint64_t die);
+	    void processOutData(uint64_t die);
 
 	    Channel *channel;
 	    std::vector<Die *> dies;
@@ -28,33 +31,33 @@ namespace NVDSim{
         private:
 	    class BufferPacket{
 	        public:
-		// type of packet that this is part of
+		// type of packet
 		uint type;
-		// what part of the packet this is
-		uint number;
-		
+		// how many bits are outstanding for this page
+		uint64_t number;
+		// plane that this page is for
+		uint64_t plane;
+
 		BufferPacket(){
 		    type = 0;
 		    number = 0;
+		    plane = 0;
 		}
 	    };
-	    uint id;
-
-	    int** writing_busy;
+	    uint64_t id;
 	    
-	    uint** cyclesLeft;	    
-	    uint** deviceWriting;
-	    uint** outDataLeft;
-	    uint** critData; // burst on which the critical line will be done
-	    uint** inDataLeft;
+	    uint64_t* cyclesLeft;	    
+	    uint64_t* outDataLeft;
+	    uint64_t* critData; // burst on which the critical line will be done
+	    uint64_t* inDataLeft;
 
-	    uint sendingDie;
-	    uint sendingPlane;
+	    uint64_t sendingDie;
+	    uint64_t sendingPlane;
 
-	    std::vector<std::vector<std::list<BufferPacket *> > > outData;
-	    std::vector<std::vector<std::list<BufferPacket *> > > inData;
-
-	    int count;
+	    uint64_t* outDataSize;
+	    std::vector<std::list<BufferPacket *> >  outData;
+	    uint64_t* inDataSize;
+	    std::vector<std::list<BufferPacket *> > inData;
     };
 } 
 
