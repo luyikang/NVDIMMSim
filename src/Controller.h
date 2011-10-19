@@ -52,7 +52,9 @@ namespace NVDSim{
 
 			void sendQueueLength(void);
 
-			void bufferDone(uint die, uint plane);
+			void bufferDone(uint64_t package, uint64_t die, uint64_t plane);
+
+			void releaseChannel(uint64_t package);
 
 			// for fast forwarding
 			void writeToPackage(ChannelPacket *packet);
@@ -61,6 +63,7 @@ namespace NVDSim{
 			Logger *log;
 
 		private:
+			bool* paused;
 			std::list<FlashTransaction> returnTransaction;
 			std::vector<Package> *packages;
 			std::vector<std::list <ChannelPacket *> > channelQueues;

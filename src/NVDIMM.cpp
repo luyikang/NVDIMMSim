@@ -261,7 +261,7 @@ void NVDIMM::saveStats(void){
 }
 
 void NVDIMM::update(void){
-	uint i, j;
+	uint64_t i, j;
 	Package package;
 	
 	for (i= 0; i < packages->size(); i++){

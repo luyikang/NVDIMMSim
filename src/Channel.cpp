@@ -25,20 +25,26 @@ void Channel::attachController(Controller *c){
 }
 
 int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
-    if (sender != -1 || (t == CONTROLLER && buffer->dies[p->die]->isDieBusy(p->plane)) || busy == 1){
-		return 0;
-	}
+    if (sender != -1 || (t == CONTROLLER && !BUFFERED && buffer->dies[p->die]->isDieBusy(p->plane)) || busy == 1){
+	return 0;		
+    }
+    else
+    {
 	sType = t;
 	sender = (int) s;
-	
+	//cout << t << " has the channel now \n";
 	return 1;
+    }
+    return 0;
 }
 
 int Channel::releaseChannel(SenderType t, uint s){       
 	if (t == sType && sender == (int) s){
 		sender = -1;
+		//cout << t << "has released the channel \n";
 		return 1;
 	}
+	//cout << t << "tried to give up the channel but couldn't \n";
 	return 0;
 }
 
@@ -64,6 +70,11 @@ void Channel::sendPiece(SenderType t, uint type, uint die, uint plane){
 	packetType = type;
 }
 
+bool Channel::isBufferFull(SenderType t, uint die)
+{
+    return buffer->isFull(t, die);
+}
+
 int Channel::notBusy(void){
         if(busy == 1){
 	    return 0;
@@ -75,17 +86,13 @@ int Channel::notBusy(void){
 void Channel::update(void){
         if(cyclesLeft == 0 && busy == 1){
 	    if(sType == CONTROLLER){
-		bool success = false;
-		success = buffer->sendPiece(CONTROLLER, packetType, currentDie, currentPlane);
-		if(success == true)
+		bool success = buffer->sendPiece(CONTROLLER, packetType, currentDie, currentPlane);
+		if(success == false)
 		{
-		    busy = 0;
+		    ERROR("Tried to push data into a full buffer");
 		}
 	    }
-	    else
-	    {
-		busy = 0;
-	    }
+	    busy = 0;
 	}
 	    
 	if(cyclesLeft > 0){
@@ -93,6 +100,6 @@ void Channel::update(void){
 	}
 }
 
-void Channel::bufferDone(uint die, uint plane){
-    controller->bufferDone(die, plane);
+void Channel::bufferDone(uint64_t package, uint64_t die, uint64_t plane){
+    controller->bufferDone(package, die, plane);
 }

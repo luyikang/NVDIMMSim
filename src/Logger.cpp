@@ -105,12 +105,21 @@ void Logger::access_process(uint64_t addr, uint64_t paddr, uint package, Channel
 		abort();
 	}
 
-	if (access_map[addr].count(paddr) != 0)
+	if (op == READ || op == GC_READ)
 	{
-	    cout << access_map.count(addr) << "\n";
-	    cout << access_map[addr].count(paddr) << "\n";
+	    if(access_map[addr][paddr].size() > 2)
+	    {
+		cerr << "ERROR: NVLogger.access_process() called for a read with more than one entry already in access_map. address=0x" << hex << addr << "\n" << dec;
+		abort();
+	    }
+	}
+	else
+	{
+	    if(access_map[addr][paddr].size() != 0)
+	    {
 		cerr << "ERROR: NVLogger.access_process() called with address already in access_map. address=0x" << hex << addr << "\n" << dec;
 		abort();
+	    }
 	}
 
 	AccessMapEntry a;
@@ -120,22 +129,23 @@ void Logger::access_process(uint64_t addr, uint64_t paddr, uint package, Channel
 	a.pAddr = paddr;
 	a.package = package;
 	//access_map[addr] = std::unordered_map<uint64_t, AccessMapEntry>();
-	access_map[addr][paddr] = a;
+	access_map[addr][paddr].push_back(a);
+	//cout << "access map now has size " << access_map[addr][paddr].size() << "\n";
 	
 	this->queue_latency(a.process - a.start);
 }
 
 void Logger::access_stop(uint64_t addr, uint64_t paddr)
 {
-        if (access_map[addr].count(paddr) == 0)
+        if (access_map[addr][paddr].empty())
 	{
 		cerr << "ERROR: NVLogger.access_stop() called with address not in access_map. address=" << hex << addr << "\n" << dec;
 		abort();
 	}
 
-	AccessMapEntry a = access_map[addr][paddr];
+	AccessMapEntry a = access_map[addr][paddr].front();
 	a.stop = this->currentClockCycle;
-	access_map[addr][paddr] = a;
+	access_map[addr][paddr].front() = a;
 
 	// Log cache event type.
 	if (a.op == READ)
@@ -163,11 +173,15 @@ void Logger::access_stop(uint64_t addr, uint64_t paddr)
 		}
 	    }
 	}
-		
-	access_map[addr].erase(paddr);
-	if(access_map.count(addr) == 0)
+	
+	access_map[addr][paddr].pop_front();
+	if(access_map[addr][paddr].empty())
 	{
-	    access_map.erase(addr);
+	    access_map[addr].erase(paddr);
+	    if(access_map.count(addr) == 0)
+	    {
+		access_map.erase(addr);
+	    }
 	}
 }
 

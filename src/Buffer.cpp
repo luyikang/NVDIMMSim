@@ -6,9 +6,9 @@
 using namespace std;
 using namespace NVDSim;
 
-Buffer::Buffer(uint64_t id){
+Buffer::Buffer(uint64_t i){
 
-    id = id;
+    id = i;
 
     outData = vector<list <BufferPacket *> >(DIES_PER_PACKAGE, list<BufferPacket *>());
     inData = vector<list <BufferPacket *> >(DIES_PER_PACKAGE, list<BufferPacket *>());
@@ -19,6 +19,7 @@ Buffer::Buffer(uint64_t id){
     outDataLeft = new uint64_t [DIES_PER_PACKAGE];
     critData = new uint64_t [DIES_PER_PACKAGE];
     inDataLeft = new uint64_t [DIES_PER_PACKAGE];
+    waiting =  new bool [DIES_PER_PACKAGE];
 
     for(uint i = 0; i < DIES_PER_PACKAGE; i++){
 	outDataSize[i] = 0;
@@ -27,6 +28,7 @@ Buffer::Buffer(uint64_t id){
 	outDataLeft[i] = 0;
 	critData[i] = 0;
 	inDataLeft[i] = 0;
+	waiting[i] = false;
    }
 
     sendingDie = 0;
@@ -53,7 +55,7 @@ void Buffer::sendToController(ChannelPacket *busPacket){
 bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
     if(t == CONTROLLER)
     {
-	if(inDataSize[die] <= (IN_BUFFER_SIZE-CHANNEL_WIDTH))
+	if(inDataSize[die] <= (IN_BUFFER_SIZE-(CHANNEL_WIDTH)))
 	{
 	    if(!inData[die].empty() && inData[die].back()->type == type && inData[die].back()->plane == plane &&
 	       type == 5 && inData[die].back()->number < (NV_PAGE_SIZE*8192))
@@ -69,6 +71,14 @@ bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
 	    }
 	    else
 	    {
+		cout << "started a new packet \n";
+		list<BufferPacket*>::iterator it;
+
+		cout << "inData for buffer " << id << " die " << die << " contains: \n";
+		for ( it=inData[die].begin() ; it != inData[die].end(); it++ )
+		    cout << "type " << (*it)->type << " plane " << (*it)->plane << " number " << (*it)->number << "\n";
+		cout << "\n";
+		
 		BufferPacket* myPacket = new BufferPacket();
 		myPacket->type = type;
 		myPacket->number = CHANNEL_WIDTH;
@@ -80,6 +90,8 @@ bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
 	}
 	else
 	{
+	    cout << "buffer " << id << "is full for die " << die << "\n";
+	    //cout << "buffer size is " << inDataSize[die] << "\n";
 	    return false;
 	}
     }
@@ -108,6 +120,33 @@ bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
     }
     return false;
 }
+
+bool Buffer::isFull(SenderType t, uint64_t die)
+{
+    if(t == CONTROLLER)
+    {
+	if(inDataSize[die] <= (IN_BUFFER_SIZE-(CHANNEL_WIDTH)))
+	{
+	    return false;
+	}
+	else
+	{
+	    return true;
+	}
+    }
+    else if(t == BUFFER)
+    {
+	if(outDataSize[die] <= (OUT_BUFFER_SIZE-DEVICE_WIDTH))
+	{
+	    return false;
+	}
+	else
+	{
+	    return true;
+	}
+    }
+    return true;
+}
 	    
 void Buffer::update(void){
     for(uint64_t i = 0; i < DIES_PER_PACKAGE; i++){
@@ -116,14 +155,16 @@ void Buffer::update(void){
 	// if we're not already busy writing stuff
 	if(!inData[i].empty())
 	{
+	    //cout << "in data wasn't empty \n";
 	    // *NOTE* removed check for inDataLeft == inData which i think was to make sure this didn't get called when things where just empty
 	    if(inData[i].front()->number >= DEVICE_WIDTH)
 	    {
+		//cout << "we have enough data to send \n";
 		// if it is a command, set the number of beats if we've not set them yet
 		if(inData[i].front()->type != 5)
 		{
 		    // first time we've dealt with this command so we need to set our values
-		    if(inDataLeft[i] == 0)
+		    if(inDataLeft[i] == 0 && waiting[i] != true)
 		    {
 			inDataLeft[i] = COMMAND_LENGTH;
 			cyclesLeft[i] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
@@ -132,15 +173,17 @@ void Buffer::update(void){
 		    // need to make sure either enough data has been transfered to the buffer to warrant
 		    // sending out more data or all of the data for this particular packet has already
 		    // been loaded into the buffer
-		    else if(inData[i].front()->number >= (COMMAND_LENGTH-(inDataLeft[i]+DEVICE_WIDTH)) ||
-			    (inData[i].front()->number == COMMAND_LENGTH))
+		    else if(inData[i].front()->number >= ((COMMAND_LENGTH-inDataLeft[i])+DEVICE_WIDTH) ||
+			    (inData[i].front()->number >= COMMAND_LENGTH))
 		    {
 			processInData(i);
 		    }
 		}
 		// its not a command but it is the first time we've dealt with this data
-		else if(inDataLeft[i] == 0)
+		else if(inDataLeft[i] == 0 && waiting[i] != true)
 		{
+		    cout << "starting transfer \n";
+		    cout << "packet type is " << inData[i].front()->type << "\n";
 		    inDataLeft[i] = (NV_PAGE_SIZE*8192);
 		    cyclesLeft[i] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 		    processInData(i);
@@ -148,12 +191,12 @@ void Buffer::update(void){
 		// its not a command and its not the first time we've seen it but we still need to make sure either
 		// there is enough data to warrant sending out the data or all of the data for this particular packet has already
 		// been loaded into the buffer
-		else if(inData[i].front()->number >= ((NV_PAGE_SIZE*8192)-(inDataLeft[i]+DEVICE_WIDTH)) ||
-			    (inData[i].front()->number == (NV_PAGE_SIZE*8192)))
+			
+		else if (inData[i].front()->number >= (((NV_PAGE_SIZE*8192)-inDataLeft[i])+DEVICE_WIDTH) ||
+			    (inData[i].front()->number >= (NV_PAGE_SIZE*8192)))
 		{
 		    processInData(i);
 		}
-		
 	    }
 	}	    
 	    
@@ -165,15 +208,16 @@ void Buffer::update(void){
 	{
 	    if(outData[i].front()->number >= CHANNEL_WIDTH)
 	    {
+		//cout << "buffer tried to get the channel \n";
 		// then see if we have control of the channel
 		if (channel->hasChannel(BUFFER, id) && sendingDie == i && sendingPlane == outData[i].front()->plane)
 		{
-		    if(outData[i].front()->number >= ((NV_PAGE_SIZE*8192)-(outDataLeft[i]+CHANNEL_WIDTH)) ||
-		       (outData[i].front()->number == (NV_PAGE_SIZE*8192)))
+		    if((outData[i].front()->number >= (((NV_PAGE_SIZE*8192)-outDataLeft[i])+CHANNEL_WIDTH)) ||
+		       (outData[i].front()->number >= (NV_PAGE_SIZE*8192)))
 		    {
 			processOutData(i);
 		    }
-		}		
+		}
 		else if (channel->obtainChannel(id, BUFFER, NULL)){
 		    outDataLeft[i] = (NV_PAGE_SIZE*8192);
 		    sendingDie = i;
@@ -204,6 +248,7 @@ void Buffer::processInData(uint64_t die){
 	    // subtract this chunk of data from the data we need to send to be done
 	    if(inDataLeft[die] >= DEVICE_WIDTH)
 	    {
+		//cout << "sending data to die \n";
 		inDataLeft[die] = inDataLeft[die] - DEVICE_WIDTH;
 		inDataSize[die] = inDataSize[die] - DEVICE_WIDTH;
 	    }
@@ -211,19 +256,30 @@ void Buffer::processInData(uint64_t die){
 	    // to avoid negative numbers here which break things
 	    else
 	    {
+		inDataSize[die] = inDataSize[die] - inDataLeft[die];
 		inDataLeft[die] = 0;
 	    }
 	}
     }
     
     // we're done here
-    if(inDataLeft[die] == 0 && !dies[die]->isDieBusy(inData[die].front()->plane))
-    {	    
-	cout << dies[die]->currentClockCycle << "\n";
-	cout << inData[die].front()->plane << "\n";
-	cout << inData[die].front()->type << "\n";
-	channel->bufferDone(die, inData[die].front()->plane);
-	inData[die].pop_front();
+    if(inDataLeft[die] == 0)
+    {
+	if(!dies[die]->isDieBusy(inData[die].front()->plane))
+	{	    
+	    //cout << dies[die]->currentClockCycle << "\n";
+	    //cout << inData[die].front()->plane << "\n";
+	    //cout << inData[die].front()->type << "\n";
+	    //cout << id << "\n";
+	    cout << "finished loading data \n";
+	    channel->bufferDone(id, die, inData[die].front()->plane);
+	    inData[die].pop_front();
+	    waiting[die] = false;
+	}
+	else
+	{
+	    waiting[die] = true;
+	}
     }
 }
 
@@ -245,6 +301,7 @@ void Buffer::processOutData(uint64_t die){
 	}
 	else
 	{
+	    outDataSize[die] = outDataSize[die] - outDataLeft[die];
 	    outDataLeft[die] = 0;
 	}
 	critData[die] = critData[die] + CHANNEL_WIDTH;

@@ -26,11 +26,12 @@ namespace NVDSim{
 			void sendToBuffer(ChannelPacket *busPacket);
 			void sendToController(ChannelPacket *busPacket);
 			void sendPiece(SenderType t, uint type, uint die, uint plane);
+			bool isBufferFull(SenderType t, uint die);
 			int notBusy(void);
 
 			void update(void);
 
-			void bufferDone(uint die, uint plane);
+			void bufferDone(uint64_t package, uint64_t die, uint64_t plane);
 			
 			Controller *controller;
 		private:

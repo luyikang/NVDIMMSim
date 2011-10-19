@@ -17,6 +17,12 @@ Controller::Controller(NVDIMM* parent, Logger* l){
 
 	pendingPackets = vector<list <ChannelPacket *> >(NUM_PACKAGES, list<ChannelPacket *>());
 
+	paused = new bool [NUM_PACKAGES];
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
+	{
+	    paused[i] = false;
+	}
+
 	currentClockCycle = 0;
 }
 
@@ -185,7 +191,7 @@ void Controller::update(void){
 	//Use the buffer code for the NVDIMMS to calculate the actual transfer time
 	if(BUFFERED == true)
 	{
-		uint i;	
+		uint64_t i;	
 		//Look through queues and send oldest packets to the appropriate channel
 		for (i = 0; i < channelQueues.size(); i++){
 			if (!channelQueues[i].empty() && outgoingPackets[i]==NULL){
@@ -227,15 +233,38 @@ void Controller::update(void){
 		
 		//Check for commands/data on a channel. If there is, see if it is done on channel
 		for (i= 0; i < outgoingPackets.size(); i++){
-		    if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
-			if (channelBeatsLeft[i] == 0){
-			    (*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
-			    pendingPackets[i].push_back(outgoingPackets[i]);
-			    outgoingPackets[i] = NULL;
-			}else if ((*packages)[outgoingPackets[i]->package].channel->notBusy()){
-			    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, outgoingPackets[i]->busPacketType, 
-											outgoingPackets[i]->die, outgoingPackets[i]->plane);
-			    channelBeatsLeft[i]--;
+		    if (outgoingPackets[i] != NULL){
+			if(paused[outgoingPackets[i]->package] == true && 
+			   !(*packages)[outgoingPackets[i]->package].channel->isBufferFull(CONTROLLER, outgoingPackets[i]->die))
+			{
+			    if ((*packages)[outgoingPackets[i]->package].channel->obtainChannel(0, CONTROLLER, outgoingPackets[i])){
+				paused[outgoingPackets[i]->package] = false;
+				//cout << "paused is now " << paused[outgoingPackets[i]->package] << "\n";
+			    }
+			}
+			if ((*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0) && paused[outgoingPackets[i]->package] == false){
+			    if (channelBeatsLeft[i] == 0){
+				//if(outgoingPackets[i]->package == 15)
+				//{
+				    //cout << "finished a packet in the controller \n";
+				    //cout << "type was " << outgoingPackets[i]->busPacketType << " package was " << outgoingPackets[i]->package << "\n";
+				//}
+				(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
+				pendingPackets[i].push_back(outgoingPackets[i]);
+				outgoingPackets[i] = NULL;
+			    }else if ((*packages)[outgoingPackets[i]->package].channel->notBusy()){
+				if(!(*packages)[outgoingPackets[i]->package].channel->isBufferFull(CONTROLLER, outgoingPackets[i]->die))
+				{
+				    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, outgoingPackets[i]->busPacketType, 
+											    outgoingPackets[i]->die, outgoingPackets[i]->plane);
+				    channelBeatsLeft[i]--;
+				}
+				else
+				{
+				    (*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
+				    paused[outgoingPackets[i]->package] = true;
+				}
+			    }
 			}
 		    }
 		}
@@ -244,8 +273,7 @@ void Controller::update(void){
 	else
 	{
 	    // BUFFERED NOT TRUE CASE...
-	    
-	    uint i;
+	    uint64_t i;
 	    //Check for commands/data on a channel. If there is, see if it is done on channel
 	    for (i= 0; i < outgoingPackets.size(); i++){
 		if (outgoingPackets[i] != NULL && (*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0)){
@@ -324,16 +352,23 @@ void Controller::writeToPackage(ChannelPacket *packet)
 	(*packages)[packet->package].dies[packet->die]->writeToPlane(packet);
 }
 
-void Controller::bufferDone(uint die, uint plane)
+void Controller::bufferDone(uint64_t package, uint64_t die, uint64_t plane)
 {
+    cout << "called buffer done for package " << package << "\n";
 	for (uint i = 0; i < pendingPackets.size(); i++){
 		std::list<ChannelPacket *>::iterator it;
 		for(it = pendingPackets[i].begin(); it != pendingPackets[i].end(); it++){
-			if ((*it) != NULL && (*it)->die == die && (*it)->plane == plane){
+		    if ((*it) != NULL && (*it)->package == package && (*it)->die == die && (*it)->plane == plane){
+			cout << "packet type was " << (*it)->busPacketType << "\n";
 				(*packages)[(*it)->package].channel->sendToBuffer((*it));
 				pendingPackets[i].erase(it);
 				break;
-			}
+		    }
 		}
 	}
+}
+
+void Controller::releaseChannel(uint64_t package)
+{
+    
 }

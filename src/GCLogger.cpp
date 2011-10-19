@@ -34,15 +34,15 @@ void GCLogger::update()
 
 void GCLogger::access_stop(uint64_t addr, uint64_t paddr)
 {
-        if (access_map[addr].count(paddr) == 0)
+        if (access_map[addr][paddr].empty())
 	{
 	    cerr << "ERROR: NVGCLogger.access_stop() called with address not in access_map. address= " << hex << addr << ", " << paddr << "\n" << dec;
 		abort();
 	}
 
-	AccessMapEntry a = access_map[addr][paddr];
+	AccessMapEntry a = access_map[addr][paddr].front();
 	a.stop = this->currentClockCycle;
-	access_map[addr][paddr] = a;
+	access_map[addr][paddr].front() = a;
 
 	// Log cache event type.
 	if (a.op == READ)
@@ -103,10 +103,14 @@ void GCLogger::access_stop(uint64_t addr, uint64_t paddr)
 	    }
 	}
 	
-	access_map[addr].erase(paddr);
-	if(access_map.count(addr) == 0)
+	access_map[addr][paddr].pop_front();
+	if(access_map[addr][paddr].empty())
 	{
-	    access_map.erase(addr);
+	    access_map[addr].erase(paddr);
+	    if(access_map.count(addr) == 0)
+	    {
+		access_map.erase(addr);
+	    }
 	}
 }
 

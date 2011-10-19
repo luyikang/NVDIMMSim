@@ -21,7 +21,7 @@ namespace NVDSim{
 	                Die(NVDIMM *parent, Logger *l, uint64_t id);
 			void attachToBuffer(Buffer *buff);
 			void receiveFromBuffer(ChannelPacket *busPacket);
-			int isDieBusy(uint plane);
+			int isDieBusy(uint64_t plane);
 			void update(void);
 			void channelDone(void);
 			void bufferDone(void);

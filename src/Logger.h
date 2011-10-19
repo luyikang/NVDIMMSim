@@ -142,7 +142,7 @@ namespace NVDSim
 	};
 
 	// Store access info while the access is being processed.
-	std::unordered_map<uint64_t, std::unordered_map<uint64_t, AccessMapEntry>> access_map;
+	std::unordered_map<uint64_t, std::unordered_map<uint64_t, std::list<AccessMapEntry>>> access_map;
 
 	// Store the address and arrival time while access is waiting to be processed.
 	// Must do this because duplicate addresses may arrive close together.

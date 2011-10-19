@@ -12,13 +12,14 @@
 namespace NVDSim{
     class Buffer : public SimObj{
         public:
-	    Buffer(uint64_t id);
+	    Buffer(uint64_t i);
 	    void attachDie(Die *d);
 	    void attachChannel(Channel *c);
 	    void sendToDie(ChannelPacket *busPacket);
 	    void sendToController(ChannelPacket *busPacket);
 
 	    bool sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane);
+	    bool isFull(SenderType t, uint64_t die);
 	    
 	    void update(void);
 
@@ -27,6 +28,8 @@ namespace NVDSim{
 
 	    Channel *channel;
 	    std::vector<Die *> dies;
+
+	    uint64_t id;
 
         private:
 	    class BufferPacket{
@@ -44,12 +47,13 @@ namespace NVDSim{
 		    plane = 0;
 		}
 	    };
-	    uint64_t id;
 	    
 	    uint64_t* cyclesLeft;	    
 	    uint64_t* outDataLeft;
 	    uint64_t* critData; // burst on which the critical line will be done
 	    uint64_t* inDataLeft;
+	    bool* waiting;
+	    bool* sending;
 
 	    uint64_t sendingDie;
 	    uint64_t sendingPlane;
