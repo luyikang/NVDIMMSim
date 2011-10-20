@@ -239,16 +239,10 @@ void Controller::update(void){
 			{
 			    if ((*packages)[outgoingPackets[i]->package].channel->obtainChannel(0, CONTROLLER, outgoingPackets[i])){
 				paused[outgoingPackets[i]->package] = false;
-				//cout << "paused is now " << paused[outgoingPackets[i]->package] << "\n";
 			    }
 			}
 			if ((*packages)[outgoingPackets[i]->package].channel->hasChannel(CONTROLLER, 0) && paused[outgoingPackets[i]->package] == false){
 			    if (channelBeatsLeft[i] == 0){
-				//if(outgoingPackets[i]->package == 15)
-				//{
-				    //cout << "finished a packet in the controller \n";
-				    //cout << "type was " << outgoingPackets[i]->busPacketType << " package was " << outgoingPackets[i]->package << "\n";
-				//}
 				(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
 				pendingPackets[i].push_back(outgoingPackets[i]);
 				outgoingPackets[i] = NULL;
@@ -354,21 +348,14 @@ void Controller::writeToPackage(ChannelPacket *packet)
 
 void Controller::bufferDone(uint64_t package, uint64_t die, uint64_t plane)
 {
-    cout << "called buffer done for package " << package << "\n";
 	for (uint i = 0; i < pendingPackets.size(); i++){
 		std::list<ChannelPacket *>::iterator it;
 		for(it = pendingPackets[i].begin(); it != pendingPackets[i].end(); it++){
 		    if ((*it) != NULL && (*it)->package == package && (*it)->die == die && (*it)->plane == plane){
-			cout << "packet type was " << (*it)->busPacketType << "\n";
 				(*packages)[(*it)->package].channel->sendToBuffer((*it));
 				pendingPackets[i].erase(it);
 				break;
 		    }
 		}
 	}
-}
-
-void Controller::releaseChannel(uint64_t package)
-{
-    
 }

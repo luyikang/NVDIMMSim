@@ -35,7 +35,6 @@ void Die::attachToBuffer(Buffer *buff){
 
 void Die::receiveFromBuffer(ChannelPacket *busPacket){
 	if (busPacket->busPacketType == DATA){
-	    cout << "got the data at the die \n";
 		planes[busPacket->plane].storeInData(busPacket);
 	} else if (currentCommands[busPacket->plane] == NULL) {
 		currentCommands[busPacket->plane] = busPacket;
@@ -47,7 +46,6 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 		switch (busPacket->busPacketType){
 			case READ:
 			case GC_READ:
-			    cout << "started a read \n";
 				controlCyclesLeft[busPacket->plane]= READ_TIME;
 				// log the new state of this plane
 				if(LOGGING && PLANE_STATE_LOG)
@@ -124,7 +122,6 @@ void Die::update(void){
 					case READ:	
 						planes[currentCommand->plane].read(currentCommand);
 						returnDataPackets.push(planes[currentCommand->plane].readFromData());
-						cout << "finished the read \n";
 						break;
 					case GC_READ:
 					        planes[currentCommand->plane].read(currentCommand);
@@ -163,7 +160,6 @@ void Die::update(void){
 					// Tell the logger the access is done.
 					if (LOGGING)
 					{
-					    cout << "calling access stop for vAddr " << currentCommand->virtualAddress << " and pAddr " <<  currentCommand->physicalAddress << "\n";
 					    log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
 					    if(PLANE_STATE_LOG)
 					    {
@@ -254,10 +250,6 @@ void Die::bufferLoaded()
 {
     pendingDataPackets.push(returnDataPackets.front());
     returnDataPackets.pop();	
-    cout << "return data packets now has size " << returnDataPackets.size() << "\n";
-    cout << "return data packets is now empty " << returnDataPackets.empty() << "\n";
-    cout << "die attached to buffer " << buffer->id << "\n";
-    cout << "die is " << id << "\n";
     sending = false;
 }
 

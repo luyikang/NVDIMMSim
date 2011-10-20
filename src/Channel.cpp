@@ -32,7 +32,6 @@ int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
     {
 	sType = t;
 	sender = (int) s;
-	//cout << t << " has the channel now \n";
 	return 1;
     }
     return 0;
@@ -41,10 +40,8 @@ int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
 int Channel::releaseChannel(SenderType t, uint s){       
 	if (t == sType && sender == (int) s){
 		sender = -1;
-		//cout << t << "has released the channel \n";
 		return 1;
 	}
-	//cout << t << "tried to give up the channel but couldn't \n";
 	return 0;
 }
 

@@ -70,15 +70,7 @@ bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
 		inDataSize[die] = inDataSize[die] + CHANNEL_WIDTH;
 	    }
 	    else
-	    {
-		cout << "started a new packet \n";
-		list<BufferPacket*>::iterator it;
-
-		cout << "inData for buffer " << id << " die " << die << " contains: \n";
-		for ( it=inData[die].begin() ; it != inData[die].end(); it++ )
-		    cout << "type " << (*it)->type << " plane " << (*it)->plane << " number " << (*it)->number << "\n";
-		cout << "\n";
-		
+	    {	
 		BufferPacket* myPacket = new BufferPacket();
 		myPacket->type = type;
 		myPacket->number = CHANNEL_WIDTH;
@@ -90,8 +82,6 @@ bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
 	}
 	else
 	{
-	    cout << "buffer " << id << "is full for die " << die << "\n";
-	    //cout << "buffer size is " << inDataSize[die] << "\n";
 	    return false;
 	}
     }
@@ -106,7 +96,6 @@ bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
 		// if ths was the last piece of this packet, tell the die
 		if( outData[die].back()->number >= (NV_PAGE_SIZE*8192))
 		{
-		    cout << "called buffer loaded \n";
 		    dies[die]->bufferLoaded();
 		}
 	    }else{
@@ -188,8 +177,6 @@ void Buffer::update(void){
 		// its not a command but it is the first time we've dealt with this data
 		else if(inDataLeft[i] == 0 && waiting[i] != true)
 		{
-		    cout << "starting transfer \n";
-		    cout << "packet type is " << inData[i].front()->type << "\n";
 		    inDataLeft[i] = (NV_PAGE_SIZE*8192);
 		    cyclesLeft[i] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 		    processInData(i);
@@ -272,12 +259,7 @@ void Buffer::processInData(uint64_t die){
     if(inDataLeft[die] == 0)
     {
 	if(!dies[die]->isDieBusy(inData[die].front()->plane))
-	{	    
-	    //cout << dies[die]->currentClockCycle << "\n";
-	    //cout << inData[die].front()->plane << "\n";
-	    //cout << inData[die].front()->type << "\n";
-	    //cout << id << "\n";
-	    cout << "finished loading data \n";
+	{   
 	    channel->bufferDone(id, die, inData[die].front()->plane);
 	    inData[die].pop_front();
 	    waiting[die] = false;
