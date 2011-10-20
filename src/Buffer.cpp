@@ -103,6 +103,12 @@ bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
 	       outData[die].back()->number < (NV_PAGE_SIZE*8192)){
 		outData[die].back()->number = outData[die].back()->number + DEVICE_WIDTH;
 		outDataSize[die] = outDataSize[die] + DEVICE_WIDTH;
+		// if ths was the last piece of this packet, tell the die
+		if( outData[die].back()->number >= (NV_PAGE_SIZE*8192))
+		{
+		    cout << "called buffer loaded \n";
+		    dies[die]->bufferLoaded();
+		}
 	    }else{
 		BufferPacket* myPacket = new BufferPacket();
 		myPacket->type = type;
@@ -310,7 +316,7 @@ void Buffer::processOutData(uint64_t die){
     // we're done here
     if(outDataLeft[die] == 0 && channel->notBusy())
     {
-	dies[die]->bufferDone();
+	dies[die]->bufferDone(outData[die].front()->plane);
 	channel->releaseChannel(BUFFER,id);
 	critData[die] = 0;
 	outData[die].pop_front();

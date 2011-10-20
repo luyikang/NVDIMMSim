@@ -24,7 +24,8 @@ namespace NVDSim{
 			int isDieBusy(uint64_t plane);
 			void update(void);
 			void channelDone(void);
-			void bufferDone(void);
+			void bufferDone(uint64_t plane);
+			void bufferLoaded(void);
 			void critLineDone(void);
 
 			// for fast forwarding
@@ -40,6 +41,7 @@ namespace NVDSim{
 			uint deviceBeatsLeft; //device beats per page
 			uint critBeat; //device beat when first cache line will have been sent, used for crit line first
 			std::queue<ChannelPacket *> returnDataPackets;
+			std::queue<ChannelPacket *> pendingDataPackets;
 			std::vector<Plane> planes;
 			std::vector<ChannelPacket *> currentCommands;
 			uint *controlCyclesLeft;

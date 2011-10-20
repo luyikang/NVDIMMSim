@@ -47,6 +47,7 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 		switch (busPacket->busPacketType){
 			case READ:
 			case GC_READ:
+			    cout << "started a read \n";
 				controlCyclesLeft[busPacket->plane]= READ_TIME;
 				// log the new state of this plane
 				if(LOGGING && PLANE_STATE_LOG)
@@ -181,9 +182,16 @@ void Die::update(void){
 		}
 	}
 
-	if (!returnDataPackets.empty()){
+	if (!returnDataPackets.empty())
+	{
 	    if( BUFFERED == true)
 	    {
+		if(deviceBeatsLeft == 0 && sending == false){
+		    dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+		    deviceBeatsLeft = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
+		    sending = true;
+		}
+
 		if(dataCyclesLeft == 0 && deviceBeatsLeft > 0){
 		    bool success = false;
 		    success = buffer->sendPiece(BUFFER, 0, id, returnDataPackets.front()->plane);
@@ -200,12 +208,6 @@ void Die::update(void){
 		
 		if(dataCyclesLeft > 0 && deviceBeatsLeft > 0){
 		    dataCyclesLeft--;
-		}
-		
-		if(deviceBeatsLeft == 0 && sending == false){
-		    dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
-		    deviceBeatsLeft = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
-		    sending = true;
 		}
 	    }else{
 		if(buffer->channel->hasChannel(BUFFER, id)){
@@ -228,18 +230,35 @@ void Die::update(void){
 		    if(buffer->channel->obtainChannel(id, BUFFER, NULL))
 		    {
 			dataCyclesLeft = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
-			
 		    }
 		}
 	    }
 	}
 }
 
-void Die::bufferDone()
+void Die::bufferDone(uint64_t plane)
 {
-	buffer->sendToController(returnDataPackets.front());
-	returnDataPackets.pop();			
-	sending = false;
+    //sanity check
+    if(pendingDataPackets.front()->plane == plane)
+    {
+	buffer->sendToController(pendingDataPackets.front());
+	pendingDataPackets.pop();
+    }
+    else
+    {
+	ERROR("Tried to complete a pending data packet for the wrong plane, things got out of order somehow");
+    }
+}
+
+void Die::bufferLoaded()
+{
+    pendingDataPackets.push(returnDataPackets.front());
+    returnDataPackets.pop();	
+    cout << "return data packets now has size " << returnDataPackets.size() << "\n";
+    cout << "return data packets is now empty " << returnDataPackets.empty() << "\n";
+    cout << "die attached to buffer " << buffer->id << "\n";
+    cout << "die is " << id << "\n";
+    sending = false;
 }
 
 void Die::critLineDone()
