@@ -55,7 +55,7 @@ void Buffer::sendToController(ChannelPacket *busPacket){
 bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
     if(t == CONTROLLER)
     {
-	if(inDataSize[die] <= (IN_BUFFER_SIZE-(CHANNEL_WIDTH)))
+	if(IN_BUFFER_SIZE == 0 || inDataSize[die] <= (IN_BUFFER_SIZE-(CHANNEL_WIDTH)))
 	{
 	    if(!inData[die].empty() && inData[die].back()->type == type && inData[die].back()->plane == plane &&
 	       type == 5 && inData[die].back()->number < (NV_PAGE_SIZE*8192))
@@ -87,7 +87,7 @@ bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
     }
     else if(t == BUFFER)
     {
-	if(outDataSize[die] <= (OUT_BUFFER_SIZE-DEVICE_WIDTH))
+	if(OUT_BUFFER_SIZE == 0 || outDataSize[die] <= (OUT_BUFFER_SIZE-DEVICE_WIDTH))
 	{
 	    if(!outData[die].empty() && outData[die].back()->type == type && outData[die].back()->plane == plane &&
 	       outData[die].back()->number < (NV_PAGE_SIZE*8192)){
@@ -120,7 +120,7 @@ bool Buffer::isFull(SenderType t, uint64_t die)
 {
     if(t == CONTROLLER)
     {
-	if(inDataSize[die] <= (IN_BUFFER_SIZE-(CHANNEL_WIDTH)))
+	if(IN_BUFFER_SIZE > 0 && inDataSize[die] <= (IN_BUFFER_SIZE-(CHANNEL_WIDTH)))
 	{
 	    return false;
 	}
@@ -131,7 +131,7 @@ bool Buffer::isFull(SenderType t, uint64_t die)
     }
     else if(t == BUFFER)
     {
-	if(outDataSize[die] <= (OUT_BUFFER_SIZE-DEVICE_WIDTH))
+	if(OUT_BUFFER_SIZE > 0 && outDataSize[die] <= (OUT_BUFFER_SIZE-DEVICE_WIDTH))
 	{
 	    return false;
 	}
