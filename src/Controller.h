@@ -62,9 +62,13 @@ namespace NVDSim{
 
 		private:
 			bool* paused;
+
+			uint queue_access_counter;
+
 			std::list<FlashTransaction> returnTransaction;
 			std::vector<Package> *packages;
-			std::vector<std::list <ChannelPacket *> > channelQueues;
+			std::vector<std::list <ChannelPacket *> > readQueues;
+			std::vector<std::list <ChannelPacket *> > writeQueues;
 			std::vector<ChannelPacket *> outgoingPackets; //there can only ever be one outgoing packet per channel
 			std::vector<std::list <ChannelPacket *> > pendingPackets; //there can be a pending package for each plane of each die of each package
 			std::vector<uint> channelXferCyclesLeft; //cycles per channel beat
