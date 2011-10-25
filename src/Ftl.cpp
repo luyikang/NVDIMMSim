@@ -168,6 +168,10 @@ bool Ftl::addTransaction(FlashTransaction &t){
 				// stop_process for that write is called here since its over now.
 				log->access_stop(t.address, t.address);
 			    }
+			    // issue a callback for this write
+			    if (parent->WriteDataDone != NULL){
+				(*parent->WriteDataDone)(parent->systemID, (*it).address, currentClockCycle, true);
+			    }
 			    writeQueue.erase(it);
 			    break;
 			}
@@ -313,7 +317,6 @@ void Ftl::handle_read(bool gc)
 			// access_process for this read is called here since it starts here
 			log->access_process(vAddr, vAddr, 0, READ);
 		    }
-
 		    break;
 		}
 	    }

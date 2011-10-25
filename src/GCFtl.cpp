@@ -82,6 +82,10 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 				    // stop_process for that write is called here since its over now.
 				    log->access_stop(t.address, t.address);
 				}
+				// issue a callback for this write
+				if (parent->WriteDataDone != NULL){
+				    (*parent->WriteDataDone)(parent->systemID, (*it).address, currentClockCycle, true);
+				}
 				writeQueue.erase(it);
 				break;
 			    }

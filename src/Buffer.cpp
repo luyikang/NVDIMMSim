@@ -120,7 +120,7 @@ bool Buffer::isFull(SenderType t, uint64_t die)
 {
     if(t == CONTROLLER)
     {
-	if(IN_BUFFER_SIZE > 0 && inDataSize[die] <= (IN_BUFFER_SIZE-(CHANNEL_WIDTH)))
+	if(IN_BUFFER_SIZE == 0 || inDataSize[die] <= (IN_BUFFER_SIZE-(CHANNEL_WIDTH)))
 	{
 	    return false;
 	}
@@ -131,7 +131,7 @@ bool Buffer::isFull(SenderType t, uint64_t die)
     }
     else if(t == BUFFER)
     {
-	if(OUT_BUFFER_SIZE > 0 && outDataSize[die] <= (OUT_BUFFER_SIZE-DEVICE_WIDTH))
+	if(OUT_BUFFER_SIZE == 0 || outDataSize[die] <= (OUT_BUFFER_SIZE-DEVICE_WIDTH))
 	{
 	    return false;
 	}
