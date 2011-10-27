@@ -13,7 +13,7 @@ make libdramsim.so
 cd ..
 
 # Checkout and make NVDIMM.
-git clone https://github.com/jimstevens2001/NVDIMMSim.git
+git clone https://watchmaker@github.com/watchmaker/NVDIMMSim.git
 cd NVDIMMSim/src
 make lib
 cd ../..
@@ -34,59 +34,53 @@ do
 	test -e "$mix" || mkdir "$mix"
 	cd "$mix"
 
-	for chan in 1 2 4 8 16 32 64 128 256;
+	for chan in 1 2 4 8 16 32;
 	do
-		# If the channel directory doesn't exist, then create it.
-		test -e "$chan"|| mkdir "$chan"
-		cd "$chan"
 
-		for config in noprefetch prefetch;
-		do
-			# If the prefetch option directory doesn't exist, then create it.
-			test -e "$config" || mkdir "$config"
-			cd "$config"
+	    # If the channel directory doesn't exist, then create it.
+	    test -e "$chan"|| mkdir "$chan"
+	    cd "$chan"
+
+	    for speed in 1 2 4;
+	    do
+		# If the prefetch option directory doesn't exist, then create it.
+		test -e "$speed" || mkdir "$speed"
+		cd "$speed"
 			
-			echo In directory for $mix/$chan/$config
+		echo In directory for $mix/$chan/$config
 
-			# Copy repos
-			cp -r $topdir/master/* .
+		# Copy repos
+		cp -r $topdir/master/* .
 
-			cd HybridSim
+		cd HybridSim
 
-			# Copy config.h and ini files for this experiment.
-			cp $topdir/ini/"$config".h config.h
-			cp $topdir/ini/"$chan"_chan.ini ini/samsung_K9XXG08UXM_mod.ini
-			cp $topdir/ini/hybridsim.ini ini/hybridsim.ini
-			cp $topdir/ini/TraceBasedSim.cpp .
+		# Copy config.h and ini files for this experiment.
+		cp $topdir/ini/"$chan"_"$speed"_chan.ini ini/samsung_K9XXG08UXM_mod.ini
+		cp $topdir/ini/hybridsim.ini ini/hybridsim.ini
+		cp $topdir/ini/TraceBasedSim.cpp .
+		
+		
+		# Copy fast forwardig state		
+		scp -r naan:/home/ibhati/disk_ff_"$mix"/state .
 
-			# Copy fast forwarding state
-			test -e state || mkdir state
-			scp -r naan:/home/ibhati/disk_ff_"$mix"/state .
+		# Copy trace to run.
+		cp $topdir/original/"$mix".txt traces/"$mix".txt
 
-			# Copy trace to run.
-			scp naan:~/ishwar_script/traces/original/"$mix".txt traces/"$mix".txt
+		# Build HybridSim
+		make
 
-			# Copy prefetch data 
-			#if [ "$config" == 'prefetch' ]; then
-			#scp naan:~/ishwar_script/traces/prefetch2/"$mix"/prefetch_data.txt traces/prefetch_data.txt
-			scp naan:~/ishwar_script/traces/prefetch2/"$mix"/prefetch_cache_state.txt state/my_state.txt
-			#fi;
+		# Run Experiment
+		nohup nice -5 ./HybridSim traces/"$mix".txt > out 2> err &
 
-			# Build HybridSim
-			make
-
-			# Run Experiment
-			nohup nice -5 ./HybridSim traces/"$mix".txt > out 2> err &
-
-			# Leave HybridSim directory
-			cd ..
-
-			# Leave config directory
-			cd ..
-		done
-
-		# Leave chan directory.
+		# Leave HybridSim directory
 		cd ..
+		
+		# Leave Speed directory
+		cd ..
+	    done
+
+	    # Leave chan directory.
+	    cd ..
 	done
 
 	# Leave mix directory.

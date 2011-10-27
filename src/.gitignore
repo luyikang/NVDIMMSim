@@ -7,6 +7,10 @@
 *.h~
 *.cpp~
 src/Results/*.txt
+src/tools/sweep_scripts/mix1/*
+src/tools/sweep_scripts/mix2/*
+src/tools/sweep_scripts/mix3/*
+src/tools/sweep_scripts/mix4/*
 *~
 \.#*
 *#
