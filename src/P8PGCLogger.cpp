@@ -464,12 +464,12 @@ void P8PGCLogger::write_epoch(EpochEntry *e)
 	    {
 		WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
 	    }
-	    savefile.open(LOG_DIR+"NVDIMM.log", ios_base::out | ios_base::trunc);
-	    savefile<<"NVDIMM Log \n";
+	    savefile.open(LOG_DIR+"NVDIMM_EPOCH.log", ios_base::out | ios_base::trunc);
+	    savefile<<"NVDIMM_EPOCH Log \n";
 	}
 	else
 	{
-	    savefile.open(LOG_DIR+"NVDIMM.log", ios_base::out | ios_base::app);
+	    savefile.open(LOG_DIR+"NVDIMM_EPOCH.log", ios_base::out | ios_base::app);
 	}
 
 	if (!savefile) 
