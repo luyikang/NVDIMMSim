@@ -6,7 +6,7 @@
 
 using namespace std;
 
-uint64_t BLOCKS_PER_PLANE;
+//uint64_t BLOCKS_PER_PLANE;
 
 namespace NVDSim
 {

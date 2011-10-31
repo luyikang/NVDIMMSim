@@ -37,7 +37,11 @@ uint ERASE_TIME= 1500;
 uint DATA_TIME= 100;
 uint COMMAND_TIME= 10;
 */
-uint OUTPUT= 1;
+
+namespace NVDSim
+{
+	uint OUTPUT= 1;
+}
 
 using namespace NVDSim;
 using namespace std;

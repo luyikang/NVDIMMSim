@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <limits.h>
 
+
 //sloppily reusing #defines from dramsim
 #ifndef ERROR
 #define ERROR(str) std::cerr<<"[ERROR ("<<__FILE__<<":"<<__LINE__<<")]: "<<str<<std::endl;
@@ -63,6 +64,8 @@
 // Power Callback Options
 #define Power_Callback 1
 #define Verbose_Power_Callback 0
+
+namespace NVDSim{
 
 // Scheduling Options
 extern bool SCHEDULE;
@@ -164,7 +167,7 @@ extern double VPP;
 
 extern uint OUTPUT;
 
-namespace NVDSim{
+//namespace NVDSim{
 	typedef void (*returnCallBack_t)(uint id, uint64_t addr, uint64_t clockcycle);
 }
 #endif
