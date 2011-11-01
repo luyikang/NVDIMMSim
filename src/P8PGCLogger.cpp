@@ -158,22 +158,15 @@ void P8PGCLogger::save(uint64_t cycle, uint epoch)
 	     }
 	}
 
-        if(RUNTIME_WRITE)
+	string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
+	const char * command = command_str.c_str();
+	int sys_done = system(command);
+	if (sys_done != 0)
 	{
-	    savefile.open(LOG_DIR+"NVDIMM.log", ios_base::out | ios_base::app);
+	    WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
 	}
-	else
-	{
-	    string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
-	    const char * command = command_str.c_str();
-	    int sys_done = system(command);
-	    if (sys_done != 0)
-	    {
-		WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
-	    }
-	    savefile.open(LOG_DIR+"NVDIMM.log", ios_base::out | ios_base::trunc);
-	    savefile<<"NVDIMM Log \n";
-	}
+	savefile.open(LOG_DIR+"NVDIMM.log", ios_base::out | ios_base::trunc);
+	savefile<<"NVDIMM Log \n";
 
 	if (!savefile) 
 	{
