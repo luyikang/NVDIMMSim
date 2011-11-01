@@ -186,7 +186,7 @@ void P8PGCLogger::save(uint64_t cycle, uint epoch)
 	savefile<<"\nAccess Data: \n";
 	savefile<<"========================\n";	    
 	savefile<<"Cycles Simulated: "<<cycle<<"\n";
-	savefile<<"Accesses: "<<num_accesses<<"\n";
+	savefile<<"Accesses completed: "<<num_accesses<<"\n";
 	savefile<<"Reads completed: "<<num_reads<<"\n";
 	savefile<<"Writes completed: "<<num_writes<<"\n";
 	savefile<<"Erases completed: "<<num_erases<<"\n";
@@ -523,7 +523,7 @@ void P8PGCLogger::write_epoch(EpochEntry *e)
 	savefile<<"\nAccess Data: \n";
 	savefile<<"========================\n";
 	savefile<<"Cycles Simulated: "<<e->cycle<<"\n";
-	savefile<<"Accesses: "<<e->num_accesses<<"\n";
+	savefile<<"Accesses completed: "<<e->num_accesses<<"\n";
 	savefile<<"Reads completed: "<<e->num_reads<<"\n";
 	savefile<<"Writes completed: "<<e->num_writes<<"\n";
 	savefile<<"Erases completed: "<<e->num_erases<<"\n";
