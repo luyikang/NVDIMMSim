@@ -298,7 +298,7 @@ void Ftl::handle_read(bool gc)
     bool write_queue_handled = false;
     
     //Check to see if the vAddr corresponds to the write waiting in the write queue
-    if(!gc)
+    if(!gc && SCHEDULE)
     {
 	if(queue_access_counter == 0)
 	{

@@ -136,10 +136,20 @@ void Controller::receiveFromChannel(ChannelPacket *busPacket){
 // this is only called on a write as the name suggests
 bool Controller::checkQueueWrite(ChannelPacket *p)
 {
-    if (!((writeQueues[p->package].size() + 1 < CTRL_WRITE_QUEUE_LENGTH) || (CTRL_WRITE_QUEUE_LENGTH == 0)))
-	return false;
+    if(CTRL_SCHEDULE)
+    {
+	if ((writeQueues[p->package].size() + 1 < CTRL_WRITE_QUEUE_LENGTH) || (CTRL_WRITE_QUEUE_LENGTH == 0))
+	    return true;
+	else
+	    return false;
+    }
     else
-	return true;
+    {
+	if ((readQueues[p->package].size() + 1 < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
+	    return true;
+	else
+	    return false;
+    }
 }
 
 bool Controller::addPacket(ChannelPacket *p){
@@ -151,18 +161,14 @@ bool Controller::addPacket(ChannelPacket *p){
 	{
 	case READ:
         case ERASE:
-	    if (!((readQueues[p->package].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0)))
-		return false;
-	    else
+	    if ((readQueues[p->package].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
 		readQueues[p->package].push_back(p);
+	    else	
+	        return false;
 	    break;
         case WRITE:
         case DATA:
-	     if (!((writeQueues[p->package].size() < CTRL_WRITE_QUEUE_LENGTH) || (CTRL_WRITE_QUEUE_LENGTH == 0)))
-	     {
-		return false;
-	     }
-	     else
+	     if ((writeQueues[p->package].size() < CTRL_WRITE_QUEUE_LENGTH) || (CTRL_WRITE_QUEUE_LENGTH == 0))
 	     {
 		 // search the write queue to check if this write overwrites some other write
 		 // this should really only happen if we're doing in place writing though (no gc)
@@ -193,13 +199,17 @@ bool Controller::addPacket(ChannelPacket *p){
 		 writeQueues[p->package].push_back(p);
 		 break;
 	     }
+	     else
+	     {
+		 return false;
+	     }
 	case GC_READ:
 	case GC_WRITE:
 	    // Try to push the gc stuff to the front of the read queue in order to give them priority
-	    if (!((readQueues[p->package].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0)))
-		return false;
+	    if ((readQueues[p->package].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
+		readQueues[p->package].push_front(p);	
 	    else
-		readQueues[p->package].push_front(p);
+		return false;
 	    break;
 	default:
 	    ERROR("Illegal busPacketType " << p->busPacketType << " in Controller::receiveFromChannel\n");
@@ -230,31 +240,20 @@ bool Controller::addPacket(ChannelPacket *p){
     // Not scheduling so everything goes to the read queue
     else
     {
-	if (!((readQueues[p->package].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0)))
-	    return false;
-
-        readQueues[p->package].push_back(p);
-    
-	if(LOGGING && QUEUE_EVENT_LOG)
+	if ((readQueues[p->package].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
 	{
-	    switch (p->busPacketType)
+	    readQueues[p->package].push_back(p);
+    
+	    if(LOGGING && QUEUE_EVENT_LOG)
 	    {
-	    case READ:
-	    case GC_READ:
-	    case ERASE:
 		log->log_ctrl_queue_event(false, p->package, &readQueues[p->package]);
-		break;
-	    case WRITE:
-	    case GC_WRITE:
-	    case DATA:
-		log->log_ctrl_queue_event(true, p->package, &readQueues[p->package]);
-		break;
-	    default:
-		ERROR("Illegal busPacketType " << p->busPacketType << " in Controller::receiveFromChannel\n");
-		break;
 	    }
+	    return true;
 	}
-	return true;
+	else
+	{
+	    return false;
+	}
     }
 }
 

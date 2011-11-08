@@ -50,6 +50,10 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 			{
 			    // Start the logging for this access.
 			    log->access_start(t.address);
+			    if(QUEUE_EVENT_LOG)
+			    {
+			       log->log_ftl_queue_event(false, &readQueue);
+			    }
 			}
 			return true;
 		    }
@@ -95,6 +99,10 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 			{
 			    // Start the logging for this access.
 			    log->access_start(t.address);
+			    if(QUEUE_EVENT_LOG)
+			    {
+				log->log_ftl_queue_event(true, &writeQueue);
+			    }
 			}
 			return true;
 		    }
@@ -119,6 +127,10 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 		{
 		    // Start the logging for this access.
 		    log->access_start(t.address);
+		    if(QUEUE_EVENT_LOG)
+		    {
+			log->log_ftl_queue_event(false, &readQueue);
+		    }
 		}
 		return true;
 	    }
