@@ -150,7 +150,6 @@ void Buffer::update(void){
 	// if we're not already busy writing stuff
 	if(!inData[i].empty())
 	{
-	    //cout << "in data wasn't empty \n";
 	    // *NOTE* removed check for inDataLeft == inData which i think was to make sure this didn't get called when things where just empty
 	    if(inData[i].front()->number >= DEVICE_WIDTH)
 	    {

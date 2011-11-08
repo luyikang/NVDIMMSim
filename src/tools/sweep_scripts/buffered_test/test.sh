@@ -19,7 +19,7 @@ make lib
 cd ../..
 
 # Checkout HybridSim
-git clone https://github.com/jimstevens2001/HybridSim.git
+git clone http://github.com/watchmaker/HybridSim.git
 
 # Go back to top level directory
 cd ..
@@ -41,13 +41,13 @@ do
 	    test -e "$chan"|| mkdir "$chan"
 	    cd "$chan"
 
-	    for qlength in 2 8 16;
+	    for speed in 1 2 4;
 	    do
 		# If the prefetch option directory doesn't exist, then create it.
-		test -e "$qlength" || mkdir "$qlength"
-		cd "$qlength"
+		test -e "$speed" || mkdir "$speed"
+		cd "$speed"
 			
-		echo In directory for $mix/$chan/$qlength
+		echo In directory for $mix/$chan/$config
 
 		# Copy repos
 		cp -r $topdir/master/* .
@@ -55,13 +55,13 @@ do
 		cd HybridSim
 
 		# Copy config.h and ini files for this experiment.
-		cp $topdir/ini/"$chan"_"$qlength"_sched.ini ini/samsung_K9XXG08UXM_mod.ini
+		cp $topdir/ini/"$chan"_"$speed"_chan.ini ini/samsung_K9XXG08UXM_mod.ini
 		cp $topdir/ini/hybridsim.ini ini/hybridsim.ini
 		cp $topdir/ini/TraceBasedSim.cpp .
 		
 		
 		# Copy fast forwardig state		
-		scp -r pkt3c@naan.ece.umd.edu:/home/ibhati/disk_ff_"$mix"/state .
+		scp -r naan:/home/ibhati/disk_ff_"$mix"/state .
 
 		# Copy trace to run.
 		cp $topdir/original/"$mix".txt traces/"$mix".txt
