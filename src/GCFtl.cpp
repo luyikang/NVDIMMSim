@@ -112,6 +112,62 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 	    }
 	    return false;
 	}
+	else if(PERFECT_SCHEDULE)
+	{
+	    if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
+	    {
+		if(readQueue.size() >= FTL_READ_QUEUE_LENGTH && FTL_READ_QUEUE_LENGTH != 0)
+		{
+		    return false;
+		}
+		else
+		{
+		    if (!panic_mode)
+		    {
+			readQueue.push_back(t);
+			if(LOGGING == true)
+			{
+			    // Start the logging for this access.
+			    log->access_start(t.address);
+			    if(QUEUE_EVENT_LOG)
+			    {
+			       log->log_ftl_queue_event(false, &readQueue);
+			    }
+			}
+			return true;
+		    }
+		    
+		    return false;
+		}
+	    }
+	    else if(t.transactionType == DATA_WRITE)
+	    {
+		if(writeQueue.size() >= FTL_WRITE_QUEUE_LENGTH && FTL_WRITE_QUEUE_LENGTH != 0)
+		{
+		    return false;
+		}
+		else
+		{
+		    if (!panic_mode)
+		    {
+			writeQueue.push_back(t);
+			if(LOGGING == true)
+			{
+			    // Start the logging for this access.
+			    log->access_start(t.address);
+			    if(QUEUE_EVENT_LOG)
+			    {
+				log->log_ftl_queue_event(true, &writeQueue);
+			    }
+			}
+			return true;
+		    }
+		    
+		    return false;
+		}
+	    }
+	    return false;
+	}
 	// no scheduling, so just shove everything into the read queue
 	else
 	{

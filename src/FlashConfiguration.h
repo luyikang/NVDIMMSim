@@ -76,6 +76,7 @@ extern bool CTRL_SCHEDULE;
 extern bool CTRL_WRITE_ON_QUEUE_SIZE;
 extern uint CTRL_WRITE_QUEUE_LIMIT;
 extern bool CTRL_IDLE_WRITE;
+extern bool PERFECT_SCHEDULE;
 
 // Buffering Options
 extern bool BUFFERED;
