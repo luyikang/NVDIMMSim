@@ -55,6 +55,9 @@ namespace NVDSim{
 
 			uint systemID, numReads, numWrites, numErases;
 			uint epoch_count, epoch_cycles;
+			uint64_t channel_cycles_per_cycle;
+			uint64_t* cycles_left;
+			bool faster_channel;
 
 		private:
 			string dev, sys, cDirectory;

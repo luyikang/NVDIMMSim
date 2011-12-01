@@ -14,7 +14,7 @@ namespace NVDSim
 	dev(deviceFile),
 	sys(sysFile),
 	cDirectory(pwd)
-	{
+    {
 	uint64_t i, j;
 	systemID = id;
 	
@@ -182,17 +182,17 @@ namespace NVDSim
 
 	for (i= 0; i < NUM_PACKAGES; i++){
 	    Package pack = {new Channel(), new Buffer(i), vector<Die *>()};
-		//pack.channel= new Channel();
-		pack.channel->attachController(controller);
-		pack.channel->attachBuffer(pack.buffer);
-		pack.buffer->attachChannel(pack.channel);
-		for (j= 0; j < DIES_PER_PACKAGE; j++){
-		        Die *die= new Die(this, log, j);
-			die->attachToBuffer(pack.buffer);
-			pack.buffer->attachDie(die);
-			pack.dies.push_back(die);
-		}
-		packages->push_back(pack);
+	    //pack.channel= new Channel();
+	    pack.channel->attachController(controller);
+	    pack.channel->attachBuffer(pack.buffer);
+	    pack.buffer->attachChannel(pack.channel);
+	    for (j= 0; j < DIES_PER_PACKAGE; j++){
+		Die *die= new Die(this, log, j);
+		die->attachToBuffer(pack.buffer);
+		pack.buffer->attachDie(die);
+		pack.dies.push_back(die);
+	    }
+	    packages->push_back(pack);
 	}
 	controller->attachPackages(packages);
 	
@@ -206,69 +206,110 @@ namespace NVDSim
 	numWrites= 0;
 	numErases= 0;
 	currentClockCycle= 0;
+	cycles_left = new uint64_t [NUM_PACKAGES];
+	for(uint64_t h = 0; h < NUM_PACKAGES; h++){
+	    cycles_left[h] = 0;
+	}
+	// the channel and buffers are running faster than the other parts of the system
+	if(CYCLE_TIME > CHANNEL_CYCLE)
+	{
+	    channel_cycles_per_cycle = (uint64_t)(((float)CYCLE_TIME / (float)CHANNEL_CYCLE) + 0.50f);
+	    faster_channel = true;
+	}
+	else if(CYCLE_TIME <= CHANNEL_CYCLE)
+	{
+	    channel_cycles_per_cycle = (uint64_t)(((float)CHANNEL_CYCLE / (float)CYCLE_TIME) + 0.50f);
+	    faster_channel = false;
+	}
+	cout << "the faster cycles computed was: " << channel_cycles_per_cycle << " \n";
 
 	ftl->loadNVState();
-	}
+    }
 
 // static allocator for the library interface
-NVDIMM *getNVDIMMInstance(uint id, string deviceFile, string sysFile, string pwd, string trc)
-{
-    return new NVDIMM(id, deviceFile, sysFile, pwd, trc);
-}
+    NVDIMM *getNVDIMMInstance(uint id, string deviceFile, string sysFile, string pwd, string trc)
+    {
+	return new NVDIMM(id, deviceFile, sysFile, pwd, trc);
+    }
 
-bool NVDIMM::add(FlashTransaction &trans){
-    return ftl->addTransaction(trans);	
-}
+    bool NVDIMM::add(FlashTransaction &trans){
+	return ftl->addTransaction(trans);	
+    }
 
-bool NVDIMM::addTransaction(bool isWrite, uint64_t addr){
+    bool NVDIMM::addTransaction(bool isWrite, uint64_t addr){
 	TransactionType type = isWrite ? DATA_WRITE : DATA_READ;
 	FlashTransaction trans = FlashTransaction(type, addr, NULL);
 	return ftl->addTransaction(trans);
-}
+    }
 
-string NVDIMM::SetOutputFileName(string tracefilename){
+    string NVDIMM::SetOutputFileName(string tracefilename){
 	return "";
-}
+    }
 
-void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback_v *Power){
+    void NVDIMM::RegisterCallbacks(Callback_t *readCB, Callback_t *writeCB, Callback_v *Power){
 	ReturnReadData = readCB;
 	CriticalLineDone = NULL;
 	WriteDataDone = writeCB;
 	ReturnPowerData = Power;
-}
+    }
 
-void NVDIMM::RegisterCallbacks(Callback_t *readCB,  Callback_t *critLineCB, Callback_t *writeCB, Callback_v *Power)
-{
-    	ReturnReadData = readCB;
+    void NVDIMM::RegisterCallbacks(Callback_t *readCB,  Callback_t *critLineCB, Callback_t *writeCB, Callback_v *Power)
+    {
+	ReturnReadData = readCB;
 	CriticalLineDone = critLineCB;
 	WriteDataDone = writeCB;
 	ReturnPowerData = Power;
-}
+    }
 
-void NVDIMM::printStats(void){
-       if(LOGGING == true)
-       {
-	   log->print(currentClockCycle);
-       }
-}
+    void NVDIMM::printStats(void){
+	if(LOGGING == true)
+	{
+	    log->print(currentClockCycle);
+	}
+    }
 
-void NVDIMM::saveStats(void){
-       if(LOGGING == true)
-       {
-	   log->save(currentClockCycle, epoch_count);
-       }
-       ftl->saveNVState();
-}
+    void NVDIMM::saveStats(void){
+	if(LOGGING == true)
+	{
+	    log->save(currentClockCycle, epoch_count);
+	}
+	ftl->saveNVState();
+    }
 
-void NVDIMM::update(void){
+    void NVDIMM::update(void){
 	uint64_t i, j;
 	Package package;
 	
 	for (i= 0; i < packages->size(); i++){
 		package= (*packages)[i];
-		package.channel->update();
+		if(BUFFERED)
+		{
+		    if(faster_channel)
+		    {
+			for(uint64_t c = 0; c < channel_cycles_per_cycle; c++)
+			{
+			    package.channel->update();
+			}
+		    }
+		    else
+		    {
+			// reset the update counter and update the channel
+			if(cycles_left[i] == 0)
+			{
+			    package.channel->update();
+			    cycles_left[i] = channel_cycles_per_cycle;
+			}
+			
+			cycles_left[i] = cycles_left[i] - 1;
+		    }
+		}
+		else
+		{
+		    package.channel->update();
+		}
 		package.buffer->update();
-		for (j= 0; j < package.dies.size() ; j++){
+		for (j= 0; j < package.dies.size() ; j++)
+		{
 			package.dies[j]->update();
 			package.dies[j]->step();
 		}
@@ -308,35 +349,35 @@ void NVDIMM::update(void){
 	}
 
 	//cout << "NVDIMM successfully updated" << endl;
-}
+    }
 
-void NVDIMM::powerCallback(void){
-    ftl->powerCallback();
-}
+    void NVDIMM::powerCallback(void){
+	ftl->powerCallback();
+    }
 
 //If either of these methods are called it is because HybridSim called them
 //therefore the appropriate system setting should be set
-void NVDIMM::saveNVState(string filename){
-    ENABLE_NV_SAVE = 1;
-    NV_SAVE_FILE = filename;
-    cout << "got to save state in nvdimm \n";
-    cout << "save file was " << NV_SAVE_FILE << "\n";
-    ftl->saveNVState();
-}
+    void NVDIMM::saveNVState(string filename){
+	ENABLE_NV_SAVE = 1;
+	NV_SAVE_FILE = filename;
+	cout << "got to save state in nvdimm \n";
+	cout << "save file was " << NV_SAVE_FILE << "\n";
+	ftl->saveNVState();
+    }
 
-void NVDIMM::loadNVState(string filename){
-    ENABLE_NV_RESTORE = 1;
-    NV_RESTORE_FILE = filename;
-    ftl->loadNVState();
-}
+    void NVDIMM::loadNVState(string filename){
+	ENABLE_NV_RESTORE = 1;
+	NV_RESTORE_FILE = filename;
+	ftl->loadNVState();
+    }
 
-void NVDIMM::queuesNotFull(void)
-{
-    ftl->queuesNotFull();
-}
+    void NVDIMM::queuesNotFull(void)
+    {
+	ftl->queuesNotFull();
+    }
 
-void NVDIMM::GCReadDone(uint64_t vAddr)
-{
-    ftl->GCReadDone(vAddr);
-}
+    void NVDIMM::GCReadDone(uint64_t vAddr)
+    {
+	ftl->GCReadDone(vAddr);
+    }
 }
