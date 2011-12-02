@@ -289,6 +289,7 @@ namespace NVDSim
 			for(uint64_t c = 0; c < channel_cycles_per_cycle; c++)
 			{
 			    package.channel->update();
+			    package.buffer->update();
 			}
 		    }
 		    else
@@ -297,6 +298,7 @@ namespace NVDSim
 			if(cycles_left[i] == 0)
 			{
 			    package.channel->update();
+			    package.buffer->update();
 			    cycles_left[i] = channel_cycles_per_cycle;
 			}
 			
@@ -306,8 +308,8 @@ namespace NVDSim
 		else
 		{
 		    package.channel->update();
-		}
-		package.buffer->update();
+		    package.buffer->update();
+		}		
 		for (j= 0; j < package.dies.size() ; j++)
 		{
 			package.dies[j]->update();
@@ -317,8 +319,36 @@ namespace NVDSim
 	
 	ftl->update();
 	ftl->step();
-	controller->update();
-	controller->step();
+
+	if(BUFFERED)
+	{
+	    if(faster_channel)
+	    {
+		for(uint64_t c = 0; c < channel_cycles_per_cycle; c++)
+		{
+		    controller->update();
+		    controller->step();
+		}
+	    }
+	    else
+	    {
+		// reset the update counter and update the controller
+		if(controller_cycles_left == 0)
+		{
+		    controller->update();
+		    controller->step();
+		    controller_cycles_left = channel_cycles_per_cycle;
+		}
+		
+		controller_cycles_left = controller_cycles_left - 1;
+	    }
+	}
+	else
+	{
+	    controller->update();
+	    controller->step();
+	}
+
 	if(LOGGING == true)
 	{
 	    log->update();
