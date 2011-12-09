@@ -321,7 +321,7 @@ void GCFtl::update(void){
 	    // if we're not in gc mode and...
 	    // we're favoring reads over writes so we need to check the write queues to make sure they
 	    // aren't filling up. if they are we issue a write, otherwise we just keeo on issuing reads
-	    else if(SCHEDULE)
+	    else if(SCHEDULE || PERFECT_SCHEDULE)
 	    {
 		// do we need to issue a write?
 		if((WRITE_ON_QUEUE_SIZE == true && writeQueue.size() >= WRITE_QUEUE_LIMIT) ||
