@@ -11,8 +11,6 @@ Channel::Channel(void){
 	sender = -1;
 	busy = 0;
 
-	cyclesLeft = 0;
-
 	firstCheck = 0;
 }
 
@@ -60,7 +58,6 @@ void Channel::sendToController(ChannelPacket *busPacket){
 }
 
 void Channel::sendPiece(SenderType t, uint type, uint die, uint plane){
-        cyclesLeft = divide_params(CHANNEL_CYCLE,CYCLE_TIME);
 	busy = 1;
 	currentDie = die;
 	currentPlane = plane;
@@ -81,7 +78,7 @@ int Channel::notBusy(void){
 }
 
 void Channel::update(void){
-        if(cyclesLeft == 0 && busy == 1){
+        if(busy == 1){
 	    if(sType == CONTROLLER){
 		bool success = buffer->sendPiece(CONTROLLER, packetType, currentDie, currentPlane);
 		if(success == false)
@@ -90,10 +87,6 @@ void Channel::update(void){
 		}
 	    }
 	    busy = 0;
-	}
-	    
-	if(cyclesLeft > 0){
-	    cyclesLeft--;
 	}
 }
 

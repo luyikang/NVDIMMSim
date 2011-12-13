@@ -26,7 +26,7 @@ Die::Die(NVDIMM *parent, Logger *l, uint64_t idNum){
 
 	currentClockCycle= 0;
 
-	critBeat = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH)-(divide_params((uint)512,DEVICE_WIDTH)) * DEVICE_CYCLE) / CYCLE_TIME; // cache line is 64 bytes
+	critBeat = ((divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH)-divide_params((uint)512,DEVICE_WIDTH)) * DEVICE_CYCLE) / CYCLE_TIME; // cache line is 64 bytes
 }
 
 void Die::attachToBuffer(Buffer *buff){

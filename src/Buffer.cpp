@@ -151,48 +151,44 @@ void Buffer::update(void){
 	if(!inData[i].empty())
 	{
 	    // *NOTE* removed check for inDataLeft == inData which i think was to make sure this didn't get called when things where just empty
-	    if(inData[i].front()->number >= DEVICE_WIDTH)
+	    //cout << "we have enough data to send \n";
+	    // if it is a command, set the number of beats if we've not set them yet
+	    if(inData[i].front()->type != 5)
 	    {
-		//cout << "we have enough data to send \n";
-		// if it is a command, set the number of beats if we've not set them yet
-		if(inData[i].front()->type != 5)
+		// first time we've dealt with this command so we need to set our values
+		if(inDataLeft[i] == 0 && waiting[i] != true && inData[i].front()->number >= COMMAND_LENGTH)
 		{
-		    // first time we've dealt with this command so we need to set our values
-		    if(inDataLeft[i] == 0 && waiting[i] != true)
-		    {
-			inDataLeft[i] = COMMAND_LENGTH;
-			cyclesLeft[i] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
-			processInData(i);
-		    }
-		    // need to make sure either enough data has been transfered to the buffer to warrant
-		    // sending out more data or all of the data for this particular packet has already
-		    // been loaded into the buffer
-		    else if(inData[i].front()->number >= ((COMMAND_LENGTH-inDataLeft[i])+DEVICE_WIDTH) ||
-			    (inData[i].front()->number >= COMMAND_LENGTH))
-		    {
-			processInData(i);
-		    }
-		}
-		// its not a command but it is the first time we've dealt with this data
-		else if(inDataLeft[i] == 0 && waiting[i] != true)
-		{
-		    inDataLeft[i] = (NV_PAGE_SIZE*8192);
+		    inDataLeft[i] = COMMAND_LENGTH;
 		    cyclesLeft[i] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 		    processInData(i);
 		}
-		// its not a command and its not the first time we've seen it but we still need to make sure either
-		// there is enough data to warrant sending out the data or all of the data for this particular packet has already
+		// need to make sure either enough data has been transfered to the buffer to warrant
+		// sending out more data or all of the data for this particular packet has already
 		// been loaded into the buffer
-			
-		else if (inData[i].front()->number >= (((NV_PAGE_SIZE*8192)-inDataLeft[i])+DEVICE_WIDTH) ||
-			    (inData[i].front()->number >= (NV_PAGE_SIZE*8192)))
+		else if(inData[i].front()->number >= ((COMMAND_LENGTH-inDataLeft[i])+DEVICE_WIDTH) ||
+			(inData[i].front()->number >= COMMAND_LENGTH))
 		{
 		    processInData(i);
 		}
 	    }
-	}	    
+	    // its not a command but it is the first time we've dealt with this data
+	    else if(inDataLeft[i] == 0 && waiting[i] != true && inData[i].front()->number >= DEVICE_WIDTH)
+	    {
+		inDataLeft[i] = (NV_PAGE_SIZE*8192);
+		cyclesLeft[i] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+		processInData(i);
+	    }
+	    // its not a command and its not the first time we've seen it but we still need to make sure either
+	    // there is enough data to warrant sending out the data or all of the data for this particular packet has already
+	    // been loaded into the buffer
 	    
-	
+	    else if (inData[i].front()->number >= (((NV_PAGE_SIZE*8192)-inDataLeft[i])+DEVICE_WIDTH) ||
+		     (inData[i].front()->number >= (NV_PAGE_SIZE*8192)))
+	    {
+		processInData(i);
+	    }
+	}    
+	    	
 	// moving data away from die
 	//====================================================================================
 	// first scan through to see if we have stuff to send if we're not busy

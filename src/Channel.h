@@ -42,7 +42,6 @@ namespace NVDSim{
 			int firstCheck;
 			Buffer *buffer;
 
-			uint cyclesLeft; //cycles per device or channel beat
 			uint currentDie;
 			uint currentPlane;
 	};
