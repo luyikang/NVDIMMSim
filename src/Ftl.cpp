@@ -202,22 +202,17 @@ bool Ftl::addTransaction(FlashTransaction &t){
 		}
 		else
 		{
-		    if (!panic_mode)
+		    readQueue.push_back(t);
+		    if(LOGGING == true)
 		    {
-			readQueue.push_back(t);
-			if(LOGGING == true)
+			// Start the logging for this access.
+			log->access_start(t.address);
+			if(QUEUE_EVENT_LOG)
 			{
-			    // Start the logging for this access.
-			    log->access_start(t.address);
-			    if(QUEUE_EVENT_LOG)
-			    {
-			       log->log_ftl_queue_event(false, &readQueue);
-			    }
+			    log->log_ftl_queue_event(false, &readQueue);
 			}
-			return true;
 		    }
-		    
-		    return false;
+		    return true;
 		}
 	    }
 	    else if(t.transactionType == DATA_WRITE)
@@ -228,22 +223,17 @@ bool Ftl::addTransaction(FlashTransaction &t){
 		}
 		else
 		{
-		    if (!panic_mode)
+		    writeQueue.push_back(t);
+		    if(LOGGING == true)
 		    {
-			writeQueue.push_back(t);
-			if(LOGGING == true)
+			// Start the logging for this access.
+			log->access_start(t.address, t.transactionType);
+			if(QUEUE_EVENT_LOG)
 			{
-			    // Start the logging for this access.
-			    log->access_start(t.address);
-			    if(QUEUE_EVENT_LOG)
-			    {
-				log->log_ftl_queue_event(true, &writeQueue);
-			    }
+			    log->log_ftl_queue_event(true, &writeQueue);
 			}
-			return true;
 		    }
-		    
-		    return false;
+		    return true;
 		}
 	    }
 	    return false;
@@ -708,7 +698,7 @@ uint64_t Ftl::get_ptr(void) {
 void Ftl::popFront(ChannelPacketType type)
 {
     // if we've put stuff into different queues we must now figure out which queue to pop from
-    if(SCHEDULE)
+    if(SCHEDULE || PERFECT_SCHEDULE)
     {
 	if(type == READ || type == ERASE)
 	{

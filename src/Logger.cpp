@@ -28,6 +28,11 @@ Logger::Logger()
 	max_ftl_queue_length = 0;
 	max_ctrl_queue_length = vector<uint64_t>(NUM_PACKAGES, 0);
 
+	if(PERFECT_SCHEDULE)
+	{
+	    first_write_log = true;
+	}
+
 	if(PLANE_STATE_LOG)
 	{
 	    first_state_log = true;
@@ -76,6 +81,36 @@ void Logger::update()
 void Logger::access_start(uint64_t addr)
 {
 	access_queue.push_back(pair <uint64_t, uint64_t>(addr, currentClockCycle));
+}
+
+void Logger::access_start(uint64_t addr, TransactionType op)
+{
+	access_queue.push_back(pair <uint64_t, uint64_t>(addr, currentClockCycle));
+
+	if(op == DATA_WRITE)
+	{
+	    if(first_write_log == true)
+	    {
+		string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
+		const char * command = command_str.c_str();
+		int sys_done = system(command);
+		if (sys_done != 0)
+		{
+		    WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
+		}
+		savefile.open(LOG_DIR+"WriteArrive.log", ios_base::out | ios_base::trunc);
+		savefile<<"Write Arrival Log \n";
+		first_write_log = false;
+	    }
+	    else
+	    {
+		savefile.open(LOG_DIR+"WriteArrive.log", ios_base::out | ios_base::app);
+	    }
+
+	    savefile << currentClockCycle << " " << addr << " " << "\n";
+
+	    savefile.close();
+	}
 }
 
 // Using virtual addresses here right now
@@ -303,11 +338,11 @@ void Logger::log_ctrl_queue_event(bool write, uint64_t number, std::list<Channel
     savefile.close();
 }
 
-void Logger::log_plane_state(uint64_t package, uint64_t die, uint64_t plane, PlaneStateType op)
+void Logger::log_plane_state(uint64_t address, uint64_t package, uint64_t die, uint64_t plane, PlaneStateType op)
 {
     plane_states[package][die][plane] = op;
     
-    if(first_state_log == 0)
+    if(first_state_log == true)
     {
 	string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
 	const char * command = command_str.c_str();
@@ -318,24 +353,31 @@ void Logger::log_plane_state(uint64_t package, uint64_t die, uint64_t plane, Pla
 	}
 	savefile.open(LOG_DIR+"PlaneState.log", ios_base::out | ios_base::trunc);
 	savefile<<"Plane State Log \n";
-	first_state_log = 1;
+	first_state_log = false;
     }
     else
     {
 	savefile.open(LOG_DIR+"PlaneState.log", ios_base::out | ios_base::app);
     }
 
-    savefile<<"Clock cycle: "<<currentClockCycle<<"\n";
-    for(uint i = 0; i < NUM_PACKAGES; i++){
-	for(uint j = 0; j < DIES_PER_PACKAGE; j++){
-	    for(uint k = 0; k < PLANES_PER_DIE; k++){
-		savefile<<plane_states[i][j][k]<<" ";
+    if(PERFECT_SCHEDULE)
+    {
+	savefile << currentClockCycle << " " << address << " " << package << " " << die << " " << plane << " " << op << "\n";
+    }
+    else
+    {
+	savefile<<"Clock cycle: "<<currentClockCycle<<"\n";
+	for(uint i = 0; i < NUM_PACKAGES; i++){
+	    for(uint j = 0; j < DIES_PER_PACKAGE; j++){
+		for(uint k = 0; k < PLANES_PER_DIE; k++){
+		    savefile<<plane_states[i][j][k]<<" ";
+		}
+		savefile<<"   ";
 	    }
-	    savefile<<"   ";
+	    savefile<<"\n";
 	}
 	savefile<<"\n";
     }
-    savefile<<"\n";
 
     savefile.close();
 }

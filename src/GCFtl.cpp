@@ -154,7 +154,7 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 			if(LOGGING == true)
 			{
 			    // Start the logging for this access.
-			    log->access_start(t.address);
+			    log->access_start(t.address, t.transactionType);
 			    if(QUEUE_EVENT_LOG)
 			    {
 				log->log_ftl_queue_event(true, &writeQueue);
@@ -501,7 +501,7 @@ void GCFtl::popFront(ChannelPacketType type)
 	gcQueue.pop_front();
     }
     // if we've put stuff into different queues we must now figure out which queue to pop from
-    else if(SCHEDULE)
+    else if(SCHEDULE || PERFECT_SCHEDULE)
     {
 	if(type == READ)
 	{

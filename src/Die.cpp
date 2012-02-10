@@ -52,11 +52,11 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				{
 				    if(busPacket->busPacketType == READ)
 				    {
-					log->log_plane_state(busPacket->package, busPacket->die, busPacket->plane, READING);
+					log->log_plane_state(busPacket->virtualAddress, busPacket->package, busPacket->die, busPacket->plane, READING);
 				    }
 				    else if(busPacket->busPacketType == GC_READ)
 				    {
-					log->log_plane_state(busPacket->package, busPacket->die, busPacket->plane, GC_READING);
+					log->log_plane_state(busPacket->virtualAddress, busPacket->package, busPacket->die, busPacket->plane, GC_READING);
 				    }
 				}
 				break;
@@ -75,11 +75,11 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				{
 				    if(busPacket->busPacketType == WRITE)
 				    {
-					log->log_plane_state(busPacket->package, busPacket->die, busPacket->plane, WRITING);
+					log->log_plane_state(busPacket->virtualAddress, busPacket->package, busPacket->die, busPacket->plane, WRITING);
 				    }
 				    else if(busPacket->busPacketType == GC_WRITE)
 				    {
-					log->log_plane_state(busPacket->package, busPacket->die, busPacket->plane, GC_WRITING);
+					log->log_plane_state(busPacket->virtualAddress, busPacket->package, busPacket->die, busPacket->plane, GC_WRITING);
 				    }
 				}
 				break;
@@ -89,7 +89,7 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				// log the new state of this plane
 				if(LOGGING && PLANE_STATE_LOG)
 				{
-				    log->log_plane_state(busPacket->package, busPacket->die, busPacket->plane, ERASING);
+				    log->log_plane_state(busPacket->virtualAddress, busPacket->package, busPacket->die, busPacket->plane, ERASING);
 				}
 				break;
 			default:
@@ -163,7 +163,7 @@ void Die::update(void){
 					    log->access_stop(currentCommand->virtualAddress, currentCommand->physicalAddress);
 					    if(PLANE_STATE_LOG)
 					    {
-						log->log_plane_state(currentCommand->package, currentCommand->die, currentCommand->plane, IDLE);
+						log->log_plane_state(currentCommand->virtualAddress, currentCommand->package, currentCommand->die, currentCommand->plane, IDLE);
 					    }
 					}
 
@@ -198,10 +198,6 @@ void Die::update(void){
 		    }
 		}
 		
-		if(dataCyclesLeft > 0 && deviceBeatsLeft == 0 && LOGGING && PLANE_STATE_LOG){
-		    log->log_plane_state(returnDataPackets.front()->package, returnDataPackets.front()->die, returnDataPackets.front()->plane, IDLE);
-		}
-		
 		if(dataCyclesLeft > 0 && deviceBeatsLeft > 0){
 		    dataCyclesLeft--;
 		}
@@ -212,7 +208,7 @@ void Die::update(void){
 			buffer->channel->releaseChannel(BUFFER, id);
 			if(LOGGING && PLANE_STATE_LOG)
 			{
-			    log->log_plane_state(returnDataPackets.front()->package, returnDataPackets.front()->die, returnDataPackets.front()->plane, IDLE);
+			    log->log_plane_state(returnDataPackets.front()->virtualAddress, returnDataPackets.front()->package, returnDataPackets.front()->die, returnDataPackets.front()->plane, IDLE);
 			}
 			returnDataPackets.pop();
 		    }
@@ -249,6 +245,10 @@ void Die::bufferDone(uint64_t plane)
 void Die::bufferLoaded()
 {
     pendingDataPackets.push(returnDataPackets.front());
+    if(LOGGING && PLANE_STATE_LOG)
+    {
+	log->log_plane_state(returnDataPackets.front()->virtualAddress, returnDataPackets.front()->package, returnDataPackets.front()->die, returnDataPackets.front()->plane, IDLE);
+    }
     returnDataPackets.pop();	
     sending = false;
 }

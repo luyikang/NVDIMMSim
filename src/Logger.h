@@ -33,7 +33,7 @@ namespace NVDSim
 	// extended logging options
 	void log_ftl_queue_event(bool write, std::list<FlashTransaction> *queue);
 	void log_ctrl_queue_event(bool write, uint64_t number, std::list<ChannelPacket*> *queue);
-	void log_plane_state(uint64_t package, uint64_t die, uint64_t plane, PlaneStateType op);
+	void log_plane_state(uint64_t address, uint64_t package, uint64_t die, uint64_t plane, PlaneStateType op);
 	
 	// operations
 	void read();
@@ -74,6 +74,8 @@ namespace NVDSim
 	virtual void update();
 	
 	void access_start(uint64_t addr);
+	// overloaded access start for perfect scheduling analysis
+	void access_start(uint64_t addr, TransactionType op);
 	void access_process(uint64_t addr, uint64_t paddr, uint package, ChannelPacketType op);
 	virtual void access_stop(uint64_t addr, uint64_t paddr);
 
@@ -108,6 +110,7 @@ namespace NVDSim
 	std::unordered_map<uint64_t, uint64_t> writes_per_address;
 
 	// Extended logging state
+	bool first_write_log;
 	bool first_ftl_read_log;
 	bool first_ftl_write_log;
 	bool* first_ctrl_read_log;
