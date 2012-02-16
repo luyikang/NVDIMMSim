@@ -44,12 +44,17 @@ mode = sys.argv[3]
 
 # analyzing reads only to find out the space between them
 if mode == 'Read':
+	# idle time records
 	shortest_time = READ_TIME * WRITE_TIME #just a big number
 	longest_time = 0
 	average_time = 0
 	average_times = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
-	last_ops = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
-	op_counts = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
+	# potential write records
+	open_count = 0
+	open_counts = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
+	last_read = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
+	idle = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
+	idle_counts = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
 	#read in the plane states log
 	#find the state of the planes up to this time
 	while(1):
@@ -62,33 +67,47 @@ if mode == 'Read':
 			#do nothing for now
 			print 'starting plane state parsing'
 		else:
-			[state_cycle, package, die, plane, op] = [int(j) for j in state.strip().split()]
-			if op_counts[package][die][plane] > 0:
-				temp_time = state_cycle - last_ops[package][die][plane]
+			[state_cycle, state_address, package, die, plane, op] = [int(j) for j in state.strip().split()]
+			if op == 0:
+				idle[package][die][plane] = 1
+				last_read[package][die][plane] = state_cycle
+
+			if idle[package][die][plane] == 1 and op != 0:
+				temp_time = state_cycle - last_read[package][die][plane]
 				if temp_time < shortest_time:
 					shortest_time = temp_time
 				elif temp_time > longest_time:
 					longest_time = temp_time
+
+				if temp_time > WRITE_CYCLES:
+					open_count = open_count + 1
+					open_counts[package][die][plane] = open_counts[package][die][plane] + 1
 				
 				average_times[package][die][plane] = average_times[package][die][plane] + temp_time
-			op_counts[package][die][plane] = op_counts[package][die][plane] + 1
-			last_ops[package][die][plane] = state_cycle
+				idle_counts[package][die][plane] = idle_counts[package][die][plane] + 1
+			
 			
 	for i in range(NUM_PACKAGES):
 		for j in range(DIES_PER_PACKAGE):
-			for k in range(PLANES_PER_DIE):				
-				average_times[i][j][k] = average_times[i][j][k] / op_counts[i][j][k]
-				average_time = average_time + average_times[i][j][k]
+			for k in range(PLANES_PER_DIE):	
+				if idle_counts[i][j][k] > 0:			
+					average_times[i][j][k] = average_times[i][j][k] / idle_counts[i][j][k]
+					average_time = average_time + average_times[i][j][k]
 
 	average_time = average_time / TOTAL_PLANES
 				
-	print 'shortest time', shortest_time
-	print 'longest time', longest_time
-	print 'average time', average_time
+	print 'shortest idle time', shortest_time
+	print 'longest idle time', longest_time
+	print 'average idle time', average_time
 	for i in range(NUM_PACKAGES):
 		for j in range(DIES_PER_PACKAGE):
 			for k in range(PLANES_PER_DIE):
 				print 'average time for package', i, 'die', j, 'plane', k, 'is', average_times[i][j][k]
+	print 'number of idle times large enough for a write', open_count
+	for i in range(NUM_PACKAGES):
+		for j in range(DIES_PER_PACKAGE):
+			for k in range(PLANES_PER_DIE):
+				print 'write sized gaps for package', i, 'die', j, 'plane', k, 'is', open_counts[i][j][k]
 
 # trying to place writes between the reads and determining if our actions delay either
 elif mode == 'Write':
@@ -131,7 +150,7 @@ elif mode == 'Write':
 				#do nothing for now
 				print 'starting plane state parsing'
 			else:
-				[state_cycle, package, die, plane, op] = [int(j) for j in state.strip().split()]
+				[state_cycle, state_address, package, die, plane, op] = [int(j) for j in state.strip().split()]
 	
 				# if the cycle of this state change is greater than the write arrival 	cycle
 				# break cause we're not here yet
@@ -168,7 +187,7 @@ elif mode == 'Write':
 		#issue the write to a plane and determine its completion cycle
 		elif free_planes > 0:
 			free_planes = free_planes - 1
-			pending_writes.append(cycle + WRITE_TIME)
+			pending_writes.append(cycle + WRITE_CYCLES)
 			delayed = 0
 			#print 'free planes', free_planes
 			#print 'number of pending writes', len(pending_writes)
