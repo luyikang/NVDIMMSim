@@ -40,6 +40,10 @@ plane_log = open(sys.argv[2], 'r')
 # are we just getting read statistics or are we trying to schedule writes
 mode = sys.argv[3]
 
+# preparse everything into files
+plane_data = []
+write_data = []
+
 # analyzing reads only to find out the space between them
 if mode == 'Read':
 	# idle time records
@@ -53,41 +57,55 @@ if mode == 'Read':
 	last_read = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
 	idle = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
 	idle_counts = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
-	#read in the plane states log
-	#find the state of the planes up to this time
+	data_counter = 0
+
+	# get all the plane log data
 	while(1):
 		state = plane_log.readline()
 		# if the state is blank we've reached the end of the file
 		if state == '':
 			break
-
+	
 		if state == 'Plane State Log \n':
-			# do nothing for now
+			#do nothing for now
 			print 'starting plane state parsing'
-		else:
-			[state_cycle, state_address, package, die, plane, op] = [int(j) for j in state.strip().split()]
-			# if this is a record of a plane going idle record that plane as now idle and this cycle as the end
-			# of its last read
-			if op == 0:
-				idle[package][die][plane] = 1
-				last_read[package][die][plane] = state_cycle
-			
-			# if this is a record of a plane starting a read and that plane was idle then compute the amount of time
-			# this plane was idle
-			if idle[package][die][plane] == 1 and op != 0:
-				temp_time = state_cycle - last_read[package][die][plane]
-				if temp_time < shortest_time:
-					shortest_time = temp_time
-				elif temp_time > longest_time:
-					longest_time = temp_time
+			continue
+	
+		plane_data.append(state)
 
-				# was this plane idle long enough that it could have done a write?
-				if temp_time > WRITE_CYCLES:
-					open_count = open_count + math.floor(temp_time/WRITE_CYCLES)
-					open_counts[package][die][plane] = open_counts[package][die][plane] + 1
+	#read in the plane states log
+	#find the state of the planes up to this time
+	while(1):
+		# check to see if we're done
+		if data_counter >= len(plane_data):
+			break
+
+		curr_data = plane_data[data_counter]
+		[state_cycle, state_address, package, die, plane, op] = [int(j) for j in curr_data.strip().split()]
+		# if this is a record of a plane going idle record that plane as now idle and this cycle as the end
+		# of its last read
+		if op == 0:
+			idle[package][die][plane] = 1
+			last_read[package][die][plane] = state_cycle
+		
+		# if this is a record of a plane starting a read and that plane was idle then compute the amount of time
+		# this plane was idle
+		if idle[package][die][plane] == 1 and op != 0:
+			temp_time = state_cycle - last_read[package][die][plane]
+			if temp_time < shortest_time:
+				shortest_time = temp_time
+			elif temp_time > longest_time:
+				longest_time = temp_time
+
+			# was this plane idle long enough that it could have done a write?
+			if temp_time > WRITE_CYCLES:
+				open_count = open_count + math.floor(temp_time/WRITE_CYCLES)
+				open_counts[package][die][plane] = open_counts[package][die][plane] + 1
 				
-				average_times[package][die][plane] = average_times[package][die][plane] + temp_time
-				idle_counts[package][die][plane] = idle_counts[package][die][plane] + 1
+			average_times[package][die][plane] = average_times[package][die][plane] + temp_time
+			idle_counts[package][die][plane] = idle_counts[package][die][plane] + 1
+		# done with that line of the log, move on to the next one
+		data_counter =  data_counter + 1
 			
 	# add everything up for the total average across all planes		
 	for i in range(NUM_PACKAGES):
@@ -142,85 +160,114 @@ elif mode == 'Write':
 	read_delayed = 0
 	channel_delays = 0
 	RAW_haz = 0 
+
+	#reading counters
+	write_counter = 0
+	plane_counter = 0
+	
+	# get all the write log data
+	while(1):
+		write = write_log.readline()
+
+		if write == '':
+			break
+
+		elif write == 'Write Arrival Log \n':
+			#do nothing for now
+			print 'starting write arrival parsing'
+			continue
+	
+		write_data.append(write)
+	
+	# get all the plane log data
+	while(1):
+		state = plane_log.readline()
+		# if the state is blank we've reached the end of the file
+		if state == '':
+			break
+	
+		if state == 'Plane State Log \n':
+			#do nothing for now
+			print 'starting plane state parsing'
+			continue
+	
+		plane_data.append(state)
+	
 	while(1):
 		if write_delayed == 0:
-			# get the next write
-			write = write_log.readline()
-			# if the write is blank we've reached the end of the file
-			if write == '':
+			# see if we're done
+			if write_counter >= len(write_data):
 				break
-			# if the write is the title of the file then we're at the beginning
-			if write == 'Write Arrival Log \n':
-				# do nothing for now
-				print 'starting write arrival parsing'
-				continue
+
+			# parse the write data
+			curr_write = write_data[write_counter]
+			[tcycle, address] = [int(i) for i in curr_write.strip().split()]
+			if tcycle > cycle:
+				cycle = tcycle
 			else:
-				# parse the write data
-				[tcycle, address] = [int(i) for i in write.strip().split()]
-				if tcycle > cycle:
-					cycle = tcycle
-				else:
-					delayed_writes = delayed_writes + 1		
+				delayed_writes = delayed_writes + 1	
+
+			# we can move on
+			write_counter = write_counter + 1	
 		else:
 			# increment the cycle count
 			cycle = cycle + 1
 	
 		#find the state of the planes up to this time
 		while(1):
-			state = plane_log.readline()
-			# if the state is blank we've reached the end of the file
-			if state == '':
+			# see if we're done here too
+			if plane_counter >= len(plane_data):
 				break
-	
-			if state == 'Plane State Log \n':
-				#do nothing for now
-				print 'starting plane state parsing'
-				continue
-			else:
-				[state_cycle, state_address, package, die, plane, op] = [int(j) for j in state.strip().split()]
-	
-				# if the cycle of this state change is greater than the write arrival cycle
-				# break cause we're not here yet
-				if state_cycle > cycle:
-					break
-
-				# if the cycle of this state change is the same or greater than the cycle of when a
-				# read was to start transfering, start the transfer
-				for t in soon_channels:
-					if t >= cycle:
-						free_channels = free_channels - 1
-						soon_channels.remove(t)
 			
-						# if this read needed a channel to transfer its data and we didn't have it then
-						# it would have been delayed so record that
-						if free_channels < 0:
-							delayed_reads = delayed_reads + 1
-							channel_delays = channel_delays + 1
+			# parse the read data
+			curr_op = plane_data[plane_counter]
+			[state_cycle, state_address, package, die, plane, op] = [int(j) for j in curr_op.strip().split()]
+	
+			# if the cycle of this state change is greater than the write arrival cycle
+			# break cause we're not here yet
+			if state_cycle > cycle:
+				break
+
+			# if the cycle of this state change is the same or greater than the cycle of when a
+			# read was to start transfering, start the transfer
+			for t in soon_channels:
+				if t >= cycle:
+					free_channels = free_channels - 1
+					soon_channels.remove(t)
+		
+					# if this read needed a channel to transfer its data and we didn't have it then
+					# it would have been delayed so record that
+					if free_channels < 0:
+						delayed_reads = delayed_reads + 1
+						channel_delays = channel_delays + 1
 										
 
-				# if the plane is newly idle update the planes count to reflect a new open
-				# plane
-				if planes[package][die][plane] != 0 and op == 0:
-					free_planes = free_planes + 1
-					# channel is now no longer being used
-					free_channels = free_channels + 1
-					completed_reads = completed_reads + 1
-				elif planes[package][die][plane] == 0 and op != 0:
-					free_planes = free_planes - 1	
-					# let us know that a channel will go busy when this read is done
-					soon_channels.append(cycle + READ_CYCLES)			
+			# if the plane is newly idle update the planes count to reflect a new open
+			# plane
+			if planes[package][die][plane] != 0 and op == 0:
+				free_planes = free_planes + 1
+				# channel is now no longer being used
+				free_channels = free_channels + 1
+				completed_reads = completed_reads + 1
+			elif planes[package][die][plane] == 0 and op != 0:
+				free_planes = free_planes - 1	
+				# let us know that a channel will go busy when this read is done
+				soon_channels.append(cycle + READ_CYCLES)			
 				
-					# if this read needed a plane that we didn't have then it would have 
-					# been delayed so record that
-					if free_planes < 0:
-						delayed_reads = delayed_reads + 1
+				# if this read needed a plane that we didn't have then it would have 
+				# been delayed so record that
+				if free_planes < 0:
+					delayed_reads = delayed_reads + 1
 	
-					# if this read was for a write that hasn't yet finished, record the error
-					if state_address in pending_addresses:
-						delayed_reads = delayed_reads + 1
-						RAW_haz = RAW_haz + 1
+				# if this read was for a write that hasn't yet finished, record the error
+				if state_address in pending_addresses:
+					delayed_reads = delayed_reads + 1
+					RAW_haz = RAW_haz + 1
 
-				planes[package][die][plane] = op					
+			planes[package][die][plane] = op
+
+			# got to the end so we're good to move on the next read record
+			plane_counter = plane_counter + 1					
 			
 		#check to see if any pending writes are done
 		for p in pending_writes:
