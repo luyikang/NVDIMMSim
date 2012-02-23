@@ -40,10 +40,26 @@ plane_log = open(sys.argv[2], 'r')
 # are we just getting read statistics or are we trying to schedule writes
 mode = sys.argv[3]
 
+# see if we've specified whether or not we want to append to this file or not
+if len(sys.argv) == 6:
+	file_out = 1 # just so we know later to write to a file
+	if sys.argv[4] == 'Append':
+		output_file = open(sys.argv[5], 'a')
+	else:
+		output_file = open(sys.argv[5], 'w')
+# if we didn't but we still provided an output file assume we're not appending
+elif len(sys.argv) == 5:
+	file_out = 1 # just so we know later to write to a file
+	output_file = open(sys.argv[4], 'w')
+	
+
 # preparse everything into files
 plane_data = []
 write_data = []
 
+#========================================================================================================
+# Read Analysis
+#========================================================================================================
 # analyzing reads only to find out the space between them
 if mode == 'Read':
 	# idle time records
@@ -131,6 +147,67 @@ if mode == 'Read':
 			for k in range(PLANES_PER_DIE):
 				print 'write sized gaps for package', i, 'die', j, 'plane', k, 'is', open_counts[i][j][k]
 
+	# save stuff to a file
+	if file_out == 1:
+		output_file.write('===================\n')
+		output_file.write('=  Read Analysis  =\n')
+		output_file.write('===================\n')
+		#annoying
+		output_file.write('shortest idle time ')
+		s =  str(shortest_time)
+		output_file.write(s)
+		output_file.write('\n')		
+		
+		output_file.write('longest idle time ')
+		s =  str(longest_time)
+		output_file.write(s)
+		output_file.write('\n')	
+
+		output_file.write('average idle time ')
+		s =  str(average_time)
+		output_file.write(s)
+		output_file.write('\n')	
+
+		for i in range(NUM_PACKAGES):
+			for j in range(DIES_PER_PACKAGE):
+				for k in range(PLANES_PER_DIE):
+					output_file.write('average time for package ')
+					s =  str(i)
+					output_file.write(s)
+					output_file.write(' die ')
+					s =  str(j)
+					output_file.write(s)
+					output_file.write(' plane ')
+					s =  str(k)
+					output_file.write(s)
+					output_file.write(' is ')
+					s =  str(average_times[i][j][k])
+					output_file.write(s)
+					output_file.write('\n')	
+		output_file.write('number of idle times large enough for a write ')
+		s =  str(open_count)
+		output_file.write(s)
+		output_file.write('\n')
+		for i in range(NUM_PACKAGES):
+			for j in range(DIES_PER_PACKAGE):
+				for k in range(PLANES_PER_DIE):
+					output_file.write('write sized gaps for package ')
+					s =  str(i)
+					output_file.write(s)
+					output_file.write(' die ')
+					s =  str(j)
+					output_file.write(s)
+					output_file.write(' plane ')
+					s =  str(k)
+					output_file.write(s)
+					output_file.write(' is ')
+					s =  str(open_counts[i][j][k])
+					output_file.write(s)
+					output_file.write('\n')	
+
+#========================================================================================================
+# Write Analysis
+#========================================================================================================
 # trying to place writes between the reads and determining if our actions delay either
 elif mode == 'Write':
 
@@ -208,7 +285,8 @@ elif mode == 'Write':
 				delayed_writes = delayed_writes + 1	
 
 			# we can move on
-			write_counter = write_counter + 1	
+			write_counter = write_counter + 1
+			print write_counter	
 		else:
 			# increment the cycle count
 			cycle = cycle + 1
@@ -292,7 +370,7 @@ elif mode == 'Write':
 			free_planes = free_planes - 1
 			pending_writes.append(cycle + WRITE_CYCLES + CYCLES_PER_TRANSFER)
 			pending_addresses[cycle + WRITE_CYCLES + CYCLES_PER_TRANSFER] = address
-			delayed = 0
+			write_delayed = 0
 			# gonna be using the channel immediately
 			free_channels = free_channels - 1
 			busy_channels.append(cycle + CYCLES_PER_TRANSFER)
@@ -306,6 +384,51 @@ elif mode == 'Write':
 	print 'completed reads', completed_reads
 	print 'RAW hazards', RAW_haz
 
+	# save stuff to a file
+	if file_out == 1:
+		output_file.write('===================\n')
+		output_file.write('=  Write Analysis  =\n')
+		output_file.write('===================\n')
+		#annoying again
+		output_file.write('free planes ')
+		s =  str(free_planes)
+		output_file.write(s)
+		output_file.write('\n')		
+
+		output_file.write('free channels ')
+		s =  str(free_channels)
+		output_file.write(s)
+		output_file.write('\n')	
+
+		output_file.write('delayed reads ')
+		s =  str(delayed_reads)
+		output_file.write(s)
+		output_file.write('\n')	
+
+		output_file.write('delayed writes ')
+		s =  str(delayed_writes)
+		output_file.write(s)
+		output_file.write('\n')	
+
+		output_file.write('channel delays ')
+		s =  str(channel_delays)
+		output_file.write(s)
+		output_file.write('\n')	
+
+		output_file.write('completed writes ')
+		s =  str(completed_writes)
+		output_file.write(s)
+		output_file.write('\n')	
+
+		output_file.write('completed reads ')
+		s =  str(completed_reads)
+		output_file.write(s)
+		output_file.write('\n')	
+
+		output_file.write('RAW hazards ')
+		s =  str(RAW_haz)
+		output_file.write(s)
+		output_file.write('\n')	
 else:
 	print 'invalid mode selection, please enter either Read or Write'
 	
