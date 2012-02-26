@@ -40,6 +40,16 @@ plane_log = open(sys.argv[2], 'r')
 # are we just getting read statistics or are we trying to schedule writes
 mode = sys.argv[3]
 
+# see if we're in error checking mode
+if len(sys.argv) == 7:
+	file_out = 1 # just so we know later to write to a fill
+	print sys.argv[6]
+	error_file = open(sys.argv[6], 'w')
+	error_out = 1 # just so we know we're printing errors
+	if sys.argv[4] == 'Append':
+		output_file = open(sys.argv[5], 'a')
+	else:
+		output_file = open(sys.argv[5], 'w')
 # see if we've specified whether or not we want to append to this file or not
 if len(sys.argv) == 6:
 	file_out = 1 # just so we know later to write to a file
@@ -281,12 +291,17 @@ elif mode == 'Write':
 			[tcycle, address] = [int(i) for i in curr_write.strip().split()]
 			if tcycle > cycle:
 				cycle = tcycle
+			# because we can increment the cycles here we kind wind up with two writes
+			# occuring on the same cycle which can't happen so just increment once here
+			# to make sure that won't happen
+			elif tcycle == cycle:
+				cycle = cycle + 1
 			else:
 				delayed_writes = delayed_writes + 1	
 
 			# we can move on
 			write_counter = write_counter + 1
-			print write_counter	
+			#print write_counter	
 		else:
 			# increment the cycle count
 			cycle = cycle + 1
@@ -347,9 +362,28 @@ elif mode == 'Write':
 			# got to the end so we're good to move on the next read record
 			plane_counter = plane_counter + 1					
 			
+		# bug hunting
+		#if write_counter > 11000 and error_out == 1:
+		#	error_file.write('Pending Writes ')
+		#	s = str(len(pending_writes))
+		#	error_file.write(s)
+		#	error_file.write('\n')
+		#	error_file.write('Pending Addresses ')
+		#	s = str(len(pending_addresses))
+		#	error_file.write(s)
+		#	error_file.write('\n')
 		#check to see if any pending writes are done
 		for p in pending_writes:
-			if p <= cycle:
+			if p <= cycle:	
+				if write_counter > 11000 and error_out == 1:
+					error_file.write('Removed cycle ')
+					s = str(p)
+					error_file.write(s)
+					error_file.write('\n')
+					error_file.write('Corresponding Address ')
+					s = str(pending_addresses[p])
+					error_file.write(s)
+					error_file.write('\n')				
 				free_planes = free_planes + 1
 				pending_writes.remove(p)
 				del pending_addresses[p]
@@ -374,6 +408,15 @@ elif mode == 'Write':
 			# gonna be using the channel immediately
 			free_channels = free_channels - 1
 			busy_channels.append(cycle + CYCLES_PER_TRANSFER)
+			if write_counter > 11000 and error_out == 1:
+				error_file.write('Added cycle ')
+				s = str(cycle + WRITE_CYCLES + CYCLES_PER_TRANSFER)
+				error_file.write(s)
+				error_file.write('\n')
+				error_file.write('Corresponding Address ')
+				s = str(address)
+				error_file.write(s)
+				error_file.write('\n')		
  		 
 	print 'free planes', free_planes
 	print 'free channels', free_channels
