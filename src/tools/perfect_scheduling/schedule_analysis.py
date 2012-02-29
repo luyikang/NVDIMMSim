@@ -2,7 +2,7 @@ import sys
 import math
 
 # capacity parameters
-NUM_PACKAGES = 32
+NUM_PACKAGES = 4
 DIES_PER_PACKAGE = 4
 PLANES_PER_DIE = 1
 BLOCKS_PER_PLANE = 32
@@ -294,9 +294,8 @@ elif mode == 'Write':
 			# because we can increment the cycles here we kind wind up with two writes
 			# occuring on the same cycle which can't happen so just increment once here
 			# to make sure that won't happen
-			elif tcycle == cycle:
-				cycle = cycle + 1
 			else:
+				cycle = cycle + 1
 				delayed_writes = delayed_writes + 1	
 
 			# we can move on
@@ -472,8 +471,228 @@ elif mode == 'Write':
 		s =  str(RAW_haz)
 		output_file.write(s)
 		output_file.write('\n')	
+#========================================================================================================
+# Script Generating Analysis
+#========================================================================================================
+elif mode == 'Sched':
+	# with the perfect scheduling version of plane state we do need to keep track of the planes
+	plane_states = [[[[] for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
+
+	# cycles when each planes next write gap appears and ends
+	plane_gaps = [[[[] for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
+	
+	# counters
+	write_counter = 0
+	read_counters = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
+	read_counter = 0
+
+	# write pointers
+	curr_pack = 0
+	curr_die = 0
+	curr_plane = 0
+
+	delayed_writes = 0
+
+	last_read = 0
+	write_clock = 0
+
+	RAW_haz = 0
+
+	cycle = 0	
+	
+	# get all the write log data
+	while(1):
+		write = write_log.readline()
+
+		if write == '':
+			break
+
+		elif write == 'Write Arrival Log \n':
+			#do nothing for now
+			print 'starting write arrival parsing'
+			continue
+	
+		write_data.append(write)
+	
+	# get all the plane log data
+	# and pre-parse it into per plane queues
+	previous_state = []
+	previous_read = []
+	while(1):
+		state = plane_log.readline()
+		# if the state is blank we've reached the end of the file
+		if state == '':
+			break
+	
+		if state == 'Plane State Log \n':
+			#do nothing for now
+			print 'starting plane state parsing'
+			continue
+ 
+		[state_cycle, state_address, package, die, plane, op] = [int(j) for j in state.strip().split()]				
+		plane_states[package][die][plane].append([state_cycle, state_address, op])
+		plane_data.append(state)
+
+	# now that we have that we want to turn those plane state logs into plane gap logs
+	for i in range(NUM_PACKAGES):
+		for j in range(DIES_PER_PACKAGE):
+			for k in range(PLANES_PER_DIE):
+				for h in range(len(plane_states[i][j][k])):
+					# if its the first entry we can't have a gap yet
+					# technically we could but because the clock cycles are huge and screwed up, 
+					# I don't think we can do that right now
+					if h == 0:
+						print 'starting per plane gap parsing'
+					else:
+						[state_cycle, state_address, op] = plane_states[i][j][k][h]
+						[previous_cycle, previous_address, previous_op] = plane_states[i][j][k][h-1]
+
+						# if this op and the previous one bookend a gap			
+						if previous_op == 0 and op != 0 and (state_cycle - previous_cycle) >= WRITE_CYCLES:
+							plane_gaps[i][j][k].append([previous_cycle, state_cycle])
+	
+	still_gaps = 1						
+	# go through the writes in order and try to place them
+	while(1):
+		# see if we're done here
+		if write_counter >= len(write_data):
+			break
+
+		# parse the write data
+		curr_write = write_data[write_counter]
+		[tcycle, address] = [int(i) for i in curr_write.strip().split()]
+
+		# we can move on
+		write_counter = write_counter + 1
+
+		if still_gaps == 0:						
+			# find a read gap
+			# loop through the planes and eleminate any gaps that end before the current read
+			for i in range(NUM_PACKAGES):
+				for j in range(DIES_PER_PACKAGE):
+					for k in range(PLANES_PER_DIE):
+						if len(plane_gaps[i][j][k]) > 0:
+							[gap_start, gap_end] = plane_gaps[i][j][k][0]
+							if gap_end < tcycle or gap_end - tcycle < WRITE_CYCLES:
+								plane_gaps[i][j][k].remove(plane_gaps[i][j][k][0])
+
+			# loop through the planes and find the soonest gap and use that one
+			soonest_start = sys.maxint
+			soonest_pack = 0
+			soonest_die = 0
+			soonest_plane = 0
+			found = 0
+			for i in range(NUM_PACKAGES):
+				for j in range(DIES_PER_PACKAGE):
+					for k in range(PLANES_PER_DIE):
+						# make sure the gap list isn't empty
+						if len(plane_gaps[i][j][k]) > 0:
+							#check the head of each queue of gaps
+							[gap_start, gap_end] = plane_gaps[i][j][k][0]
+							if gap_start < soonest_start:
+								soonest_start = gap_start
+								soonest_pack = i
+								soonest_die = j
+								soonest_plane = k
+								found = 1
+			
+			# check for RAW hazards
+			# start at the beginning of the plane log
+			while(1):
+				# see if we're done here
+				if read_counter >= len(plane_data):
+					break
+	
+				[state_cycle, state_address, package, die, plane, op] = plane_data[read_counter]
+	
+				# if this was a read
+				if op != 0 and state_address == address and state_cycle < tcycle:
+					RAW_haz = RAW_haz + 1
+	
+				# if we're to a plane state that's past our write break
+				if state_cycle >= tcycle:
+					break
+	
+				read_counter = read_counter + 1
+				last_read = state_cycle			
+	
+			# pop the read gap cause we've used it
+			if found == 1:
+				plane_gaps[soonest_pack][soonest_die][soonest_plane].remove(plane_gaps[soonest_pack][soonest_die][soonest_plane][0])
+			
+				# save the write 
+				s = str(soonest_start)
+				output_file.write(s)
+				output_file.write(' ')
+				s = str(address)
+				output_file.write(s)
+				output_file.write(' ')
+				s = str(soonest_pack)		
+				output_file.write(s)
+				output_file.write(' ')
+				s = str(soonest_die)
+				output_file.write(s)
+				output_file.write(' ')
+				s = str(soonest_plane)
+				output_file.write(s)
+				output_file.write('\n')
+		
+			# if we didn't find any gaps then out of gaps
+			still_gaps = 0
+		# out of gaps so just add all of the remaining writes to the end of the file in round robin
+		else:
+			if write_counter < CONCURRENCY:
+				write_clock = last_read + READ_CYCLES
+			else:
+				write_clock = write_clock + WRITE_CYCLES
+		
+			# just incase the writes were legit after all the reads were done
+			if write_clock < tcycle:
+				write_clock = tcycle
+			else:
+				delayed_writes = delayed_writes + 1
+	
+			# save the write 
+			s = str(write_clock)
+			output_file.write(s)
+			output_file.write(' ')
+			s = str(address)
+			output_file.write(s)
+			output_file.write(' ')
+			s = str(curr_pack)		
+			output_file.write(s)
+			output_file.write(' ')
+			s = str(curr_die)
+			output_file.write(s)
+			output_file.write(' ')
+			s = str(curr_plane)
+			output_file.write(s)
+			output_file.write('\n')
+
+			# wrap the write pointer back around
+			curr_pack = curr_pack + 1
+			if curr_pack > NUM_PACKAGES:
+				curr_pack = 0
+
+			curr_die = curr_die + 1
+			if curr_die > DIES_PER_PACKAGE:
+				curr_die = 0
+	
+			curr_plane = curr_plane + 1
+			if curr_plane > PLANES_PER_DIE:
+				curr_plane = 0
+			
+
+	print 'Script generated successfully'
+	print 'RAW Hazards', RAW_haz
+	print 'Delayed Writes', delayed_writes
+
+		
 else:
 	print 'invalid mode selection, please enter either Read or Write'
 	
+output_file.close()
+write_log.close()
+plane_log.close()
 		
 		
