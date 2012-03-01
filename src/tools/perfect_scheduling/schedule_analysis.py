@@ -492,6 +492,8 @@ elif mode == 'Sched':
 	curr_plane = 0
 
 	delayed_writes = 0
+	placed_writes = 0
+	end_writes = 0
 
 	last_read = 0
 	write_clock = 0
@@ -529,6 +531,7 @@ elif mode == 'Sched':
 			print 'starting plane state parsing'
 			continue
  
+		
 		[state_cycle, state_address, package, die, plane, op] = [int(j) for j in state.strip().split()]				
 		plane_states[package][die][plane].append([state_cycle, state_address, op])
 		plane_data.append(state)
@@ -550,10 +553,11 @@ elif mode == 'Sched':
 						# if this op and the previous one bookend a gap			
 						if previous_op == 0 and op != 0 and (state_cycle - previous_cycle) >= WRITE_CYCLES:
 							plane_gaps[i][j][k].append([previous_cycle, state_cycle])
+							print plane_gaps[i][j][k]
 	
 	still_gaps = 1						
 	# go through the writes in order and try to place them
-	while(1):
+	while(1):	
 		# see if we're done here
 		if write_counter >= len(write_data):
 			break
@@ -561,20 +565,25 @@ elif mode == 'Sched':
 		# parse the write data
 		curr_write = write_data[write_counter]
 		[tcycle, address] = [int(i) for i in curr_write.strip().split()]
-
+	
 		# we can move on
 		write_counter = write_counter + 1
 
-		if still_gaps == 0:						
+		removals = []
+		if still_gaps == 1:							
 			# find a read gap
 			# loop through the planes and eleminate any gaps that end before the current read
-			for i in range(NUM_PACKAGES):
-				for j in range(DIES_PER_PACKAGE):
-					for k in range(PLANES_PER_DIE):
-						if len(plane_gaps[i][j][k]) > 0:
-							[gap_start, gap_end] = plane_gaps[i][j][k][0]
-							if gap_end < tcycle or gap_end - tcycle < WRITE_CYCLES:
-								plane_gaps[i][j][k].remove(plane_gaps[i][j][k][0])
+			#for i in range(NUM_PACKAGES):
+			#	for j in range(DIES_PER_PACKAGE):
+			#		for k in range(PLANES_PER_DIE):
+			#			print plane_gaps[i][j][k]
+			#			if len(plane_gaps[i][j][k]) > 0:
+			#				[gap_start, gap_end] = plane_gaps[i][j][k][0]
+			#				print plane_gaps[i][j][k]
+			#				if gap_end < tcycle or gap_end - tcycle < WRITE_CYCLES:
+			#					removals.append
+			#					plane_gaps[i][j][k].remove(plane_gaps[i][j][k][0])
+			#					print plane_gaps[i][j][k]
 
 			# loop through the planes and find the soonest gap and use that one
 			soonest_start = sys.maxint
@@ -587,9 +596,10 @@ elif mode == 'Sched':
 					for k in range(PLANES_PER_DIE):
 						# make sure the gap list isn't empty
 						if len(plane_gaps[i][j][k]) > 0:
+							print plane_gaps[i][j][k]
 							#check the head of each queue of gaps
 							[gap_start, gap_end] = plane_gaps[i][j][k][0]
-							if gap_start < soonest_start:
+							if gap_start < soonest_start and gap_start >= tcycle and gap_end - tcycle >= WRITE_CYCLES:
 								soonest_start = gap_start
 								soonest_pack = i
 								soonest_die = j
@@ -603,10 +613,10 @@ elif mode == 'Sched':
 				if read_counter >= len(plane_data):
 					break
 	
-				[state_cycle, state_address, package, die, plane, op] = plane_data[read_counter]
+				[state_cycle, state_address, package, die, plane, op] = [int(z) for z in plane_data[read_counter].strip().split()]	
 	
 				# if this was a read
-				if op != 0 and state_address == address and state_cycle < tcycle:
+				if op != 0 and state_address == address and state_cycle > tcycle and state_cycle < (soonest_start + WRITE_CYCLES):
 					RAW_haz = RAW_haz + 1
 	
 				# if we're to a plane state that's past our write break
@@ -618,8 +628,14 @@ elif mode == 'Sched':
 	
 			# pop the read gap cause we've used it
 			if found == 1:
-				plane_gaps[soonest_pack][soonest_die][soonest_plane].remove(plane_gaps[soonest_pack][soonest_die][soonest_plane][0])
-			
+				[temp_start, temp_end] = plane_gaps[soonest_pack][soonest_die][soonest_plane][0]
+				if temp_end - (temp_start + WRITE_CYCLES) >= WRITE_CYCLES:
+					temp_start =  temp_start + WRITE_CYCLES
+					plane_gaps[soonest_pack][soonest_die][soonest_plane][0] = [temp_start, temp_end]
+				else:
+					plane_gaps[soonest_pack][soonest_die][soonest_plane].remove(plane_gaps[soonest_pack][soonest_die][soonest_plane][0])				
+				
+				placed_writes = placed_writes + 1
 				# save the write 
 				s = str(soonest_start)
 				output_file.write(s)
@@ -638,9 +654,42 @@ elif mode == 'Sched':
 				output_file.write('\n')
 		
 			# if we didn't find any gaps then out of gaps
-			still_gaps = 0
+			else:
+				still_gaps = 0
+				print 'ran out of gaps'
+			
+				if write_counter < CONCURRENCY:
+					write_clock = last_read + READ_CYCLES
+				else:
+					write_clock = write_clock + WRITE_CYCLES
+		
+				# just incase the writes were legit after all the reads were done
+				if write_clock < tcycle:
+					write_clock = tcycle
+					end_writes = end_writes + 1
+				else:
+					delayed_writes = delayed_writes + 1
+	
+				# save the write 
+				s = str(write_clock)
+				output_file.write(s)
+				output_file.write(' ')
+				s = str(address)
+				output_file.write(s)
+				output_file.write(' ')
+				s = str(curr_pack)		
+				output_file.write(s)
+				output_file.write(' ')
+				s = str(curr_die)
+				output_file.write(s)
+				output_file.write(' ')
+				s = str(curr_plane)
+				output_file.write(s)
+				output_file.write('\n')
+
 		# out of gaps so just add all of the remaining writes to the end of the file in round robin
 		else:
+			print 'fell through due to lack of gaps'
 			if write_counter < CONCURRENCY:
 				write_clock = last_read + READ_CYCLES
 			else:
@@ -649,6 +698,7 @@ elif mode == 'Sched':
 			# just incase the writes were legit after all the reads were done
 			if write_clock < tcycle:
 				write_clock = tcycle
+				end_writes = end_writes + 1
 			else:
 				delayed_writes = delayed_writes + 1
 	
@@ -686,6 +736,7 @@ elif mode == 'Sched':
 	print 'Script generated successfully'
 	print 'RAW Hazards', RAW_haz
 	print 'Delayed Writes', delayed_writes
+	print 'Placed Writes', placed_writes
 
 		
 else:
