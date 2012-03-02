@@ -1,3 +1,36 @@
+/*********************************************************************************
+*  Copyright (c) 2011-2012, Paul Tschirhart
+*                             Peter Enns
+*                             Jim Stevens
+*                             Ishwar Bhati
+*                             Mu-Tien Chang
+*                             Bruce Jacob
+*                             University of Maryland 
+*                             pkt3c [at] umd [dot] edu
+*  All rights reserved.
+*  
+*  Redistribution and use in source and binary forms, with or without
+*  modification, are permitted provided that the following conditions are met:
+*  
+*     * Redistributions of source code must retain the above copyright notice,
+*        this list of conditions and the following disclaimer.
+*  
+*     * Redistributions in binary form must reproduce the above copyright notice,
+*        this list of conditions and the following disclaimer in the documentation
+*        and/or other materials provided with the distribution.
+*  
+*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+*  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+*  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+*  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+*  FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+*  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+*  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+*  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+*  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*********************************************************************************/
+
 //Controller.cpp
 //Class files for controller
 
@@ -12,16 +45,20 @@ Controller::Controller(NVDIMM* parent, Logger* l){
 
 	channelBeatsLeft = vector<uint>(NUM_PACKAGES, 0);
 
-	readQueues = vector<list <ChannelPacket *> >(NUM_PACKAGES, list<ChannelPacket *>());
-	writeQueues = vector<list <ChannelPacket *> >(NUM_PACKAGES, list<ChannelPacket *>());
+	vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
+	readQueues = vector<vector<list <ChannelPacket *> > >(NUM_PACKAGES, vector<DIES_PER_PACKAGE, list<ChannelPacket *> >());
+	writeQueues = vector<vector<list <ChannelPacket *> > >(NUM_PACKAGES, vector<DIES_PER_PACKAGE, list<ChannelPacket *> >());
+	//writeQueues = vector<list <ChannelPacket *> >(DIES_PER_PACKAGE, list<ChannelPacket *>());
 	outgoingPackets = vector<ChannelPacket *>(NUM_PACKAGES, 0);
 
 	pendingPackets = vector<list <ChannelPacket *> >(NUM_PACKAGES, list<ChannelPacket *>());
 
 	paused = new bool [NUM_PACKAGES];
+	die_pointers = new uint64_t [NUM_PACKAGES];
 	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	    paused[i] = false;
+	    die_pointers[i] = 0;
 	}
 
 	currentClockCycle = 0;
@@ -138,14 +175,14 @@ bool Controller::checkQueueWrite(ChannelPacket *p)
 {
     if(CTRL_SCHEDULE)
     {
-	if ((writeQueues[p->package].size() + 1 < CTRL_WRITE_QUEUE_LENGTH) || (CTRL_WRITE_QUEUE_LENGTH == 0))
+	if ((writeQueues[p->package][p->die].size() + 1 < CTRL_WRITE_QUEUE_LENGTH) || (CTRL_WRITE_QUEUE_LENGTH == 0))
 	    return true;
 	else
 	    return false;
     }
     else
     {
-	if ((readQueues[p->package].size() + 1 < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
+	if ((readQueues[p->package][p->die].size() + 1 < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
 	    return true;
 	else
 	    return false;
@@ -161,21 +198,21 @@ bool Controller::addPacket(ChannelPacket *p){
 	{
 	case READ:
         case ERASE:
-	    if ((readQueues[p->package].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
-		readQueues[p->package].push_back(p);
+	    if ((readQueues[p->package][p->die].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
+		readQueues[p->package][p->die].push_back(p);
 	    else	
 	        return false;
 	    break;
         case WRITE:
         case DATA:
-	     if ((writeQueues[p->package].size() < CTRL_WRITE_QUEUE_LENGTH) || (CTRL_WRITE_QUEUE_LENGTH == 0))
+	     if ((writeQueues[p->package][p->die].size() < CTRL_WRITE_QUEUE_LENGTH) || (CTRL_WRITE_QUEUE_LENGTH == 0))
 	     {
 		 // search the write queue to check if this write overwrites some other write
 		 // this should really only happen if we're doing in place writing though (no gc)
 		 if(!GARBAGE_COLLECT)
 		 {
 		     list<ChannelPacket *>::iterator it;
-		     for (it = writeQueues[p->package].begin(); it != writeQueues[p->package].end(); it++)
+		     for (it = writeQueues[p->package][p->die].begin(); it != writeQueues[p->package][p->die].end(); it++)
 		     {
 			 if((*it)->virtualAddress == p->virtualAddress && (*it)->busPacketType == p->busPacketType)
 			 {
@@ -191,7 +228,7 @@ bool Controller::addPacket(ChannelPacket *p){
 			     if (parentNVDIMM->WriteDataDone != NULL){
 				 (*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, (*it)->virtualAddress, currentClockCycle,true);
 			     }
-			     writeQueues[(*it)->package].erase(it, it++);
+			     writeQueues[(*it)->package][(*it)->die].erase(it, it++);
 			     break;
 			 }
 		     }   
@@ -206,8 +243,8 @@ bool Controller::addPacket(ChannelPacket *p){
 	case GC_READ:
 	case GC_WRITE:
 	    // Try to push the gc stuff to the front of the read queue in order to give them priority
-	    if ((readQueues[p->package].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
-		readQueues[p->package].push_front(p);	
+	    if ((readQueues[p->package][p->die].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
+		readQueues[p->package][p->die].push_front(p);	
 	    else
 		return false;
 	    break;
@@ -224,11 +261,11 @@ bool Controller::addPacket(ChannelPacket *p){
 	    case GC_READ:
 	    case GC_WRITE:
 	    case ERASE:
-		log->log_ctrl_queue_event(false, p->package, &readQueues[p->package]);
+		log->log_ctrl_queue_event(false, p->package, &readQueues[p->package][p->die]);
 		break;
 	    case WRITE:
 	    case DATA:
-		log->log_ctrl_queue_event(true, p->package, &writeQueues[p->package]);
+		log->log_ctrl_queue_event(true, p->package, &writeQueues[p->package][p->die]);
 		break;
 	    default:
 		ERROR("Illegal busPacketType " << p->busPacketType << " in Controller::receiveFromChannel\n");
@@ -240,13 +277,13 @@ bool Controller::addPacket(ChannelPacket *p){
     // Not scheduling so everything goes to the read queue
     else
     {
-	if ((readQueues[p->package].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
+	if ((readQueues[p->package][p->die].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
 	{
-	    readQueues[p->package].push_back(p);
+	    readQueues[p->package][p->die].push_back(p);
     
 	    if(LOGGING && QUEUE_EVENT_LOG)
 	    {
-		log->log_ctrl_queue_event(false, p->package, &readQueues[p->package]);
+		log->log_ctrl_queue_event(false, p->package, &readQueues[p->package][p->die]);
 	    }
 	    return true;
 	}
@@ -264,7 +301,12 @@ void Controller::update(void){
 	bool write_queue_handled = false;
 	uint64_t i;	
 	//loop through the channels to find a packet for each
-	for (i = 0; i < NUM_PACKAGES; i++){
+	for (i = 0; i < NUM_PACKAGES; i++)
+	{
+	    // loop through the dies per package to find the packet
+	    die_counter = 0;
+	    while (die_counter < DIES_PER_PACKAGE)
+	    {
 	    // do we need to issue a write
 	    if((CTRL_WRITE_ON_QUEUE_SIZE == true && writeQueues[i].size() >= CTRL_WRITE_QUEUE_LIMIT) ||
 	       (CTRL_WRITE_ON_QUEUE_SIZE == false && writeQueues[i].size() >= CTRL_WRITE_QUEUE_LENGTH-1))
