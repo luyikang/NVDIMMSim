@@ -48,7 +48,7 @@
 #include "TraceBasedSim.h"
 
 #define NUM_WRITES 5000
-#define SIM_CYCLES 100000
+#define SIM_CYCLES 1000000
 
 /*temporary assignments for externed variables.
  * This should really be done with another class
@@ -177,7 +177,7 @@ void test_obj::run_test(void){
 	      }
 	  }
 
-		(*NVDimm).update();
+	  (*NVDimm).update();
 		/*if (cycle < NUM_WRITES){
 			t= FlashTransaction(DATA_READ, cycle, (void *)0xfeedface);
 

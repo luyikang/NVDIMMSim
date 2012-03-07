@@ -351,6 +351,7 @@ namespace NVDSim
 		}
 	}
 	
+	//cout << "updating ftl \n";
 	ftl->update();
 	ftl->step();
 

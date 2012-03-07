@@ -305,9 +305,9 @@ void Ftl::addFfTransaction(FlashTransaction &t){
 }
 
 void Ftl::update(void){
+    	cout << "updataing \n";
 	if (busy) {
 	    if (lookupCounter <= 0 && !queues_full){
-
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
 					handle_read(false);
@@ -507,6 +507,7 @@ void Ftl::write_used_handler(uint64_t vAddr)
 
 void Ftl::handle_write(bool gc)
 {
+    cout << "handling the write \n";
     uint64_t start;
     uint64_t vAddr = currentTransaction.address, pAddr;
     ChannelPacket *commandPacket, *dataPacket;

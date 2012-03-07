@@ -243,7 +243,6 @@ void GCFtl::addGcTransaction(FlashTransaction &t){
 
 void GCFtl::update(void){
 	uint i;
-
 	if (gc_status){
 		if (!panic_mode && parent->numErases == start_erase + 1)
 			gc_status = 0;
@@ -275,7 +274,9 @@ void GCFtl::update(void){
 	}
 
 	if (busy) {
+	    //cout << "lookupCounter was " << lookupCounter << " and queues_full was " << queues_full << "\n";
 	    if (lookupCounter <= 0 && !queues_full){
+		//cout << "got into the handlers \n";
 			uint64_t vAddr = currentTransaction.address;
 			bool result = false;
 			ChannelPacket *commandPacket;
@@ -396,7 +397,9 @@ void GCFtl::update(void){
 	    // just issue from there
 	    else
 	    {
+		//cout << "tried to set up a write \n";
 		if (!readQueue.empty()) {
+		    //cout << "did set up a write \n";
 		    busy = 1;
 		    currentTransaction = readQueue.front();
 		    lookupCounter = LOOKUP_TIME;

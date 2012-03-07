@@ -45,9 +45,8 @@ Controller::Controller(NVDIMM* parent, Logger* l){
 
 	channelBeatsLeft = vector<uint>(NUM_PACKAGES, 0);
 
-	vector<vector<bool>>(numBlocks, vector<bool>(PAGES_PER_BLOCK, false));
-	readQueues = vector<vector<list <ChannelPacket *> > >(NUM_PACKAGES, vector<DIES_PER_PACKAGE, list<ChannelPacket *> >());
-	writeQueues = vector<vector<list <ChannelPacket *> > >(NUM_PACKAGES, vector<DIES_PER_PACKAGE, list<ChannelPacket *> >());
+	readQueues = vector<vector<list <ChannelPacket *> > >(NUM_PACKAGES, vector<list<ChannelPacket *> >(DIES_PER_PACKAGE, list<ChannelPacket * >()));
+	writeQueues = vector<vector<list <ChannelPacket *> > >(NUM_PACKAGES, vector<list<ChannelPacket *> >(DIES_PER_PACKAGE, list<ChannelPacket * >()));
 	//writeQueues = vector<list <ChannelPacket *> >(DIES_PER_PACKAGE, list<ChannelPacket *>());
 	outgoingPackets = vector<ChannelPacket *>(NUM_PACKAGES, 0);
 
@@ -61,6 +60,8 @@ Controller::Controller(NVDIMM* parent, Logger* l){
 	    die_pointers[i] = 0;
 	}
 
+	done = 0;
+	die_counter = 0;
 	currentClockCycle = 0;
 }
 
@@ -233,7 +234,7 @@ bool Controller::addPacket(ChannelPacket *p){
 			 }
 		     }   
 		 }
-		 writeQueues[p->package].push_back(p);
+		 writeQueues[p->package][p->die].push_back(p);
 		 break;
 	     }
 	     else
@@ -280,6 +281,8 @@ bool Controller::addPacket(ChannelPacket *p){
 	if ((readQueues[p->package][p->die].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
 	{
 	    readQueues[p->package][p->die].push_back(p);
+	    cout << "added a read to the read queue \n";
+	    cout << "read queue length is now " << readQueues[p->package][p->die].size() << " \n";
     
 	    if(LOGGING && QUEUE_EVENT_LOG)
 	    {
@@ -305,21 +308,184 @@ void Controller::update(void){
 	{
 	    // loop through the dies per package to find the packet
 	    die_counter = 0;
-	    while (die_counter < DIES_PER_PACKAGE)
+	    done = 0;
+	    while (!done)
 	    {
-	    // do we need to issue a write
-	    if((CTRL_WRITE_ON_QUEUE_SIZE == true && writeQueues[i].size() >= CTRL_WRITE_QUEUE_LIMIT) ||
-	       (CTRL_WRITE_ON_QUEUE_SIZE == false && writeQueues[i].size() >= CTRL_WRITE_QUEUE_LENGTH-1))
-	    {
-		if (!writeQueues[i].empty() && outgoingPackets[i]==NULL){
+		// do we need to issue a write
+		// *** NOTE: We need to review this write condition for out new design ***
+		if((CTRL_WRITE_ON_QUEUE_SIZE == true && writeQueues[i][die_pointers[i]].size() >= CTRL_WRITE_QUEUE_LIMIT) ||
+		   (CTRL_WRITE_ON_QUEUE_SIZE == false && writeQueues[i][die_pointers[i]].size() >= CTRL_WRITE_QUEUE_LENGTH-1))
+		{
+		    if (!writeQueues[i][die_pointers[i]].empty() && outgoingPackets[i]==NULL){
+			//if we can get the channel
+			if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, writeQueues[i][die_pointers[i]].front())){
+			    outgoingPackets[i] = writeQueues[i][die_pointers[i]].front();
+			    if(LOGGING && QUEUE_EVENT_LOG)
+			    {
+				log->log_ctrl_queue_event(true, writeQueues[i][die_pointers[i]].front()->package, &writeQueues[i][die_pointers[i]]);
+			    }
+			    writeQueues[i][die_pointers[i]].pop_front();
+			    parentNVDIMM->queuesNotFull();
+			    
+			    switch (outgoingPackets[i]->busPacketType){
+			    case DATA:
+				// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
+				// are in 1 KB (1024 * 8).
+				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
+				break;
+			    default:
+				channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
+				break;
+			    }
+			    // managed to place something so we're done with this channel
+			    // advance the die pointer since this die is now busy
+			    die_pointers[i]++;
+			    if (die_pointers[i] >= DIES_PER_PACKAGE)
+			    {
+				die_pointers[i] = 0;
+			    }
+			    done = 1;
+			}
+			// if we can't get the channel for that die, try the next die
+			// ***NOTE: Do we really want this to work like this? *******************************************************
+			else
+			{
+			    die_pointers[i]++;
+			    if (die_pointers[i] >= DIES_PER_PACKAGE)
+			    {
+				die_pointers[i] = 0;
+			    }
+			    die_counter++;
+			    // if we loop the number of dies, then we're done
+			    if (die_counter >= DIES_PER_PACKAGE)
+			    {
+				done = 1;
+			    }
+			}
+		    }
+		    // this queue is empty, move on
+		    else
+		    {
+			die_pointers[i]++;
+			if (die_pointers[i] >= DIES_PER_PACKAGE)
+			{
+			    die_pointers[i] = 0;
+			}
+			die_counter++;
+			// if we loop the number of dies, then we're done
+			if (die_counter >= DIES_PER_PACKAGE)
+			{
+			    done = 1;
+			}
+		    }
+		}
+		// if we don't have to issue a write check to see if there is a read to send
+		// we're reusing the same die pointer for reads and writes because if a die was just given a read or write
+		// it can't do anything else with it so the die counters sort've act like a dies in use marker
+		else if (!readQueues[i][die_pointers[i]].empty() && outgoingPackets[i]==NULL){
+		    if(queue_access_counter == 0 && readQueues[i][die_pointers[i]].front()->busPacketType != GC_READ && 
+		       readQueues[i][die_pointers[i]].front()->busPacketType != GC_WRITE && !writeQueues[i][die_pointers[i]].empty())
+		    {
+			//see if this read can be satisfied by something in the write queue
+			list<ChannelPacket *>::iterator it;
+			for (it = writeQueues[i][die_pointers[i]].begin(); it != writeQueues[i][die_pointers[i]].end(); it++)
+			{
+			    if((*it)->virtualAddress == readQueues[i][die_pointers[i]].front()->virtualAddress)
+			    {
+				if(LOGGING)
+				{		
+				    // access_process for the read we're satisfying  is called here since we're doing it here.
+				    log->access_process(readQueues[i][die_pointers[i]].front()->virtualAddress, readQueues[i][die_pointers[i]].front()->physicalAddress, 
+							readQueues[i][die_pointers[i]].front()->package, READ);
+				}
+				queue_access_counter = QUEUE_ACCESS_TIME;
+				write_queue_handled = true;
+				break;
+				// done for now with this channel and die but don't advance the die counter
+				// cause we have to get through the queue access counter for it
+				done = 1;
+			    }
+			}
+		    }
+		    else if(queue_access_counter > 0)
+		    {
+			queue_access_counter--;
+			write_queue_handled = true;
+			if(queue_access_counter == 0)
+			{
+			    if(LOGGING)
+			    {
+				// stop_process for this read is called here since this ends now.
+				log->access_stop(readQueues[i][die_pointers[i]].front()->virtualAddress, readQueues[i][die_pointers[i]].front()->virtualAddress);
+			    }
+			    
+			    returnReadData(FlashTransaction(RETURN_DATA, readQueues[i][die_pointers[i]].front()->virtualAddress, readQueues[i][die_pointers[i]].front()->data));
+			    readQueues[i][die_pointers[i]].pop_front();
+			    // managed to place something so we're done with this channel
+			    // advance the die pointer since this die is now busy
+			    die_pointers[i]++;
+			    if (die_pointers[i] >= DIES_PER_PACKAGE)
+			    {
+				die_pointers[i] = 0;
+			    }
+			    done = 1;
+			}
+		    }
+		    else if(!write_queue_handled)
+		    {
+			//if we can get the channel
+			if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, readQueues[i][die_pointers[i]].front())){
+			    outgoingPackets[i] = readQueues[i][die_pointers[i]].front();
+			    if(LOGGING && QUEUE_EVENT_LOG)
+			    {
+				log->log_ctrl_queue_event(false, readQueues[i][die_pointers[i]].front()->package, &readQueues[i][die_pointers[i]]);
+			    }
+			    readQueues[i][die_pointers[i]].pop_front();
+			    parentNVDIMM->queuesNotFull();
+			    
+			    channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
+			    // managed to place something so we're done with this channel
+			    // advance the die pointer since this die is now busy
+			    die_pointers[i]++;
+			    if (die_pointers[i] >= DIES_PER_PACKAGE)
+			    {
+				die_pointers[i] = 0;
+			    }
+			    done = 1;
+			}
+			// couldn't get the channel so go to the next die
+			else
+			{
+			    die_pointers[i]++;
+			    if (die_pointers[i] >= DIES_PER_PACKAGE)
+			    {
+				die_pointers[i] = 0;
+			    }
+			    die_counter++;
+			    // if we loop the number of dies, then we're done
+			    if (die_counter >= DIES_PER_PACKAGE)
+			    {
+				done = 1;
+			    }
+			}
+		    }
+		}
+		// if there are no reads to send see if we're allowed to send a write instead
+		else if (CTRL_IDLE_WRITE == true && !writeQueues[i][die_pointers[i]].empty() && outgoingPackets[i]==NULL){
 		    //if we can get the channel
-		    if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, writeQueues[i].front())){
-			outgoingPackets[i] = writeQueues[i].front();
+		    if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, writeQueues[i][die_pointers[i]].front())){
+			outgoingPackets[i] = writeQueues[i][die_pointers[i]].front();
 			if(LOGGING && QUEUE_EVENT_LOG)
 			{
-			    log->log_ctrl_queue_event(true, writeQueues[i].front()->package, &writeQueues[i]);
+			    log->log_ctrl_queue_event(true, writeQueues[i][die_pointers[i]].front()->package, &writeQueues[i][die_pointers[i]]);
 			}
-			writeQueues[i].pop_front();
+			writeQueues[i][die_pointers[i]].pop_front();
+			// successfully issued the write so increment the die pointer
+			die_pointers[i]++;
+			if (die_pointers[i] >= DIES_PER_PACKAGE)
+			{
+			    die_pointers[i] = 0;
+			}
 			parentNVDIMM->queuesNotFull();
 			
 			switch (outgoingPackets[i]->busPacketType){
@@ -332,85 +498,44 @@ void Controller::update(void){
 			    channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
 			    break;
 			}
-		    }
-		}	
-	    }
-	    // if we don't have to issue a write check to see if there is a read to send
-	    else if (!readQueues[i].empty() && outgoingPackets[i]==NULL){
-		if(queue_access_counter == 0 && readQueues[i].front()->busPacketType != GC_READ && 
-		   readQueues[i].front()->busPacketType != GC_WRITE && !writeQueues[i].empty())
-		{
-		    //see if this read can be satisfied by something in the write queue
-		    list<ChannelPacket *>::iterator it;
-		    for (it = writeQueues[i].begin(); it != writeQueues[i].end(); it++)
-		    {
-			if((*it)->virtualAddress == readQueues[i].front()->virtualAddress)
+			// managed to place something so we're done with this channel
+			// advance the die pointer since this die is now busy
+			die_pointers[i]++;
+			if (die_pointers[i] >= DIES_PER_PACKAGE)
 			{
-			    if(LOGGING)
-			    {		
-				// access_process for the read we're satisfying  is called here since we're doing it here.
-				log->access_process(readQueues[i].front()->virtualAddress, readQueues[i].front()->physicalAddress, 
-						    readQueues[i].front()->package, READ);
-			    }
-			    queue_access_counter = QUEUE_ACCESS_TIME;
-			    write_queue_handled = true;
-			    break;
+			    die_pointers[i] = 0;
+			}
+			done = 1;
+		    }
+		    // couldn't get the channel so go to the next die
+		    else
+		    {
+			die_pointers[i]++;
+			if (die_pointers[i] >= DIES_PER_PACKAGE)
+			{
+			    die_pointers[i] = 0;
+			}
+			die_counter++;
+			// if we loop the number of dies, then we're done
+			if (die_counter >= DIES_PER_PACKAGE)
+			{
+			    done = 1;
 			}
 		    }
 		}
-		else if(queue_access_counter > 0)
+		// queue was empty, move on
+		else
 		{
-		    queue_access_counter--;
-		    write_queue_handled = true;
-		    if(queue_access_counter == 0)
+		    die_pointers[i]++;
+		    if (die_pointers[i] >= DIES_PER_PACKAGE)
 		    {
-			if(LOGGING)
-			{
-			    // stop_process for this read is called here since this ends now.
-			    log->access_stop(readQueues[i].front()->virtualAddress, readQueues[i].front()->virtualAddress);
-			}
-
-			returnReadData(FlashTransaction(RETURN_DATA, readQueues[i].front()->virtualAddress, readQueues[i].front()->data));
-			readQueues[i].pop_front();
+			die_pointers[i] = 0;
 		    }
-		}
-		else if(!write_queue_handled)
-		{
-		    //if we can get the channel
-		    if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, readQueues[i].front())){
-			outgoingPackets[i] = readQueues[i].front();
-			if(LOGGING && QUEUE_EVENT_LOG)
-			{
-			    log->log_ctrl_queue_event(false, readQueues[i].front()->package, &readQueues[i]);
-			}
-			readQueues[i].pop_front();
-			parentNVDIMM->queuesNotFull();
-			
-			channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
-		    }
-		}
-	    }
-	    // if there are no reads to send see if we're allowed to send a write instead
-	    else if (CTRL_IDLE_WRITE == true && !writeQueues[i].empty() && outgoingPackets[i]==NULL){
-		//if we can get the channel
-		if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, writeQueues[i].front())){
-		    outgoingPackets[i] = writeQueues[i].front();
-		    if(LOGGING && QUEUE_EVENT_LOG)
+		    die_counter++;
+		    // if we loop the number of dies, then we're done
+		    if (die_counter >= DIES_PER_PACKAGE)
 		    {
-			log->log_ctrl_queue_event(true, writeQueues[i].front()->package, &writeQueues[i]);
-		    }
-		    writeQueues[i].pop_front();
-		    parentNVDIMM->queuesNotFull();
-		    
-		    switch (outgoingPackets[i]->busPacketType){
-		    case DATA:
-			// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
-			// are in 1 KB (1024 * 8).
-			channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
-			break;
-		    default:
-			channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
-			break;
+			done = 1;
 		    }
 		}
 	    }
@@ -422,37 +547,81 @@ void Controller::update(void){
 	uint64_t i;	
 	//Look through queues and send oldest packets to the appropriate channel
 	for (i = 0; i < NUM_PACKAGES; i++){
-	    if (!readQueues[i].empty() && outgoingPackets[i]==NULL){
-		//if we can get the channel
-		if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, readQueues[i].front())){
-		    outgoingPackets[i] = readQueues[i].front();
-		    if(LOGGING && QUEUE_EVENT_LOG)
-		    {
-			switch (readQueues[i].front()->busPacketType)
+	    // loop through the dies per package to find the packet
+	    die_counter = 0;
+	    done = 0;
+	    while (!done)
+	    {
+		if (!readQueues[i][die_pointers[i]].empty() && outgoingPackets[i]==NULL){
+		    //if we can get the channel
+		    if ((*packages)[i].channel->obtainChannel(0, CONTROLLER, readQueues[i][die_pointers[i]].front())){
+			outgoingPackets[i] = readQueues[i][die_pointers[i]].front();
+			if(LOGGING && QUEUE_EVENT_LOG)
 			{
-			case READ:
-			case GC_READ:
-			case ERASE:
-			    log->log_ctrl_queue_event(false, readQueues[i].front()->package, &readQueues[i]);
-			    break;
-			case WRITE:
-			case GC_WRITE:
+			    switch (readQueues[i][die_pointers[i]].front()->busPacketType)
+			    {
+			    case READ:
+			    case GC_READ:
+			    case ERASE:
+				log->log_ctrl_queue_event(false, readQueues[i][die_pointers[i]].front()->package, &readQueues[i][die_pointers[i]]);
+				break;
+			    case WRITE:
+			    case GC_WRITE:
+			    case DATA:
+				log->log_ctrl_queue_event(true, readQueues[i][die_pointers[i]].front()->package, &readQueues[i][die_pointers[i]]);
+				break;
+			    }
+			}
+			readQueues[i][die_pointers[i]].pop_front();
+			parentNVDIMM->queuesNotFull();
+			switch (outgoingPackets[i]->busPacketType){
 			case DATA:
-			    log->log_ctrl_queue_event(true, readQueues[i].front()->package, &readQueues[i]);
+			    // Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
+			    // are in 1 KB (1024 * 8).
+			    channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
+			    break;
+			default:
+			    channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
 			    break;
 			}
+			// managed to place something so we're done with this channel
+			// advance the die pointer since this die is now busy
+			die_pointers[i]++;
+			if (die_pointers[i] >= DIES_PER_PACKAGE)
+			{
+			    die_pointers[i] = 0;
+			}
+			done = 1;
 		    }
-		    readQueues[i].pop_front();
-		    parentNVDIMM->queuesNotFull();
-		    switch (outgoingPackets[i]->busPacketType){
-		    case DATA:
-			// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
-			// are in 1 KB (1024 * 8).
-			channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
-			break;
-		    default:
-			channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
-			break;
+		    // couldn't get the channel so... Next die
+		    else
+		    {
+			die_pointers[i]++;
+			if (die_pointers[i] >= DIES_PER_PACKAGE)
+			{
+			    die_pointers[i] = 0;
+			}
+			die_counter++;
+			// if we loop the number of dies, then we're done
+			if (die_counter >= DIES_PER_PACKAGE)
+			{
+			    done = 1;
+			}
+		    }
+		}
+		// this queue is empty so move on
+		else
+		{
+		    die_pointers[i]++;
+		    if (die_pointers[i] >= DIES_PER_PACKAGE)
+		    {
+			die_pointers[i] = 0;
+		    }
+		    die_counter++;
+		    // if we loop the number of dies, then we're done
+		    if (die_counter >= DIES_PER_PACKAGE)
+		    {
+			done = 1;
 		    }
 		}
 	    }

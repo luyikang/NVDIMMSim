@@ -96,6 +96,8 @@ namespace NVDSim{
 		private:
 			bool* paused;
 			uint64_t* die_pointers; // for maintaining round robin fairness for channel access
+			uint64_t die_counter;
+			bool done;
 
 			uint queue_access_counter;
 
