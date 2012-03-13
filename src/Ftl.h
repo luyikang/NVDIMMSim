@@ -57,7 +57,7 @@ namespace NVDSim{
 			virtual bool addTransaction(FlashTransaction &t);
 			void addFfTransaction(FlashTransaction &t);
 			virtual void update(void);
-			void handle_read(bool gc);
+			int handle_read(bool gc); // int now tells us when this fails so we can move to the next read
 			virtual void write_used_handler(uint64_t vAddr);
 			void handle_write(bool gc);
 			void attemptWrite(uint64_t start, uint64_t *vAddr, uint64_t *pAddr, bool *done);
@@ -84,10 +84,15 @@ namespace NVDSim{
 
 			Logger *log;
 
+			// temp stuff **************************
+			uint64_t locked_counter;
+			// *************************************
+
 		protected:
 			bool gc_flag;
 			uint offset,  pageBitWidth, blockBitWidth, planeBitWidth, dieBitWidth, packageBitWidth;
-			uint channel, die, plane, lookupCounter;
+			uint64_t channel, die, plane, lookupCounter;
+			uint64_t temp_channel, temp_die, temp_plane;
 			uint64_t max_queue_length;
 			FlashTransaction currentTransaction;
 			uint busy;
@@ -96,6 +101,7 @@ namespace NVDSim{
 			uint64_t deadlock_time;
 			uint64_t write_counter;
 			uint64_t used_page_count;
+			std::list<FlashTransaction>::iterator read_pointer; // stores location of the last place we tried in the read queue
 
 			bool saved;
 			bool loaded;
@@ -107,7 +113,7 @@ namespace NVDSim{
 
 			std::unordered_map<uint64_t,uint64_t> addressMap;
 			std::vector<vector<bool>> used;
-			std::list<FlashTransaction> readQueue;
+			std::list<FlashTransaction> readQueue; 
 			std::list<FlashTransaction> writeQueue;
 	};
 }

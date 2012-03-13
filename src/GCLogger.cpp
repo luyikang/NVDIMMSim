@@ -251,6 +251,11 @@ void GCLogger::save(uint64_t cycle, uint epoch)
 	    exit(-1); 
 	}
 
+	// *** NOTE: Just a temp thing *****************************************************
+	savefile<<"Times we locked up: "<<num_locks<<"\n\n";
+	savefile<<"Cycles we spent locked up: "<<time_locked<<"\n\n";
+	// *********************************************************************************
+
 	savefile<<"\nData for Full Simulation: \n";
 	savefile<<"===========================\n";
 	savefile<<"\nAccess Data: \n";

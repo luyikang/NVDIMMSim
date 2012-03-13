@@ -79,6 +79,10 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 		    if (!panic_mode)
 		    {
 			readQueue.push_back(t);
+			if( readQueue.size() == 1)
+			{
+			    read_pointer = readQueue.begin();
+			}
 			if(LOGGING == true)
 			{
 			    // Start the logging for this access.
@@ -87,6 +91,14 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 			    {
 			       log->log_ftl_queue_event(false, &readQueue);
 			    }
+			}
+			cout << "The read queue is now \n";
+			list<FlashTransaction>::iterator it;
+			int blah = 0;
+			for (it = readQueue.begin(); it != readQueue.end(); it++)
+			{
+			    cout << blah << " : " << (*it).address << " " << (*it).transactionType << "\n";
+			    blah++;
 			}
 			return true;
 		    }
@@ -283,16 +295,40 @@ void GCFtl::update(void){
 			
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
-					handle_read(false);
-					break;
-
+				{
+				    int status = handle_read(false);
+				    if(status == 0)
+				    { // if the read failed try the next thing in the queue
+					if(read_pointer != readQueue.end())
+					{
+					    read_pointer++;
+					    busy = 0;
+					}
+					else
+					{
+					    read_pointer = readQueue.begin();
+					    busy = 0;
+					}
+				    }
+				    else if(status == 1)
+				    {
+					read_pointer = readQueue.begin(); // if whatever our read_pointer was pointing to worked
+					// move the read_pointer back to the front of the queue
+				    }
+				    // status can also be 2 in which case nothing happens cause the read is being serviced
+				    // by the write queue and we need to chill for a bit
+				    break;
+				}
 				case DATA_WRITE:
 					handle_write(false);
 					break;
 
 				case GC_DATA_READ:
-					handle_read(true);
-					break;
+				{
+				    // right now we just lock up on a gc read if it doesn't go through
+				    handle_read(true);
+				    break;
+				}
 
 				case GC_DATA_WRITE:
 					handle_write(true);
@@ -319,7 +355,7 @@ void GCFtl::update(void){
 					    }
 					    else
 					    {
-						readQueue.pop_front();
+						readQueue.erase(read_pointer);
 					    }
 					    busy = 0;
 					}
@@ -339,6 +375,10 @@ void GCFtl::update(void){
 		else if(lookupCounter > 0)
 		{
 			lookupCounter--;
+		}
+		else if(queues_full)
+		{
+		    locked_counter++;
 		}
 	} 
 	// Not currently busy.
@@ -366,44 +406,36 @@ void GCFtl::update(void){
 		    lookupCounter = LOOKUP_TIME;
 		}
 		// no? then issue a read
-		else
+		else if (!readQueue.empty()) {
+		    busy = 1;
+		    currentTransaction = (*read_pointer);
+		    lookupCounter = LOOKUP_TIME;	    
+		}
+		// no reads to issue? then issue a write if we have opted to issue writes during idle
+		else if(IDLE_WRITE == true && !writeQueue.empty())
 		{
-		    if (!readQueue.empty()) {
-			busy = 1;
-			currentTransaction = readQueue.front();
-			lookupCounter = LOOKUP_TIME;
-		    }
-		    // no reads to issue? then issue a write if we have opted to issue writes during idle
-		    else if(IDLE_WRITE == true && !writeQueue.empty())
+		    busy = 1;
+		    currentTransaction = writeQueue.front();
+		    lookupCounter = LOOKUP_TIME;
+		}
+		// still need something to do?
+		// Check to see if GC needs to run.
+		else {
+		    if (checkGC() && !gc_status && dirty_page_count != 0)
 		    {
-			busy = 1;
-			currentTransaction = writeQueue.front();
-			lookupCounter = LOOKUP_TIME;
-		    }
-		    // still need something to do?
-		    // Check to see if GC needs to run.
-		    else {
-			if (checkGC() && !gc_status && dirty_page_count != 0)
-			{
-				// Run the GC.
-				start_erase = parent->numErases;
-				gc_status = 1;
-				runGC();
-			}
+			// Run the GC.
+			start_erase = parent->numErases;
+			gc_status = 1;
+			runGC();
 		    }
 		}
 	    }
 	     // we're not scheduling so everything is in the read queue
 	    // just issue from there
-	    else
-	    {
-		//cout << "tried to set up a write \n";
-		if (!readQueue.empty()) {
-		    //cout << "did set up a write \n";
+	    else if (!readQueue.empty()) {
 		    busy = 1;
 		    currentTransaction = readQueue.front();
 		    lookupCounter = LOOKUP_TIME;
-		}
 	    }
 	}
 
@@ -541,7 +573,8 @@ void GCFtl::popFront(ChannelPacketType type)
     {
 	if(type == READ)
 	{
-	    readQueue.pop_front();	
+	    cout << "the read pointer is popping a " << (*read_pointer).address << "\n";
+	    readQueue.erase(read_pointer);	
 	}
 	else if(type == WRITE)
 	{

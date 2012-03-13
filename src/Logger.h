@@ -73,6 +73,8 @@ namespace NVDSim
 	void write();
 	void mapped();
 	void unmapped();
+	void locked_up(uint64_t cycle);
+	void unlocked_up(uint64_t count);
 
 	void read_mapped();
 	void read_unmapped();
@@ -120,6 +122,10 @@ namespace NVDSim
 	uint64_t num_accesses;
 	uint64_t num_reads;
 	uint64_t num_writes;
+
+	uint64_t num_locks;
+	uint64_t time_locked;
+	uint64_t lock_start;
 
 	uint64_t num_unmapped;
 	uint64_t num_mapped;

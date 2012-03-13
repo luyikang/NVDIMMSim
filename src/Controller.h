@@ -81,6 +81,7 @@ namespace NVDSim{
 			void receiveFromChannel(ChannelPacket *busPacket);
 			bool checkQueueWrite(ChannelPacket *p);
 			bool addPacket(ChannelPacket *p);
+			bool nextDie(uint64_t package);
 			void update(void);
 
 			void sendQueueLength(void);

@@ -42,6 +42,12 @@ Logger::Logger()
 	num_reads = 0;
 	num_writes = 0;
 
+	// NOTE: Temporary debuging stuff **********************
+	num_locks = 0;
+	time_locked = 0;
+	lock_start = 0;
+	//******************************************************
+
 	num_unmapped = 0;
 	num_mapped = 0;
 
@@ -427,6 +433,17 @@ void Logger::write()
 	num_writes += 1;
 }
 
+void Logger::locked_up(uint64_t cycle)
+{
+    num_locks += 1;
+    lock_start = cycle;
+}
+
+void Logger::unlocked_up(uint64_t count)
+{
+    time_locked += count;
+}
+
 void Logger::mapped()
 {
 	num_mapped += 1;
@@ -609,6 +626,11 @@ void Logger::save(uint64_t cycle, uint epoch)
 	    ERROR("Cannot open NVDIMM.log");
 	    exit(-1); 
 	}
+
+	// *** NOTE: Just a temp thing *****************************************************
+	savefile<<"Times we locked up: "<<num_locks<<"\n\n";
+	savefile<<"Cycles we spent locked up: "<<time_locked<<"\n\n";
+	// *********************************************************************************
 
 	savefile<<"\nData for Full Simulation: \n";
 	savefile<<"===========================\n";

@@ -281,8 +281,6 @@ bool Controller::addPacket(ChannelPacket *p){
 	if ((readQueues[p->package][p->die].size() < CTRL_READ_QUEUE_LENGTH) || (CTRL_READ_QUEUE_LENGTH == 0))
 	{
 	    readQueues[p->package][p->die].push_back(p);
-	    cout << "added a read to the read queue \n";
-	    cout << "read queue length is now " << readQueues[p->package][p->die].size() << " \n";
     
 	    if(LOGGING && QUEUE_EVENT_LOG)
 	    {
@@ -295,6 +293,24 @@ bool Controller::addPacket(ChannelPacket *p){
 	    return false;
 	}
     }
+}
+
+// just cleaning up some of the code
+// this was repeated half a dozen times in the code below
+bool Controller::nextDie(uint64_t package)
+{
+    die_pointers[package]++;
+    if (die_pointers[package] >= DIES_PER_PACKAGE)
+    {
+	die_pointers[package] = 0;
+    }
+    die_counter++;
+    // if we loop the number of dies, then we're done
+    if (die_counter >= DIES_PER_PACKAGE)
+    {
+	return 1;
+    }
+    return 0;
 }
 
 void Controller::update(void){
@@ -346,37 +362,16 @@ void Controller::update(void){
 			    }
 			    done = 1;
 			}
-			// if we can't get the channel for that die, try the next die
-			// ***NOTE: Do we really want this to work like this? *******************************************************
+			// if we can't get the channel for that die, try the next die			
 			else
 			{
-			    die_pointers[i]++;
-			    if (die_pointers[i] >= DIES_PER_PACKAGE)
-			    {
-				die_pointers[i] = 0;
-			    }
-			    die_counter++;
-			    // if we loop the number of dies, then we're done
-			    if (die_counter >= DIES_PER_PACKAGE)
-			    {
-				done = 1;
-			    }
+			    done = nextDie(i);
 			}
 		    }
 		    // this queue is empty, move on
 		    else
 		    {
-			die_pointers[i]++;
-			if (die_pointers[i] >= DIES_PER_PACKAGE)
-			{
-			    die_pointers[i] = 0;
-			}
-			die_counter++;
-			// if we loop the number of dies, then we're done
-			if (die_counter >= DIES_PER_PACKAGE)
-			{
-			    done = 1;
-			}
+			done = nextDie(i);
 		    }
 		}
 		// if we don't have to issue a write check to see if there is a read to send
@@ -421,6 +416,7 @@ void Controller::update(void){
 			    
 			    returnReadData(FlashTransaction(RETURN_DATA, readQueues[i][die_pointers[i]].front()->virtualAddress, readQueues[i][die_pointers[i]].front()->data));
 			    readQueues[i][die_pointers[i]].pop_front();
+			    parentNVDIMM->queuesNotFull();
 			    // managed to place something so we're done with this channel
 			    // advance the die pointer since this die is now busy
 			    die_pointers[i]++;
@@ -456,17 +452,7 @@ void Controller::update(void){
 			// couldn't get the channel so go to the next die
 			else
 			{
-			    die_pointers[i]++;
-			    if (die_pointers[i] >= DIES_PER_PACKAGE)
-			    {
-				die_pointers[i] = 0;
-			    }
-			    die_counter++;
-			    // if we loop the number of dies, then we're done
-			    if (die_counter >= DIES_PER_PACKAGE)
-			    {
-				done = 1;
-			    }
+			    done = nextDie(i);
 			}
 		    }
 		}
@@ -510,33 +496,13 @@ void Controller::update(void){
 		    // couldn't get the channel so go to the next die
 		    else
 		    {
-			die_pointers[i]++;
-			if (die_pointers[i] >= DIES_PER_PACKAGE)
-			{
-			    die_pointers[i] = 0;
-			}
-			die_counter++;
-			// if we loop the number of dies, then we're done
-			if (die_counter >= DIES_PER_PACKAGE)
-			{
-			    done = 1;
-			}
+			done = nextDie(i);
 		    }
 		}
 		// queue was empty, move on
 		else
 		{
-		    die_pointers[i]++;
-		    if (die_pointers[i] >= DIES_PER_PACKAGE)
-		    {
-			die_pointers[i] = 0;
-		    }
-		    die_counter++;
-		    // if we loop the number of dies, then we're done
-		    if (die_counter >= DIES_PER_PACKAGE)
-		    {
-			done = 1;
-		    }
+		    done = nextDie(i);
 		}
 	    }
 	}
@@ -596,33 +562,13 @@ void Controller::update(void){
 		    // couldn't get the channel so... Next die
 		    else
 		    {
-			die_pointers[i]++;
-			if (die_pointers[i] >= DIES_PER_PACKAGE)
-			{
-			    die_pointers[i] = 0;
-			}
-			die_counter++;
-			// if we loop the number of dies, then we're done
-			if (die_counter >= DIES_PER_PACKAGE)
-			{
-			    done = 1;
-			}
+			done = nextDie(i);
 		    }
 		}
 		// this queue is empty so move on
 		else
 		{
-		    die_pointers[i]++;
-		    if (die_pointers[i] >= DIES_PER_PACKAGE)
-		    {
-			die_pointers[i] = 0;
-		    }
-		    die_counter++;
-		    // if we loop the number of dies, then we're done
-		    if (die_counter >= DIES_PER_PACKAGE)
-		    {
-			done = 1;
-		    }
+		    done = nextDie(i);
 		}
 	    }
 	}
