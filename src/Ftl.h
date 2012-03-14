@@ -109,6 +109,7 @@ namespace NVDSim{
 			bool flushing_write;
 
 			uint queue_access_counter;
+			uint64_t read_iterator_counter; // double check for the end() function
 			std::list<FlashTransaction>::iterator reading_write;
 
 			std::unordered_map<uint64_t,uint64_t> addressMap;

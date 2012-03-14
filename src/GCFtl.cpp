@@ -263,8 +263,6 @@ void GCFtl::update(void){
 		gc_status = 1;
 		panic_mode = 1;
 		busy = 0;
-		//cout << (float)(FORCE_GC_THRESHOLD * (VIRTUAL_TOTAL_SIZE / NV_PAGE_SIZE)) << "\n";
-		//cout << (float)used_page_count << "\n";
 		for (i = 0 ; i < PLANES_PER_DIE * DIES_PER_PACKAGE * NUM_PACKAGES; i++)
 		{
 			runGC(i);
@@ -278,9 +276,7 @@ void GCFtl::update(void){
 	}
 
 	if (busy) {
-	    //cout << "lookupCounter was " << lookupCounter << " and queues_full was " << queues_full << "\n";
 	    if (lookupCounter <= 0 && !queues_full){
-		//cout << "got into the handlers \n";
 			uint64_t vAddr = currentTransaction.address;
 			bool result = false;
 			ChannelPacket *commandPacket;
@@ -291,20 +287,23 @@ void GCFtl::update(void){
 				    int status = handle_read(false);
 				    if(status == 0)
 				    { // if the read failed try the next thing in the queue
-					if(read_pointer != readQueue.end())
+					if(read_pointer != readQueue.end() && readQueue.size()-1 > read_iterator_counter)
 					{
 					    read_pointer++;
+					    read_iterator_counter++;
 					    busy = 0;
 					}
 					else
 					{
 					    read_pointer = readQueue.begin();
+					    read_iterator_counter = 0;
 					    busy = 0;
 					}
 				    }
 				    else if(status == 1)
 				    {
 					read_pointer = readQueue.begin(); // if whatever our read_pointer was pointing to worked
+					busy = 0;
 					// move the read_pointer back to the front of the queue
 				    }
 				    // status can also be 2 in which case nothing happens cause the read is being serviced
@@ -360,19 +359,6 @@ void GCFtl::update(void){
 
 				default:
 					ERROR("Transaction in Ftl that isn't a read or write... What?");
-					cout << "readQueue size was " << readQueue.size() << "\n";
-					cout << "readQueue empty was " << readQueue.empty() << "\n";
-					cout << "writeQueue size was " << writeQueue.size() << "\n";
-					cout << "writeQueue empty was " << writeQueue.empty() << "\n";
-					cout << "current transaction was " << currentTransaction.address << "\n";
-					cout << "read pointer was " << (*read_pointer).address << "\n";
-					list<FlashTransaction>::iterator poop;
-					int blah = 0;
-					for (poop = readQueue.begin(); poop != readQueue.end(); poop++)
-					{
-					    cout << blah << " : " << (*poop).address << "\n";
-					    blah++;
-					}
 					exit(1);
 					break;
 			}
@@ -455,9 +441,6 @@ void GCFtl::write_used_handler(uint64_t vAddr)
 {
 	dirty[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = true;
 	dirty_page_count ++;
-
-	//cout << "USING GCFTL's WRITE_USED_HANDLER!!!\n";
-	//cout << "Block " << addressMap[vAddr] / BLOCK_SIZE << " Page " << addressMap[vAddr] / NV_PAGE_SIZE << " is now dirty \n";
 }
 
 bool GCFtl::checkGC(void){

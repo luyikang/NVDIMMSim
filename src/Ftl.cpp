@@ -66,6 +66,7 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 	readQueue = list<FlashTransaction>();
 	writeQueue = list<FlashTransaction>();
 
+	read_iterator_counter = 0;
 	read_pointer = readQueue.begin();
 
 	controller = c;
@@ -321,21 +322,24 @@ void Ftl::update(void){
 					int status = handle_read(false);
 					if(status == 0)
 					{ // if the read failed try the next thing in the queue
-					    if(read_pointer != readQueue.end())
+					    if(read_pointer != readQueue.end() && readQueue.size()-1 > read_iterator_counter)
 					    {
 						read_pointer++;
+						read_iterator_counter++;
 						busy = 0;
 					    }
 					    else
 					    {
 						read_pointer = readQueue.begin();
+						read_iterator_counter = 0;
 						busy = 0;
 					    }
 					}
 					else if(status == 1)
 					{
 					    read_pointer = readQueue.begin(); // if whatever our read_pointer was pointing to worked
-					                      // move the read_pointer back to the front of the queue
+					    busy = 0;
+					    // move the read_pointer back to the front of the queue
 					}
 					// status can also be 2 in which case nothing happens cause the read is being serviced
 					// by the write queue and we need to chill for a bit
@@ -376,8 +380,7 @@ void Ftl::update(void){
 		else
 		{
 		    if (!readQueue.empty()) {
-			busy = 1;
-			
+			busy = 1;		
 			currentTransaction = (*read_pointer);
 			lookupCounter = LOOKUP_TIME;
 		    }
@@ -408,7 +411,6 @@ int Ftl::handle_read(bool gc)
     ChannelPacket *commandPacket;
     uint64_t vAddr = currentTransaction.address;
     bool write_queue_handled = false;
-    //cout << "handle read pointer is now at " << (*read_pointer).address << "\n";
     //Check to see if the vAddr corresponds to the write waiting in the write queue
     if(!gc && SCHEDULE)
     {
@@ -599,7 +601,6 @@ void Ftl::handle_write(bool gc)
 	}
 	block = tmp_block;
 	page = tmp_page;
-	//cout << "outside: " << block << "/" << page << "\n";
 	//attemptWrite(start, &vAddr, &pAddr, &done);
 	
 	
