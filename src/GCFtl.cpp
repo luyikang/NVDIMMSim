@@ -366,6 +366,13 @@ void GCFtl::update(void){
 					cout << "writeQueue empty was " << writeQueue.empty() << "\n";
 					cout << "current transaction was " << currentTransaction.address << "\n";
 					cout << "read pointer was " << (*read_pointer).address << "\n";
+					list<FlashTransaction>::iterator poop;
+					int blah = 0;
+					for (poop = readQueue.begin(); poop != readQueue.end(); poop++)
+					{
+					    cout << blah << " : " << (*poop).address << "\n";
+					    blah++;
+					}
 					exit(1);
 					break;
 			}
