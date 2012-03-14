@@ -741,7 +741,6 @@ void Ftl::handle_write(bool gc)
 		}
 		else if (queue_open)
 		{
-		    cout << "handling a write \n";
 		    // Add the packets to the controller queue.
 		    // Do not need to check the return values for these since checkQueueWrite() was called.
 		    controller->addPacket(dataPacket);
@@ -838,7 +837,6 @@ void Ftl::popFront(ChannelPacketType type)
     // if we're just putting everything into the read queue, just pop from there
     else
     {
-	cout << "just popping the front \n";
 	readQueue.pop_front();
 	if(LOGGING && QUEUE_EVENT_LOG)
 	{

@@ -92,14 +92,6 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 			       log->log_ftl_queue_event(false, &readQueue);
 			    }
 			}
-			cout << "The read queue is now \n";
-			list<FlashTransaction>::iterator it;
-			int blah = 0;
-			for (it = readQueue.begin(); it != readQueue.end(); it++)
-			{
-			    cout << blah << " : " << (*it).address << " " << (*it).transactionType << "\n";
-			    blah++;
-			}
 			return true;
 		    }
 		    
@@ -368,6 +360,12 @@ void GCFtl::update(void){
 
 				default:
 					ERROR("Transaction in Ftl that isn't a read or write... What?");
+					cout << "readQueue size was " << readQueue.size() << "\n";
+					cout << "readQueue empty was " << readQueue.empty() << "\n";
+					cout << "writeQueue size was " << writeQueue.size() << "\n";
+					cout << "writeQueue empty was " << writeQueue.empty() << "\n";
+					cout << "current transaction was " << currentTransaction.address << "\n";
+					cout << "read pointer was " << (*read_pointer).address << "\n";
 					exit(1);
 					break;
 			}
@@ -573,7 +571,6 @@ void GCFtl::popFront(ChannelPacketType type)
     {
 	if(type == READ)
 	{
-	    cout << "the read pointer is popping a " << (*read_pointer).address << "\n";
 	    readQueue.erase(read_pointer);	
 	}
 	else if(type == WRITE)
