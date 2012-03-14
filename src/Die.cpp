@@ -80,7 +80,6 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 			case READ:
 			case GC_READ:
 				controlCyclesLeft[busPacket->plane]= READ_TIME;
-				cout << "physical address is " << busPacket->physicalAddress << "\n";
 				// log the new state of this plane
 				if(LOGGING && PLANE_STATE_LOG)
 				{
