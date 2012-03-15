@@ -346,7 +346,7 @@ void GCFtl::update(void){
 					    }
 					    else
 					    {
-						readQueue.erase(read_pointer);
+						read_pointer = readQueue.erase(read_pointer);
 					    }
 					    busy = 0;
 					}
@@ -561,7 +561,7 @@ void GCFtl::popFront(ChannelPacketType type)
     {
 	if(type == READ)
 	{
-	    readQueue.erase(read_pointer);	
+	    read_pointer = readQueue.erase(read_pointer);	
 	}
 	else if(type == WRITE)
 	{

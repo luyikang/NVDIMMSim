@@ -822,7 +822,7 @@ void Ftl::popFront(ChannelPacketType type)
     {
 	if(type == READ || type == ERASE)
 	{
-	    readQueue.erase(read_pointer);
+	    read_pointer = readQueue.erase(read_pointer);
 	    if(LOGGING && QUEUE_EVENT_LOG)
 	    {
 		log->log_ftl_queue_event(false, &readQueue);
