@@ -534,8 +534,8 @@ int Ftl::handle_read(bool gc)
 			if(!SCHEDULE)
 			{
 			    queues_full = true;	
+			    log->locked_up(currentClockCycle);
 			}
-			log->locked_up(currentClockCycle);
 			return 0;
 			// NOTE: We should move the read to the back of the FTL read queue
 			
