@@ -734,7 +734,7 @@ void Ftl::handle_write(bool gc)
 		    // if we've gone through everything and still can't find anything chill out for a while
 		    if (itr_count >= (NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE))
 		    {
-			if(SCHEDULE)
+			if(!SCHEDULE)
 			{
 			    queues_full = true;
 			}
