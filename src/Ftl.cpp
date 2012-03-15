@@ -320,30 +320,40 @@ void Ftl::update(void){
 				case DATA_READ:
 				{
 					int status = handle_read(false);
-					if(status == 0)
-					{ // if the read failed try the next thing in the queue
-					    if(read_pointer != readQueue.end() && readQueue.size()-1 > read_iterator_counter)
-					    {
-						read_pointer++;
-						read_iterator_counter++;
-						busy = 0;
-					    }
-					    else
-					    {
-						read_pointer = readQueue.begin();
-						read_iterator_counter = 0;
-						busy = 0;
-					    }
-					}
-					else if(status == 1)
+					if(SCHEDULE)
 					{
-					    read_pointer = readQueue.begin(); // if whatever our read_pointer was pointing to worked
-					    busy = 0;
-					    // move the read_pointer back to the front of the queue
+					    if(status == 0)
+					    { // if the read failed try the next thing in the queue
+						if(read_pointer != readQueue.end() && readQueue.size()-1 > read_iterator_counter)
+						{
+						    read_pointer++;
+						    read_iterator_counter++;
+						    busy = 0;
+						}
+						else
+						{
+						    read_pointer = readQueue.begin();
+						    // if we've cycled through everything then we need to wait till something gets done
+						    // before continuing
+						    if( read_iterator_counter >= readQueue.size())
+						    {
+							queues_full = true;
+							log->locked_up(currentClockCycle);
+						    }
+						    read_iterator_counter = 0;
+						    busy = 0;
+						}
+					    }
+					    else if(status == 1)
+					    {
+						read_pointer = readQueue.begin(); // if whatever our read_pointer was pointing to worked
+						busy = 0;
+						// move the read_pointer back to the front of the queue
+					    }
+					    // status can also be 2 in which case nothing happens cause the read is being serviced
+					    // by the write queue and we need to chill for a bit
 					}
-					// status can also be 2 in which case nothing happens cause the read is being serviced
-					// by the write queue and we need to chill for a bit
-					break;
+					 break;
 				}
 				case DATA_WRITE: 
 					handle_write(false);
@@ -722,26 +732,31 @@ void Ftl::handle_write(bool gc)
 		    delete commandPacket;
 	   		    
 		    finished = false;
-		    //update the temp write pointer
-		    temp_channel = (channel + 1) % NUM_PACKAGES;
-		    if (temp_channel == 0){
-			temp_die = (temp_die + 1) % DIES_PER_PACKAGE;
-			if (temp_die == 0)
-			    temp_plane = (temp_plane + 1) % PLANES_PER_DIE;
-		    }
 
-		    itr_count++;
-		    // if we've gone through everything and still can't find anything chill out for a while
-		    if (itr_count >= (NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE))
+		    if(SCHEDULE)
 		    {
-			if(!SCHEDULE)
+			//update the temp write pointer
+			temp_channel = (channel + 1) % NUM_PACKAGES;
+			if (temp_channel == 0){
+			    temp_die = (temp_die + 1) % DIES_PER_PACKAGE;
+			    if (temp_die == 0)
+				temp_plane = (temp_plane + 1) % PLANES_PER_DIE;
+			}
+
+			itr_count++;
+			// if we've gone through everything and still can't find anything chill out for a while
+			if (itr_count >= (NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE))
 			{
 			    queues_full = true;
+			    finished = true;
+			    log->locked_up(currentClockCycle);
 			}
-			finished = true;
-			log->locked_up(currentClockCycle);
 		    }
-				       
+		    else
+		    {
+			finished = true;
+			queues_full = true;
+		    }
 		}
 		else if (queue_open)
 		{

@@ -285,29 +285,37 @@ void GCFtl::update(void){
 				case DATA_READ:
 				{
 				    int status = handle_read(false);
-				    if(status == 0)
-				    { // if the read failed try the next thing in the queue
-					if(read_pointer != readQueue.end() && readQueue.size()-1 > read_iterator_counter)
-					{
-					    read_pointer++;
-					    read_iterator_counter++;
-					    busy = 0;
-					}
-					else
-					{
-					    read_pointer = readQueue.begin();
-					    read_iterator_counter = 0;
-					    busy = 0;
-					}
-				    }
-				    else if(status == 1)
+				    if(SCHEDULE)
 				    {
-					read_pointer = readQueue.begin(); // if whatever our read_pointer was pointing to worked
-					busy = 0;
-					// move the read_pointer back to the front of the queue
+					if(status == 0)
+					{ // if the read failed try the next thing in the queue
+					    if(read_pointer != readQueue.end() && readQueue.size()-1 > read_iterator_counter)
+					    {
+						read_pointer++;
+						read_iterator_counter++;
+						busy = 0;
+					    }
+					    else
+					    {
+						read_pointer = readQueue.begin();
+						if( read_iterator_counter >= readQueue.size())
+						{
+						    queues_full = true;
+						    log->locked_up(currentClockCycle);
+						}
+						read_iterator_counter = 0;
+						busy = 0;
+					    }
+					}
+					else if(status == 1)
+					{
+					    read_pointer = readQueue.begin(); // if whatever our read_pointer was pointing to worked
+					    busy = 0;
+					    // move the read_pointer back to the front of the queue
+					}
+					// status can also be 2 in which case nothing happens cause the read is being serviced
+					// by the write queue and we need to chill for a bit
 				    }
-				    // status can also be 2 in which case nothing happens cause the read is being serviced
-				    // by the write queue and we need to chill for a bit
 				    break;
 				}
 				case DATA_WRITE:
