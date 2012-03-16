@@ -513,6 +513,7 @@ int Ftl::handle_read(bool gc)
 	else 
 	{	
 	    cout << "the vAddr in the read handler " << vAddr << "\n";
+	    cout << "the read pointer in the read handler " << (*read_pointer).address << "\n";
 		ChannelPacketType read_type;
 		if (gc)
 			read_type = GC_READ;
@@ -548,6 +549,7 @@ int Ftl::handle_read(bool gc)
 			}
 			else
 			{
+			    cout << "moved the read pointer forward \n";
 			    read_pointer++;
 			    read_iterator_counter++;
 			    // if we've cycled through everything then we need to wait till something gets done
