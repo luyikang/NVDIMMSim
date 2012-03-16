@@ -567,6 +567,7 @@ void GCFtl::addGC(uint64_t dirty_block)
 void GCFtl::popFront(ChannelPacketType type)
 {
     cout << "Popped something \n";
+    cout << "Popped a " << type << "\n";
     cout << "thing we popped " << (*read_pointer).address << " " << (*read_pointer).transactionType << "\n";
     list<FlashTransaction>::iterator poop;
     uint64_t poop_count = 0;
@@ -586,10 +587,23 @@ void GCFtl::popFront(ChannelPacketType type)
 	if(type == READ)
 	{
 	    read_pointer = readQueue.erase(read_pointer);	
+	    // making sure we don't fall off of the edge of the world
+	    if(read_pointer == readQueue.end())
+	    {
+		read_pointer = readQueue.begin();
+	    }
+	    if(LOGGING && QUEUE_EVENT_LOG)
+	    {
+		log->log_ftl_queue_event(false, &readQueue);
+	    }
 	}
 	else if(type == WRITE)
 	{
 	    writeQueue.pop_front();
+	    if(LOGGING && QUEUE_EVENT_LOG)
+	    {
+		log->log_ftl_queue_event(true, &writeQueue);
+	    }
 	}
     }
     // if we're just putting everything into the read queue, just pop from there
