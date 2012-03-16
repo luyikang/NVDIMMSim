@@ -551,6 +551,10 @@ int Ftl::handle_read(bool gc)
 			{
 			    cout << "moved the read pointer forward \n";
 			    read_pointer++;
+			    if(read_pointer == readQueue.end())
+			    {
+				read_pointer = readQueue.begin();
+			    }
 			    read_iterator_counter++;
 			    // if we've cycled through everything then we need to wait till something gets done
 			    // before continuing
