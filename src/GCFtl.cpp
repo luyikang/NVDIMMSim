@@ -236,7 +236,7 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 void GCFtl::addGcTransaction(FlashTransaction &t){ 
     // we use a special GC queue whether we're scheduling or not so always just do it like this
     gcQueue.push_back(t);
-    queues_full = false;
+    write_queues_full = false;
     
     if(LOGGING == true)
     {
@@ -276,7 +276,7 @@ void GCFtl::update(void){
 	}
 
 	if (busy) {
-	    if (lookupCounter <= 0 && !queues_full){
+	    if (lookupCounter <= 0 && !write_queues_full){
 			uint64_t vAddr = currentTransaction.address;
 			bool result = false;
 			ChannelPacket *commandPacket;
@@ -284,8 +284,10 @@ void GCFtl::update(void){
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
 				{
-				    int status = handle_read(false);
-				    if(SCHEDULE)
+				    if(!read_queues_full)
+				    {
+					int status = handle_read(false);
+				    /*if(SCHEDULE)
 				    {
 					if(status == 0)
 					{ // if the read failed try the next thing in the queue
@@ -319,6 +321,7 @@ void GCFtl::update(void){
 					}
 					// status can also be 2 in which case nothing happens cause the read is being serviced
 					// by the write queue and we need to chill for a bit
+					}*/
 				    }
 				    break;
 				}
@@ -365,7 +368,7 @@ void GCFtl::update(void){
 					else
 					{
 					    delete commandPacket;
-					    queues_full = true;
+					    write_queues_full = true;
 					}
 					break;		
 
@@ -379,7 +382,7 @@ void GCFtl::update(void){
 		{
 			lookupCounter--;
 		}
-		else if(queues_full)
+		else if(write_queues_full || read_queues_full)
 		{
 		    locked_counter++;
 		}

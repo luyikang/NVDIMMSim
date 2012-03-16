@@ -79,7 +79,8 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 	
 	saved = false;
 	loaded = false;
-	queues_full = false;
+	read_queues_full = false;
+	write_queues_full = false;
 
 	// Counter to keep track of succesful writes.
 	write_counter = 0;
@@ -315,16 +316,18 @@ void Ftl::addFfTransaction(FlashTransaction &t){
 
 void Ftl::update(void){
 	if (busy) {
-	    if (lookupCounter <= 0 && !queues_full){
+	    if (lookupCounter <= 0 && !write_queues_full){
 			switch (currentTransaction.transactionType){
 				case DATA_READ:
 				{
+				    if(!read_queues_full)
+				    {
 					int status = handle_read(false);
-					if(SCHEDULE)
+					/*if(SCHEDULE)
 					{
 					    if(status == 0)
 					    { // if the read failed try the next thing in the queue
-						if(read_pointer != readQueue.end() && readQueue.size()-1 > read_iterator_counter)
+						if(read_pointer != readQueue.end())
 						{
 						    read_pointer++;
 						    read_iterator_counter++;
@@ -347,13 +350,15 @@ void Ftl::update(void){
 					    else if(status == 1)
 					    {
 						read_pointer = readQueue.begin(); // if whatever our read_pointer was pointing to worked
+						read_iterator_counter = 0;
 						busy = 0;
 						// move the read_pointer back to the front of the queue
 					    }
 					    // status can also be 2 in which case nothing happens cause the read is being serviced
 					    // by the write queue and we need to chill for a bit
-					}
-					 break;
+					    }*/
+				    }
+				    break;
 				}
 				case DATA_WRITE: 
 					handle_write(false);
@@ -368,7 +373,7 @@ void Ftl::update(void){
 	    {
 		lookupCounter--;
 	    }
-	    else if(queues_full)// if queues full is true
+	    else if(write_queues_full || read_queues_full)// if queues full is true
 	    {
 		locked_counter++;
 	    }
@@ -459,20 +464,19 @@ int Ftl::handle_read(bool gc)
 
 		controller->returnReadData(FlashTransaction(RETURN_DATA, vAddr, (*reading_write).data));
 		
-		popFront(READ);
 		if(LOGGING && QUEUE_EVENT_LOG)
 		{
 		    log->log_ftl_queue_event(false, &readQueue);
 		}
+		popFront(READ);
+		read_iterator_counter = 0;
 		busy = 0;
 		return 1;
 	    }
 	    return 2;
 	}
-	else
-	{
-	    return 0;
-	}
+	// if we get here 
+	assert(0);
     }
     if(!write_queue_handled)
     {
@@ -502,15 +506,9 @@ int Ftl::handle_read(bool gc)
 
 		// Miss, nothing to read so return garbage.
 		controller->returnUnmappedData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
-		if(gc)
-		{
-		    ERROR("GC tried to read upmapped data at address " << vAddr);
-		    exit(2001);
-		}
-		else
-		{
-		    popFront(READ);
-		}
+	       
+		popFront(READ);
+		read_iterator_counter = 0;
 		busy = 0;
 		return 1;
 	} 
@@ -534,6 +532,7 @@ int Ftl::handle_read(bool gc)
 				log->read_mapped();
 			}
 			popFront(read_type);
+			read_iterator_counter = 0;
 			busy = 0;
 			return 1;
 		}
@@ -542,10 +541,25 @@ int Ftl::handle_read(bool gc)
 			// Delete the packet if it is not being used to prevent memory leaks.
 			delete commandPacket;
 			// NOTE: we should probably change this part since the queues aren't actually full
+			// we don't want to lock up the whole system if there is still more stuff to try to issue
+			// when we're scheduling
 			if(!SCHEDULE)
 			{
-			    queues_full = true;	
+			    write_queues_full = true;	
 			    log->locked_up(currentClockCycle);
+			}
+			else
+			{
+			    read_pointer++;
+			    read_iterator_counter++;
+			    // if we've cycled through everything then we need to wait till something gets done
+			    // before continuing
+			    if( read_iterator_counter >= readQueue.size())
+			    {
+				read_queues_full = true;
+				log->locked_up(currentClockCycle);
+				read_iterator_counter = 0;
+			    }
 			}
 			return 0;
 			// NOTE: We should move the read to the back of the FTL read queue
@@ -553,7 +567,7 @@ int Ftl::handle_read(bool gc)
 		}
 	}
     }
-    return 0;
+    assert(0);
 }
 
 void Ftl::write_used_handler(uint64_t vAddr)
@@ -748,7 +762,7 @@ void Ftl::handle_write(bool gc)
 			// if we've gone through everything and still can't find anything chill out for a while
 			if (itr_count >= (NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE))
 			{
-			    queues_full = true;
+			    write_queues_full = true;
 			    finished = true;
 			    log->locked_up(currentClockCycle);
 			}
@@ -756,7 +770,7 @@ void Ftl::handle_write(bool gc)
 		    else
 		    {
 			finished = true;
-			queues_full = true;
+			write_queues_full = true;
 		    }
 		}
 		else if (queue_open)
@@ -839,6 +853,11 @@ void Ftl::popFront(ChannelPacketType type)
 	if(type == READ || type == ERASE)
 	{
 	    read_pointer = readQueue.erase(read_pointer);
+	    // making sure we don't fall off of the edge of the world
+	    if(read_pointer == readQueue.end())
+	    {
+		read_pointer = readQueue.begin();
+	    }
 	    if(LOGGING && QUEUE_EVENT_LOG)
 	    {
 		log->log_ftl_queue_event(false, &readQueue);
@@ -1026,7 +1045,8 @@ void Ftl::loadNVState(void)
 
 void Ftl::queuesNotFull(void)
 {
-    queues_full = false;
+    read_queues_full = false;
+    write_queues_full = false;
     log->unlocked_up(locked_counter);
     locked_counter = 0;
 }

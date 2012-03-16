@@ -105,10 +105,11 @@ namespace NVDSim{
 
 			bool saved;
 			bool loaded;
-			bool queues_full;
+			bool read_queues_full;
+			bool write_queues_full;
 			bool flushing_write;
 
-			uint queue_access_counter;
+			uint queue_access_counter; // time it takes to get the data out of the write queue
 			uint64_t read_iterator_counter; // double check for the end() function
 			std::list<FlashTransaction>::iterator reading_write;
 
