@@ -298,6 +298,8 @@ void GCFtl::update(void){
 					    else
 					    {
 						read_pointer = readQueue.begin();
+						// if we've cycled through everything then we need to wait till something gets done
+						// before continuing
 						if( read_iterator_counter >= readQueue.size())
 						{
 						    queues_full = true;
@@ -309,6 +311,8 @@ void GCFtl::update(void){
 					}
 					else if(status == 1)
 					{
+					    cout << "Thing we thought we popped " << currentTransaction.address << "\n";
+					    cout << "read pointer in update " << (*read_pointer).address << "\n";
 					    read_pointer = readQueue.begin(); // if whatever our read_pointer was pointing to worked
 					    busy = 0;
 					    // move the read_pointer back to the front of the queue
@@ -559,6 +563,15 @@ void GCFtl::addGC(uint64_t dirty_block)
 
 void GCFtl::popFront(ChannelPacketType type)
 {
+    cout << "Popped something \n";
+    cout << "thing we popped " << (*read_pointer).address << " " << (*read_pointer).transactionType << "\n";
+    list<FlashTransaction>::iterator poop;
+    uint64_t poop_count = 0;
+    for (poop = readQueue.begin(); poop != readQueue.end(); poop++)
+    {
+	cout << poop_count << " : " << (*poop).address << " " << (*poop).transactionType << "\n";
+	poop_count++;
+    }
     // if its a gc operation pop from the gc queue
     if(type == ERASE || type == GC_READ || type == GC_WRITE)
     {

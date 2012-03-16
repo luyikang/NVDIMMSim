@@ -515,7 +515,8 @@ int Ftl::handle_read(bool gc)
 		return 1;
 	} 
 	else 
-	{					       
+	{	
+	    cout << "the vAddr in the read handler " << vAddr << "\n";
 		ChannelPacketType read_type;
 		if (gc)
 			read_type = GC_READ;

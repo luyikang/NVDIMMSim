@@ -35,7 +35,7 @@ import sys
 import math
 
 # capacity parameters
-NUM_PACKAGES = 2
+NUM_PACKAGES = 32
 DIES_PER_PACKAGE = 2
 PLANES_PER_DIE = 1
 BLOCKS_PER_PLANE = 32
@@ -765,7 +765,57 @@ elif mode == 'Sched1':
 	print 'Delayed Writes', delayed_writes
 	print 'Placed Writes', placed_writes
 
+#========================================================================================================
+# Operation Distribution Analysis Mode 1
+#========================================================================================================
+elif mode == "Analysis":
+	EPOCH = 0;
+	EPOCH_SIZE = 200000000;
+
+	# with the perfect scheduling version of plane state we do need to keep track of the planes
+	plane_states = [[[[[] for x in range(1000)] for i in range(100)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
+	
+	# counters
+	write_counter = 0
+	read_counters = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
+	read_counter = 0
+	
+	# get all the plane log data
+	# and pre-parse it into per plane queues
+	previous_state = []
+	previous_read = []
+
+	reset_value = 0
+	starting = 1;
+	while(1):
+		state = plane_log.readline()
+		# if the state is blank we've reached the end of the file
+		if state == '':
+			break
+	
+		if state == 'Plane State Log \n':
+			#do nothing for now
+			print 'starting plane state parsing'
+			continue
+ 
 		
+		[state_cycle, state_address, package, die, plane, op] = [int(j) for j in state.strip().split()]	
+		if starting == 1:
+			starting = 0
+			reset_value = state_cycle-1
+			
+		EPOCH = (state_cycle-reset_value) % EPOCH_SIZE	
+		print len(plane_states)		
+		print EPOCH
+		plane_states[EPOCH][package][die][plane].append([state_cycle, state_address, op])
+		plane_data.append(state)
+
+	for x in range(10000):		
+		for i in range(NUM_PACKAGES):
+			for j in range(DIES_PER_PACKAGE):
+				for k in range(PLANES_PER_DIE):
+					print 'reads for package', i, 'die', j, 'plane', k, 'is', len(plane_states[x][i][j][k])
+	
 else:
 	print 'invalid mode selection, please enter either Read or Write'
 	
