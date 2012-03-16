@@ -475,8 +475,6 @@ int Ftl::handle_read(bool gc)
 	    }
 	    return 2;
 	}
-	// if we get here 
-	assert(0);
     }
     if(!write_queue_handled)
     {
