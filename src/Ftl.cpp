@@ -560,6 +560,7 @@ int Ftl::handle_read(bool gc)
 				log->locked_up(currentClockCycle);
 				read_iterator_counter = 0;
 			    }
+			    busy = 0;
 			}
 			return 0;
 			// NOTE: We should move the read to the back of the FTL read queue

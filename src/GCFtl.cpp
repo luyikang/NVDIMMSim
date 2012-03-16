@@ -286,6 +286,7 @@ void GCFtl::update(void){
 				{
 				    if(!read_queues_full)
 				    {
+					cout << "In update the current trans is " << currentTransaction.address << "\n";
 					int status = handle_read(false);
 				    /*if(SCHEDULE)
 				    {
@@ -413,6 +414,7 @@ void GCFtl::update(void){
 		}
 		// no? then issue a read
 		else if (!readQueue.empty()) {
+		    cout << "issued a new read \n";
 		    busy = 1;
 		    currentTransaction = (*read_pointer);
 		    lookupCounter = LOOKUP_TIME;	    
