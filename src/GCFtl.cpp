@@ -286,7 +286,7 @@ void GCFtl::update(void){
 				{
 				    if(!read_queues_full)
 				    {
-					cout << "In update the current trans is " << currentTransaction.address << "\n";
+					//cout << "In update the current trans is " << currentTransaction.address << "\n";
 					int status = handle_read(false);
 				    /*if(SCHEDULE)
 				    {
@@ -414,7 +414,7 @@ void GCFtl::update(void){
 		}
 		// no? then issue a read
 		else if (!readQueue.empty()) {
-		    cout << "issued a new read \n";
+		    //cout << "issued a new read \n";
 		    busy = 1;
 		    currentTransaction = (*read_pointer);
 		    lookupCounter = LOOKUP_TIME;	    
@@ -568,7 +568,7 @@ void GCFtl::addGC(uint64_t dirty_block)
 
 void GCFtl::popFront(ChannelPacketType type)
 {
-    cout << "Popped something \n";
+    /*cout << "Popped something \n";
     cout << "Popped a " << type << "\n";
     cout << "thing we popped " << (*read_pointer).address << " " << (*read_pointer).transactionType << "\n";
     list<FlashTransaction>::iterator poop;
@@ -577,7 +577,7 @@ void GCFtl::popFront(ChannelPacketType type)
     {
 	cout << poop_count << " : " << (*poop).address << " " << (*poop).transactionType << "\n";
 	poop_count++;
-    }
+	}*/
     // if its a gc operation pop from the gc queue
     if(type == ERASE || type == GC_READ || type == GC_WRITE)
     {

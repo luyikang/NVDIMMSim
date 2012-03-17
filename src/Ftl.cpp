@@ -512,8 +512,8 @@ int Ftl::handle_read(bool gc)
 	} 
 	else 
 	{	
-	    cout << "the vAddr in the read handler " << vAddr << "\n";
-	    cout << "the read pointer in the read handler " << (*read_pointer).address << "\n";
+	    //cout << "the vAddr in the read handler " << vAddr << "\n";
+	    //cout << "the read pointer in the read handler " << (*read_pointer).address << "\n";
 		ChannelPacketType read_type;
 		if (gc)
 			read_type = GC_READ;
@@ -549,7 +549,7 @@ int Ftl::handle_read(bool gc)
 			}
 			else
 			{
-			    cout << "moved the read pointer forward \n";
+			    //cout << "moved the read pointer forward \n";
 			    read_pointer++;
 			    // making sure we don't fall off of the edge of the world
 			    if(read_pointer == readQueue.end())
