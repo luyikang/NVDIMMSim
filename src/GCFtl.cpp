@@ -588,12 +588,10 @@ void GCFtl::popFront(ChannelPacketType type)
     {
 	if(type == READ)
 	{
-	    read_pointer = readQueue.erase(read_pointer);	
-	    // making sure we don't fall off of the edge of the world
-	    if(read_pointer == readQueue.end())
-	    {
-		read_pointer = readQueue.begin();
-	    }
+	    read_pointer = readQueue.erase(read_pointer);
+	    // we finished the read we were trying now go back to the front of the list and try
+	    // the first one again
+	    read_pointer = readQueue.begin();
 	    if(LOGGING && QUEUE_EVENT_LOG)
 	    {
 		log->log_ftl_queue_event(false, &readQueue);

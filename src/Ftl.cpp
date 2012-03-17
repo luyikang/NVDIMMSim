@@ -551,6 +551,7 @@ int Ftl::handle_read(bool gc)
 			{
 			    cout << "moved the read pointer forward \n";
 			    read_pointer++;
+			    // making sure we don't fall off of the edge of the world
 			    if(read_pointer == readQueue.end())
 			    {
 				read_pointer = readQueue.begin();
@@ -858,11 +859,9 @@ void Ftl::popFront(ChannelPacketType type)
 	if(type == READ || type == ERASE)
 	{
 	    read_pointer = readQueue.erase(read_pointer);
-	    // making sure we don't fall off of the edge of the world
-	    if(read_pointer == readQueue.end())
-	    {
-		read_pointer = readQueue.begin();
-	    }
+	    // we finished the read we were trying now go back to the front of the list and try
+	    // the first one again
+	    read_pointer = readQueue.begin();
 	    if(LOGGING && QUEUE_EVENT_LOG)
 	    {
 		log->log_ftl_queue_event(false, &readQueue);
