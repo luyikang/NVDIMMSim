@@ -89,6 +89,14 @@ namespace NVDSim{
 			// *************************************
 
 		protected:
+			std::ifstream scriptfile;
+			uint64_t write_cycle;
+			uint64_t write_addr;
+			uint64_t write_pack;
+			uint64_t write_die;
+			uint64_t write_plane;
+			FlashTransaction writeTransaction;
+
 			bool gc_flag;
 			uint offset,  pageBitWidth, blockBitWidth, planeBitWidth, dieBitWidth, packageBitWidth;
 			uint64_t channel, die, plane, lookupCounter;

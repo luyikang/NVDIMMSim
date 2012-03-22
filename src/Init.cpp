@@ -50,6 +50,7 @@ namespace NVDSim
     uint CTRL_WRITE_QUEUE_LIMIT;
     bool CTRL_IDLE_WRITE;
     bool PERFECT_SCHEDULE;
+    bool WRITE_SCRIPT;
 
     bool BUFFERED;
     uint64_t IN_BUFFER_SIZE;
