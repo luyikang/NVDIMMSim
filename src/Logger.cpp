@@ -41,6 +41,7 @@ Logger::Logger()
     	num_accesses = 0;
 	num_reads = 0;
 	num_writes = 0;
+	num_idle_writes = 0;
 
 	// NOTE: Temporary debuging stuff **********************
 	num_locks = 0;
@@ -478,6 +479,11 @@ void Logger::write_unmapped()
 	num_write_unmapped += 1;
 }
 
+void Logger::idle_write()
+{
+    num_idle_writes += 1;
+}
+
 void Logger::read_latency(uint64_t cycles)
 {
     average_read_latency += cycles;
@@ -640,6 +646,7 @@ void Logger::save(uint64_t cycle, uint epoch)
 	savefile<<"Accesses completed: "<<num_accesses<<"\n";
 	savefile<<"Reads completed: "<<num_reads<<"\n";
 	savefile<<"Writes completed: "<<num_writes<<"\n";
+	savefile<<"Idle Writes issued: "<<num_idle_writes<<"\n";
 	savefile<<"Number of Unmapped Accesses: " <<num_unmapped<<"\n";
 	savefile<<"Number of Mapped Accesses: " <<num_mapped<<"\n";
 	savefile<<"Number of Unmapped Reads: " <<num_read_unmapped<<"\n";

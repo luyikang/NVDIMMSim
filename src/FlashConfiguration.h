@@ -110,7 +110,8 @@ extern bool CTRL_WRITE_ON_QUEUE_SIZE;
 extern uint CTRL_WRITE_QUEUE_LIMIT;
 extern bool CTRL_IDLE_WRITE;
 extern bool PERFECT_SCHEDULE;
-extern bool WRITE_SCRIPT;
+extern bool ENABLE_WRITE_SCRIPT;
+extern std::string NV_WRITE_SCRIPT;
 
 // Buffering Options
 extern bool BUFFERED;

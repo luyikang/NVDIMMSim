@@ -102,12 +102,18 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 	// plus the time it takes to erase the block
 	deadlock_time += ERASE_TIME + ((divide_params(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME);
 
-	if(WRITE_SCRIPT)
+	if(ENABLE_WRITE_SCRIPT)
 	{
 	    std::string temp;
 
 	    // open the file and get the first write
-	    scriptfile.open("WriteScript.txt", ifstream::in);
+	    scriptfile.open(NV_WRITE_SCRIPT, ifstream::in);
+
+	    if(!scriptfile)
+	    {
+		cout << "ERROR: Could not open NVDIMM write script file: " << NV_WRITE_SCRIPT << "\n";
+		abort();
+	    }
 	    // get the cycle
 	    scriptfile >> temp;
 	    write_cycle = convert_uint64_t(temp);
@@ -272,6 +278,11 @@ bool Ftl::addTransaction(FlashTransaction &t){
 		else
 		{
 		    readQueue.push_back(t);
+		    if( readQueue.size() == 1)
+		    {
+			read_pointer = readQueue.begin();
+		    }
+
 		    if(LOGGING == true)
 		    {
 			// Start the logging for this access.
@@ -409,7 +420,7 @@ void Ftl::update(void){
 	    // aren't filling up. if they are we issue a write, otherwise we just keeo on issuing reads
 	    if(SCHEDULE || PERFECT_SCHEDULE)
 	    {
-		if(WRITE_SCRIPT)
+		if(ENABLE_WRITE_SCRIPT)
 		{
 		    // is it time to issue a write?
 		    if(currentClockCycle >= write_cycle)
@@ -658,7 +669,7 @@ void Ftl::handle_write(bool gc)
     }
 	    
     // if we are using a write script then we don't want to do any of the other stuff
-    if(WRITE_SCRIPT)
+    if(ENABLE_WRITE_SCRIPT)
     {
 	// search the die for a block and a page that are unused
 	//look for first free physical page starting at the write pointer

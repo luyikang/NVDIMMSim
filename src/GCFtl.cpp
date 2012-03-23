@@ -162,6 +162,10 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 		    if (!panic_mode)
 		    {
 			readQueue.push_back(t);
+			if( readQueue.size() == 1)
+			{
+			    read_pointer = readQueue.begin();
+			}
 			if(LOGGING == true)
 			{
 			    // Start the logging for this access.
@@ -404,37 +408,68 @@ void GCFtl::update(void){
 	    // aren't filling up. if they are we issue a write, otherwise we just keeo on issuing reads
 	    else if(SCHEDULE || PERFECT_SCHEDULE)
 	    {
-		// do we need to issue a write?
-		if((WRITE_ON_QUEUE_SIZE == true && writeQueue.size() >= WRITE_QUEUE_LIMIT) ||
-		    (WRITE_ON_QUEUE_SIZE == false && writeQueue.size() >= FTL_WRITE_QUEUE_LENGTH-1))
+		if(ENABLE_WRITE_SCRIPT)
 		{
-		    busy = 1;
-		    currentTransaction = writeQueue.front();
-		    lookupCounter = LOOKUP_TIME;
-		}
-		// no? then issue a read
-		else if (!readQueue.empty()) {
-		    //cout << "issued a new read \n";
-		    busy = 1;
-		    currentTransaction = (*read_pointer);
-		    lookupCounter = LOOKUP_TIME;	    
-		}
-		// no reads to issue? then issue a write if we have opted to issue writes during idle
-		else if(IDLE_WRITE == true && !writeQueue.empty())
-		{
-		    busy = 1;
-		    currentTransaction = writeQueue.front();
-		    lookupCounter = LOOKUP_TIME;
-		}
-		// still need something to do?
-		// Check to see if GC needs to run.
-		else {
-		    if (checkGC() && !gc_status && dirty_page_count != 0)
+		    // is it time to issue a write?
+		    if(currentClockCycle >= write_cycle)
 		    {
-			// Run the GC.
-			start_erase = parent->numErases;
-			gc_status = 1;
-			runGC();
+			busy = 1;
+			currentTransaction = writeTransaction;
+			lookupCounter = LOOKUP_TIME;
+		    }
+		    // no? then issue a read
+		    else if(!readQueue.empty())
+		    {
+			busy = 1;
+			currentTransaction = readQueue.front();
+			lookupCounter = LOOKUP_TIME;
+		    }
+		    // still need something to do?
+		    // Check to see if GC needs to run.
+		    else {
+			if (checkGC() && !gc_status && dirty_page_count != 0)
+			{
+			    // Run the GC.
+			    start_erase = parent->numErases;
+			    gc_status = 1;
+			    runGC();
+			}
+		    }
+		}
+		else
+		{
+		    // do we need to issue a write?
+		    if((WRITE_ON_QUEUE_SIZE == true && writeQueue.size() >= WRITE_QUEUE_LIMIT) ||
+		       (WRITE_ON_QUEUE_SIZE == false && writeQueue.size() >= FTL_WRITE_QUEUE_LENGTH-1))
+		    {
+			busy = 1;
+			currentTransaction = writeQueue.front();
+			lookupCounter = LOOKUP_TIME;
+		    }
+		    // no? then issue a read
+		    else if (!readQueue.empty()) {
+			//cout << "issued a new read \n";
+			busy = 1;
+			currentTransaction = (*read_pointer);
+			lookupCounter = LOOKUP_TIME;	    
+		    }
+		    // no reads to issue? then issue a write if we have opted to issue writes during idle
+		    else if(IDLE_WRITE == true && !writeQueue.empty())
+		    {
+			busy = 1;
+			currentTransaction = writeQueue.front();
+			lookupCounter = LOOKUP_TIME;
+		    }
+		    // still need something to do?
+		    // Check to see if GC needs to run.
+		    else {
+			if (checkGC() && !gc_status && dirty_page_count != 0)
+			{
+			    // Run the GC.
+			    start_erase = parent->numErases;
+			    gc_status = 1;
+			    runGC();
+			}
 		    }
 		}
 	    }

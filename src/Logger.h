@@ -80,6 +80,7 @@ namespace NVDSim
 	void read_unmapped();
 	void write_mapped();
 	void write_unmapped();
+	void idle_write(); // to determine how many times we're issuing writes when we don't have a read
 
 	void read_latency(uint64_t cycles);
 	void write_latency(uint64_t cycles);
@@ -122,6 +123,7 @@ namespace NVDSim
 	uint64_t num_accesses;
 	uint64_t num_reads;
 	uint64_t num_writes;
+	uint64_t num_idle_writes;
 
 	uint64_t num_locks;
 	uint64_t time_locked;
