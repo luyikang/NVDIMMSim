@@ -35,8 +35,8 @@ import sys
 import math
 
 # capacity parameters
-NUM_PACKAGES = 32
-DIES_PER_PACKAGE = 2
+NUM_PACKAGES = 2
+DIES_PER_PACKAGE = 4
 PLANES_PER_DIE = 1
 BLOCKS_PER_PLANE = 32
 PAGES_PER_BLOCK = 48
@@ -52,6 +52,10 @@ READ_CYCLES = 16678 # pretty sure I don't need this actually
 WRITE_CYCLES = 133420
 ERASE_CYCLES = 1000700
 COMMAND_LENGTH = 56
+
+# just for read analysis
+PCM_WRITE_CYCLES = 47020
+DRAM_WRITE_CYCLES = 90
 
 CYCLE_TIME = 1.51
 
@@ -110,8 +114,13 @@ if mode == 'Read':
 	longest_time = 0
 	average_time = 0
 	average_times = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
-	# potential write records
+	# read gap records
 	open_count = 0
+	short_count = 0
+	shorter_count = 0
+	lookup_count = 0
+	one_count = 0
+	# potential write records
 	open_counts = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
 	last_read = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
 	idle = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
@@ -160,6 +169,14 @@ if mode == 'Read':
 			if temp_time > WRITE_CYCLES:
 				open_count = open_count + math.floor(temp_time/WRITE_CYCLES)
 				open_counts[package][die][plane] = open_counts[package][die][plane] + 1
+			elif temp_time > PCM_WRITE_CYCLES:
+				short_count = short_count + 1
+			elif temp_time > DRAM_WRITE_CYCLES:
+				shorter_count = shorter_count + 1
+			elif temp_time > 25:
+				lookup_count = lookup_count + 1
+			elif temp_time >= 1:
+				one_count = one_count + 1
 				
 			average_times[package][die][plane] = average_times[package][die][plane] + temp_time
 			idle_counts[package][die][plane] = idle_counts[package][die][plane] + 1
@@ -185,6 +202,10 @@ if mode == 'Read':
 			for k in range(PLANES_PER_DIE):
 				print 'average time for package', i, 'die', j, 'plane', k, 'is', average_times[i][j][k]
 	print 'number of idle times large enough for a write', open_count
+	print 'number of idle times less than a PCM write', short_count
+	print 'number of idle times less than a DRAM write', shorter_count
+	print 'number of idle times less than a lookup time', lookup_count
+	print 'number of idle times one 1 cycle long', one_count
 	for i in range(NUM_PACKAGES):
 		for j in range(DIES_PER_PACKAGE):
 			for k in range(PLANES_PER_DIE):
@@ -229,6 +250,22 @@ if mode == 'Read':
 					output_file.write('\n')	
 		output_file.write('number of idle times large enough for a write ')
 		s =  str(open_count)
+		output_file.write(s)
+		output_file.write('\n')
+		output_file.write('number of idle times less than a PCM write ')
+		s =  str(short_count)
+		output_file.write(s)
+		output_file.write('\n')
+		output_file.write('number of idle times less than a DRAM write ')
+		s =  str(shorter_count)
+		output_file.write(s)
+		output_file.write('\n')
+		output_file.write('number of idle times less than a lookup time ')
+		s =  str(lookup_count)
+		output_file.write(s)
+		output_file.write('\n')
+		output_file.write('number of idle times one 1 cycle long ')
+		s =  str(one_count)
 		output_file.write(s)
 		output_file.write('\n')
 		for i in range(NUM_PACKAGES):

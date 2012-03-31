@@ -112,6 +112,8 @@ extern bool CTRL_IDLE_WRITE;
 extern bool PERFECT_SCHEDULE;
 extern bool ENABLE_WRITE_SCRIPT;
 extern std::string NV_WRITE_SCRIPT;
+extern bool DELAY_WRITE;
+extern uint DELAY_WRITE_CYCLES;
 
 // Buffering Options
 extern bool BUFFERED;
