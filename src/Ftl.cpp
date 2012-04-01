@@ -119,7 +119,7 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 	    write_cycle = convert_uint64_t(temp);
 	    // get the address
 	    scriptfile >> temp;
-	    write_addr = convert_uint64_t(temp);
+	    // write_addr = convert_uint64_t(temp); Not going to use this because the addresses change with each run
 	    // get the package
 	    scriptfile >> temp;
 	    write_pack = convert_uint64_t(temp);
@@ -130,8 +130,7 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 	    scriptfile >> temp;
 	    write_plane = convert_uint64_t(temp);
 
-	    // make a transaction for this write
-	    writeTransaction = FlashTransaction(DATA_WRITE, write_addr, (void *)0xdeadbeef);
+	    
 	}
 }
 
@@ -426,7 +425,7 @@ void Ftl::update(void){
 		    if(currentClockCycle >= write_cycle)
 		    {
 			busy = 1;
-			currentTransaction = writeTransaction;
+			currentTransaction = writeQueue.front();
 			lookupCounter = LOOKUP_TIME;
 		    }
 		    // no? then issue a read
@@ -755,7 +754,7 @@ void Ftl::handle_write(bool gc)
 	    write_cycle = convert_uint64_t(temp);
 	    // get the address
 	    scriptfile >> temp;
-	    write_addr = convert_uint64_t(temp);
+	    //write_addr = convert_uint64_t(temp); Not going to use this because the addresses change with each run
 	    // get the package
 	    scriptfile >> temp;
 	    write_pack = convert_uint64_t(temp);
@@ -765,9 +764,6 @@ void Ftl::handle_write(bool gc)
 	    // get the plane
 	    scriptfile >> temp;
 	    write_plane = convert_uint64_t(temp);
-	
-	    // make a transaction for this write
-	    writeTransaction = FlashTransaction(DATA_WRITE, write_addr, (void *)0xdeadbeef);
 	}
     }
     else
