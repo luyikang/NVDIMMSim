@@ -698,7 +698,7 @@ void Ftl::handle_write(bool gc)
 	}
 
 	dataPacket = Ftl::translate(DATA, vAddr, pAddr);
-	commandPacket = Ftl::translate(write_type, vAddr, pAddr);
+	commandPacket = Ftl::translate(WRITE, vAddr, pAddr);
 
 	// Check to see if there is enough room for both packets in the queue (need two open spots).
 	bool queue_open = controller->checkQueueWrite(dataPacket);
