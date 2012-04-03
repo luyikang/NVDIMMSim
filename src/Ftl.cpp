@@ -422,7 +422,7 @@ void Ftl::update(void){
 		if(ENABLE_WRITE_SCRIPT)
 		{
 		    // is it time to issue a write?
-		    if(currentClockCycle >= write_cycle)
+		    if(currentClockCycle >= write_cycle && !writeQueue.empty())
 		    {
 			busy = 1;
 			currentTransaction = writeQueue.front();
@@ -434,6 +434,11 @@ void Ftl::update(void){
 			busy = 1;
 			currentTransaction = readQueue.front();
 			lookupCounter = LOOKUP_TIME;
+		    }
+		    else
+		    {
+			busy = 0;
+
 		    }
 		    // otherwise do nothing
 		}
