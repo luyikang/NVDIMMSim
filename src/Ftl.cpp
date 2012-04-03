@@ -727,6 +727,9 @@ void Ftl::handle_write(bool gc)
 	    // Set the used bit for this page to true.
 	    used[block][page] = true;
 	    used_page_count++;
+
+	    // Pop the transaction from the transaction queue.
+	    popFront(write_type);
 	    
 	    // The FTL is no longer busy.
 	    busy = 0;
