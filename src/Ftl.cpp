@@ -697,11 +697,6 @@ void Ftl::handle_write(bool gc)
 	    ERROR("Write script tried to write to a plane that had no free pages")
 	}
 
-	ChannelPacketType write_type;
-	if (gc)
-	    write_type = GC_WRITE;
-	else
-	    write_type = WRITE;
 	dataPacket = Ftl::translate(DATA, vAddr, pAddr);
 	commandPacket = Ftl::translate(write_type, vAddr, pAddr);
 
@@ -729,7 +724,7 @@ void Ftl::handle_write(bool gc)
 	    used_page_count++;
 
 	    // Pop the transaction from the transaction queue.
-	    popFront(write_type);
+	    popFront(WRITE);
 	    
 	    // The FTL is no longer busy.
 	    busy = 0;

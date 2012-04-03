@@ -627,6 +627,7 @@ void GCFtl::popFront(ChannelPacketType type)
 	    // we finished the read we were trying now go back to the front of the list and try
 	    // the first one again
 	    read_pointer = readQueue.begin();
+	    cout << readQueue.size();
 	    if(LOGGING && QUEUE_EVENT_LOG)
 	    {
 		log->log_ftl_queue_event(false, &readQueue);
