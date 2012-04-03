@@ -421,6 +421,8 @@ void GCFtl::update(void){
 		    else if(!readQueue.empty())
 		    {
 			busy = 1;
+			cout << "now the readqueue has: ";
+			cout << readQueue.size() << "\n";
 			currentTransaction = readQueue.front();
 			lookupCounter = LOOKUP_TIME;
 		    }
