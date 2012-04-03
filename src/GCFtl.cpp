@@ -414,7 +414,7 @@ void GCFtl::update(void){
 		    if(currentClockCycle >= write_cycle)
 		    {
 			busy = 1;
-			currentTransaction = writeTransaction;
+			currentTransaction = writeQueue.front();
 			lookupCounter = LOOKUP_TIME;
 		    }
 		    // no? then issue a read
