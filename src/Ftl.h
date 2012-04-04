@@ -109,6 +109,7 @@ namespace NVDSim{
 			uint64_t deadlock_time;
 			uint64_t write_counter;
 			uint64_t used_page_count;
+			uint64_t write_wait_count;
 			std::list<FlashTransaction>::iterator read_pointer; // stores location of the last place we tried in the read queue
 
 			bool saved;

@@ -102,6 +102,8 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 	// plus the time it takes to erase the block
 	deadlock_time += ERASE_TIME + ((divide_params(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME);
 
+	write_wait_count = DELAY_WRITE_CYCLES;
+
 	if(ENABLE_WRITE_SCRIPT)
 	{
 	    std::string temp;
@@ -463,9 +465,17 @@ void Ftl::update(void){
 			// no reads to issue? then issue a write if we have opted to issue writes during idle
 			else if(IDLE_WRITE == true && !writeQueue.empty())
 			{
-			    busy = 1;
-			    currentTransaction = writeQueue.front();
-			    lookupCounter = LOOKUP_TIME;
+			    if(write_wait_count != 0 && DELAY_WRITE)
+			    {
+				write_wait_count--;				
+			    }
+			    else
+			    {
+				busy = 1;
+				currentTransaction = writeQueue.front();
+				lookupCounter = LOOKUP_TIME;
+				write_wait_count = DELAY_WRITE_CYCLES;
+			    }
 			}
 		    }
 		}

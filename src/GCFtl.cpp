@@ -411,7 +411,7 @@ void GCFtl::update(void){
 		if(ENABLE_WRITE_SCRIPT)
 		{
 		    // is it time to issue a write?
-		    if(currentClockCycle >= write_cycle && !writeQueue.empty())
+		    if(currentClockCycle >= write_cycle-LOOKUP_TIME && !writeQueue.empty())
 		    {
 			busy = 1;
 			currentTransaction = writeQueue.front();
@@ -421,8 +421,6 @@ void GCFtl::update(void){
 		    else if(!readQueue.empty())
 		    {
 			busy = 1;
-			cout << "now the readqueue has: ";
-			cout << readQueue.size() << "\n";
 			currentTransaction = readQueue.front();
 			lookupCounter = LOOKUP_TIME;
 		    }
@@ -450,7 +448,6 @@ void GCFtl::update(void){
 		    }
 		    // no? then issue a read
 		    else if (!readQueue.empty()) {
-			//cout << "issued a new read \n";
 			busy = 1;
 			currentTransaction = (*read_pointer);
 			lookupCounter = LOOKUP_TIME;	    
@@ -458,9 +455,18 @@ void GCFtl::update(void){
 		    // no reads to issue? then issue a write if we have opted to issue writes during idle
 		    else if(IDLE_WRITE == true && !writeQueue.empty())
 		    {
-			busy = 1;
-			currentTransaction = writeQueue.front();
-			lookupCounter = LOOKUP_TIME;
+			if(write_wait_count != 0 && DELAY_WRITE)
+			{
+			    write_wait_count--;
+			}
+			else
+			{
+			    busy = 1;
+			    currentTransaction = writeQueue.front();
+			    lookupCounter = LOOKUP_TIME;
+			    write_wait_count = DELAY_WRITE_CYCLES;
+			}
+			
 		    }
 		    // still need something to do?
 		    // Check to see if GC needs to run.
@@ -629,8 +635,6 @@ void GCFtl::popFront(ChannelPacketType type)
 	    // we finished the read we were trying now go back to the front of the list and try
 	    // the first one again
 	    read_pointer = readQueue.begin();
-	    cout << "We now have this many elements : ";
-	    cout << readQueue.size() << "\n";
 	    if(LOGGING && QUEUE_EVENT_LOG)
 	    {
 		log->log_ftl_queue_event(false, &readQueue);
