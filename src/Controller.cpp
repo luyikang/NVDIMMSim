@@ -329,8 +329,8 @@ void Controller::update(void){
 	    {
 		// do we need to issue a write
 		// *** NOTE: We need to review this write condition for out new design ***
-		if((CTRL_WRITE_ON_QUEUE_SIZE == true && writeQueues[i][die_pointers[i]].size() >= CTRL_WRITE_QUEUE_LIMIT) ||
-		   (CTRL_WRITE_ON_QUEUE_SIZE == false && writeQueues[i][die_pointers[i]].size() >= CTRL_WRITE_QUEUE_LENGTH-1))
+		if((CTRL_WRITE_ON_QUEUE_SIZE == true && writeQueues[i][die_pointers[i]].size() >= CTRL_WRITE_QUEUE_LIMIT)) //||
+		    //(CTRL_WRITE_ON_QUEUE_SIZE == false && writeQueues[i][die_pointers[i]].size() >= CTRL_WRITE_QUEUE_LENGTH-1))
 		{
 		    if (!writeQueues[i][die_pointers[i]].empty() && outgoingPackets[i]==NULL){
 			//if we can get the channel
