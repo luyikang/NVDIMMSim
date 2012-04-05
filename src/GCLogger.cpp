@@ -264,6 +264,8 @@ void GCLogger::save(uint64_t cycle, uint epoch)
 	savefile<<"Accesses completed: "<<num_accesses<<"\n";
 	savefile<<"Reads completed: "<<num_reads<<"\n";
 	savefile<<"Writes completed: "<<num_writes<<"\n";
+	savefile<<"Idle Writes issued: "<<num_idle_writes<<"\n";
+	savefile<<"Writes forced: " <<num_forced<<"\n";
 	savefile<<"Erases completed: "<<num_erases<<"\n";
 	savefile<<"GC Reads completed: "<<num_gcreads<<"\n";
 	savefile<<"GC Writes completed: "<<num_gcwrites<<"\n";

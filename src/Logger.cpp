@@ -42,6 +42,7 @@ Logger::Logger()
 	num_reads = 0;
 	num_writes = 0;
 	num_idle_writes = 0;
+	num_forced = 0;
 
 	// NOTE: Temporary debuging stuff **********************
 	num_locks = 0;
@@ -479,6 +480,11 @@ void Logger::write_unmapped()
 	num_write_unmapped += 1;
 }
 
+void Logger::forced_write()
+{
+    num_forced += 1;
+}
+
 void Logger::idle_write()
 {
     num_idle_writes += 1;
@@ -647,6 +653,7 @@ void Logger::save(uint64_t cycle, uint epoch)
 	savefile<<"Reads completed: "<<num_reads<<"\n";
 	savefile<<"Writes completed: "<<num_writes<<"\n";
 	savefile<<"Idle Writes issued: "<<num_idle_writes<<"\n";
+	savefile<<"Writes forced: " <<num_forced<<"\n";
 	savefile<<"Number of Unmapped Accesses: " <<num_unmapped<<"\n";
 	savefile<<"Number of Mapped Accesses: " <<num_mapped<<"\n";
 	savefile<<"Number of Unmapped Reads: " <<num_read_unmapped<<"\n";
