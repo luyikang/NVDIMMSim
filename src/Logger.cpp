@@ -177,6 +177,7 @@ void Logger::access_process(uint64_t addr, uint64_t paddr, uint package, Channel
 
 	if (!found)
 	{
+	    cout << "op was " << op << "\n";
 		cerr << "ERROR: NVLogger.access_process() called with address not in the access_queue. address=0x" << addr << "\n" << dec;
 		abort();
 	}
