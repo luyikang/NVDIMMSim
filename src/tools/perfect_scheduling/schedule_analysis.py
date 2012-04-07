@@ -35,7 +35,7 @@ import sys
 import math
 
 # capacity parameters
-NUM_PACKAGES = 2
+NUM_PACKAGES = 32
 DIES_PER_PACKAGE = 4
 PLANES_PER_DIE = 1
 BLOCKS_PER_PLANE = 32
@@ -115,6 +115,7 @@ if mode == 'Read':
 	average_time = 0
 	average_times = [[[0 for i in range(PLANES_PER_DIE)] for j in range(DIES_PER_PACKAGE)] for k in range(NUM_PACKAGES)]
 	# read gap records
+	bigger_count = 0
 	open_count = 0
 	short_count = 0
 	shorter_count = 0
@@ -169,6 +170,8 @@ if mode == 'Read':
 			if temp_time > WRITE_CYCLES:
 				open_count = open_count + math.floor(temp_time/WRITE_CYCLES)
 				open_counts[package][die][plane] = open_counts[package][die][plane] + 1
+				if temp_time > WRITE_CYCLES + 50:
+					bigger_count = bigger_count + 1
 			elif temp_time > PCM_WRITE_CYCLES:
 				short_count = short_count + 1
 			elif temp_time > DRAM_WRITE_CYCLES:
@@ -201,6 +204,7 @@ if mode == 'Read':
 		for j in range(DIES_PER_PACKAGE):
 			for k in range(PLANES_PER_DIE):
 				print 'average time for package', i, 'die', j, 'plane', k, 'is', average_times[i][j][k]
+	print 'number of idle times large enough for a write and then some', bigger_count
 	print 'number of idle times large enough for a write', open_count
 	print 'number of idle times less than a PCM write', short_count
 	print 'number of idle times less than a DRAM write', shorter_count
@@ -248,6 +252,10 @@ if mode == 'Read':
 					s =  str(average_times[i][j][k])
 					output_file.write(s)
 					output_file.write('\n')	
+		output_file.write('number of idle times large enough for a write and then some ')
+		s =  str(bigger_count)
+		output_file.write(s)
+		output_file.write('\n')
 		output_file.write('number of idle times large enough for a write ')
 		s =  str(open_count)
 		output_file.write(s)
