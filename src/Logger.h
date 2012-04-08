@@ -154,6 +154,7 @@ namespace NVDSim
 
 	// Extended logging state
 	bool first_write_log;
+	bool first_read_log;
 	bool first_ftl_read_log;
 	bool first_ftl_write_log;
 	bool* first_ctrl_read_log;

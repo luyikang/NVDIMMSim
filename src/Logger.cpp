@@ -69,10 +69,8 @@ Logger::Logger()
 	max_ftl_queue_length = 0;
 	max_ctrl_queue_length = vector<uint64_t>(NUM_PACKAGES, 0);
 
-	if(PERFECT_SCHEDULE)
-	{
-	    first_write_log = true;
-	}
+	first_write_log = true;
+	first_read_log = true;
 
 	if(PLANE_STATE_LOG)
 	{
@@ -146,6 +144,30 @@ void Logger::access_start(uint64_t addr, TransactionType op)
 	    else
 	    {
 		savefile.open(LOG_DIR+"WriteArrive.log", ios_base::out | ios_base::app);
+	    }
+
+	    savefile << currentClockCycle << " " << addr << " " << "\n";
+
+	    savefile.close();
+	}
+	else if(op == DATA_READ)
+	{
+	    if(first_read_log == true)
+	    {
+		string command_str = "test -e "+LOG_DIR+" || mkdir "+LOG_DIR;
+		const char * command = command_str.c_str();
+		int sys_done = system(command);
+		if (sys_done != 0)
+		{
+		    WARNING("Something might have gone wrong when nvdimm attempted to makes its log directory");
+		}
+		savefile.open(LOG_DIR+"ReadArrive.log", ios_base::out | ios_base::trunc);
+		savefile<<"Read Arrival Log \n";
+		first_read_log = false;
+	    }
+	    else
+	    {
+		savefile.open(LOG_DIR+"ReadArrive.log", ios_base::out | ios_base::app);
 	    }
 
 	    savefile << currentClockCycle << " " << addr << " " << "\n";
