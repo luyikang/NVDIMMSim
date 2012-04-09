@@ -131,6 +131,8 @@ extern bool RUNTIME_WRITE;
 extern bool PER_PACKAGE;
 extern bool QUEUE_EVENT_LOG;
 extern bool PLANE_STATE_LOG;
+extern bool WRITE_ARRIVE_LOG;
+extern bool READ_ARRIVE_LOG;
 
 // Save and Restore Options
 extern bool ENABLE_NV_SAVE;

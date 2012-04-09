@@ -57,8 +57,8 @@ plane_log = open(sys.argv[1], 'r')
 
 if len(sys.argv) == 8:
 	image_out = sys.argv[2]
-	epoch_size = sys.argv[3]
-	per_plane = sys.argv[4]
+	epoch_size = int(sys.argv[3])
+	per_plane = int(sys.argv[4])
 	write_arrive = 1
 	write_log = open(sys.argv[5], 'r')
 	read_arrive = 1
@@ -67,22 +67,22 @@ if len(sys.argv) == 8:
 	output_file = open(sys.argv[7], 'w')
 elif len(sys.argv) == 7:
 	image_out = sys.argv[2]
-	epoch_size = sys.argv[3]
-	per_plane = sys.argv[4]
+	epoch_size = int(sys.argv[3])
+	per_plane = int(sys.argv[4])
 	write_arrive = 1
 	write_log = open(sys.argv[5], 'r')
 	read_arrive = 1
 	read_log = open(sys.argv[6], 'r')
 elif len(sys.argv) == 6:
 	image_out = sys.argv[2]
-	epoch_size = sys.argv[3]
-	per_plane = sys.argv[4]
+	epoch_size = int(sys.argv[3])
+	per_plane = int(sys.argv[4])
 	write_arrive = 1
 	write_log = open(sys.argv[5], 'r')
 elif len(sys.argv) == 5:
 	image_out = sys.argv[2]
 	epoch_size = int(sys.argv[3])
-	per_plane = sys.argv[4]
+	per_plane = int(sys.argv[4])
 elif len(sys.argv) == 4:
 	image_out = sys.argv[2]
 	epoch_size = int(sys.argv[3])
@@ -255,6 +255,7 @@ while(1):
 
 #Now we have two full arrays to graph so lets graph them
 epoch_list = range(epoch_total)
+plt.figure(0)
 plt.plot(epoch_list, epoch_reads, label = "Reads")
 plt.plot(epoch_list, epoch_writes, label = "Writes")
 if write_arrive == 1:
@@ -262,15 +263,21 @@ if write_arrive == 1:
 if read_arrive == 1:
 	plt.plot(epoch_list, epoch_reads_arrived, label = "Reads Arrived")
 plt.legend()
-plt.savefig(image_out)
+actual_image_out = image_out + ".pdf"
+plt.savefig(actual_image_out)
 
+print per_plane
 if per_plane == 1:
+	count = 1
 	for i in range(NUM_PACKAGES):
 		for j in range(DIES_PER_PACKAGE):
 			for k in range(PLANES_PER_DIE):
+				plt.figure(count)
 				plt.plot(epoch_list, pp_epoch_reads[i][j][k], label = "Reads")
 				plt.plot(epoch_list, pp_epoch_writes[i][j][k], label = "Writes")
 				
 				plt.legend()
-				temp_name = "Pack" + str(i) + "_Die" + str(j) + "_Plane" + str(k) + "_" + image_out
+				temp_name =   image_out + "-Pack" + str(i) + "-Die" + str(j) + "-Plane" + str(k) + ".pdf"
+				print temp_name
 				plt.savefig(temp_name)
+				count = count + 1

@@ -126,7 +126,7 @@ void Logger::access_start(uint64_t addr, TransactionType op)
 {
 	access_queue.push_back(pair <uint64_t, uint64_t>(addr, currentClockCycle));
 
-	if(op == DATA_WRITE)
+	if(op == DATA_WRITE && WRITE_ARRIVE_LOG)
 	{
 	    if(first_write_log == true)
 	    {
@@ -150,7 +150,7 @@ void Logger::access_start(uint64_t addr, TransactionType op)
 
 	    savefile.close();
 	}
-	else if(op == DATA_READ)
+	else if(op == DATA_READ && READ_ARRIVE_LOG)
 	{
 	    if(first_read_log == true)
 	    {
@@ -424,13 +424,10 @@ void Logger::log_plane_state(uint64_t address, uint64_t package, uint64_t die, u
 	savefile.open(LOG_DIR+"PlaneState.log", ios_base::out | ios_base::app);
     }
 
-    if(PERFECT_SCHEDULE)
-    {
-	savefile << currentClockCycle << " " << address << " " << package << " " << die << " " << plane << " " << op << "\n";
-    }
-    else
-    {
-	savefile<<"Clock cycle: "<<currentClockCycle<<"\n";
+
+    savefile << currentClockCycle << " " << address << " " << package << " " << die << " " << plane << " " << op << "\n";
+ 
+    /*savefile<<"Clock cycle: "<<currentClockCycle<<"\n";
 	for(uint i = 0; i < NUM_PACKAGES; i++){
 	    for(uint j = 0; j < DIES_PER_PACKAGE; j++){
 		for(uint k = 0; k < PLANES_PER_DIE; k++){
@@ -440,8 +437,7 @@ void Logger::log_plane_state(uint64_t address, uint64_t package, uint64_t die, u
 	    }
 	    savefile<<"\n";
 	}
-	savefile<<"\n";
-    }
+	savefile<<"\n";*/
 
     savefile.close();
 }
