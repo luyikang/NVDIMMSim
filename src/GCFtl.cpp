@@ -442,6 +442,7 @@ void GCFtl::update(void){
 		    if((WRITE_ON_QUEUE_SIZE == true && writeQueue.size() >= WRITE_QUEUE_LIMIT) ||
 		       (WRITE_ON_QUEUE_SIZE == false && writeQueue.size() >= FTL_WRITE_QUEUE_LENGTH-1))
 		    {
+			cout << "write forced \n";
 			busy = 1;
 			currentTransaction = writeQueue.front();
 			lookupCounter = LOOKUP_TIME;
@@ -461,6 +462,7 @@ void GCFtl::update(void){
 			}
 			else
 			{
+			    cout << "waitings done, issuing a write \n";
 			    busy = 1;
 			    currentTransaction = writeQueue.front();
 			    lookupCounter = LOOKUP_TIME;

@@ -672,6 +672,8 @@ void Ftl::handle_write(bool gc)
     temp_plane = plane;
     uint64_t itr_count = 0;
 
+    cout << "Handle write address was " << vAddr << "\n";
+
     // Mapped is used to indicate to the logger that a write was mapped or unmapped.
     bool mapped = false;
 
