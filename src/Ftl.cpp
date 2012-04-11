@@ -963,6 +963,7 @@ void Ftl::handle_write(bool gc)
 			used_page_count++;
 			
 			// Pop the transaction from the transaction queue.
+			cout << "should be popping something soon \n";
 			popFront(write_type);
 			
 			// The FTL is no longer busy.
@@ -1026,6 +1027,7 @@ uint64_t Ftl::get_ptr(void) {
 
 void Ftl::popFront(ChannelPacketType type)
 {
+    cout << "popping something \n";
     // if we've put stuff into different queues we must now figure out which queue to pop from
     if(SCHEDULE || PERFECT_SCHEDULE)
     {
