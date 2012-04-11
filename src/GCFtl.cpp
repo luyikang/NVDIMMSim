@@ -490,6 +490,17 @@ void GCFtl::update(void){
 		    currentTransaction = readQueue.front();
 		    lookupCounter = LOOKUP_TIME;
 	    }
+	    // still need something to do?
+	    // Check to see if GC needs to run.
+	    else {
+		if (checkGC() && !gc_status && dirty_page_count != 0)
+		{
+		    // Run the GC.
+		    start_erase = parent->numErases;
+		    gc_status = 1;
+		    runGC();
+		}
+	    }
 	}
 
 	//place power callbacks to hybrid_system
@@ -644,6 +655,7 @@ void GCFtl::popFront(ChannelPacketType type)
 	}
 	else if(type == WRITE)
 	{
+	    cout << "head of the write queue being popped is " << writeQueue.front().address << "\n";
 	    writeQueue.pop_front();
 	    if(LOGGING && QUEUE_EVENT_LOG)
 	    {
