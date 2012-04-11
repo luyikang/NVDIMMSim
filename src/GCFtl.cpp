@@ -133,6 +133,12 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 				break;
 			    }
 			}
+			cout << "write queue was: \n";
+			list<FlashTransaction>::iterator it2;
+			for (it2 = writeQueue.begin(); it2 != writeQueue.end(); it2++)
+			{
+			    cout << (*it2).address << "\n";
+			}
 			writeQueue.push_back(t);
 			cout << "added a write \n";
 			cout << "head is now " << writeQueue.front().address << "\n";

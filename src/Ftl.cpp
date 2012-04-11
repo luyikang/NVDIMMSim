@@ -943,6 +943,7 @@ void Ftl::handle_write(bool gc)
 			    {
 				write_queues_full = true;
 				finished = true;
+				busy = 0;
 				log->locked_up(currentClockCycle);
 			    }
 			}
