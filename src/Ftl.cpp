@@ -673,6 +673,7 @@ void Ftl::handle_write(bool gc)
     uint64_t itr_count = 0;
 
     cout << "Handle write address was " << vAddr << "\n";
+    cout << "But front is " << writeQueue.front().address << "\n";
 
     // Mapped is used to indicate to the logger that a write was mapped or unmapped.
     bool mapped = false;

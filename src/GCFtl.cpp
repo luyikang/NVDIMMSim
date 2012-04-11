@@ -115,6 +115,8 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 			{
 			    if((*it).address == t.address)
 			    {
+				cout << "replaced a write \n";
+				cout << "head is now " << writeQueue.front().address << "\n";
 				if(LOGGING)
 				{
 				    // access_process for that write is called here since its over now.
@@ -132,6 +134,8 @@ bool GCFtl::addTransaction(FlashTransaction &t){
 			    }
 			}
 			writeQueue.push_back(t);
+			cout << "added a write \n";
+			cout << "head is now " << writeQueue.front().address << "\n";
 			if(LOGGING == true)
 			{
 			    // Start the logging for this access.
@@ -443,6 +447,7 @@ void GCFtl::update(void){
 		       (WRITE_ON_QUEUE_SIZE == false && writeQueue.size() >= FTL_WRITE_QUEUE_LENGTH-1))
 		    {
 			cout << "write forced \n";
+			cout << "front is " << writeQueue.front().address << "\n";
 			busy = 1;
 			currentTransaction = writeQueue.front();
 			lookupCounter = LOOKUP_TIME;
@@ -463,6 +468,7 @@ void GCFtl::update(void){
 			else
 			{
 			    cout << "waitings done, issuing a write \n";
+			    cout << "front is " << writeQueue.front().address << "\n";
 			    busy = 1;
 			    currentTransaction = writeQueue.front();
 			    lookupCounter = LOOKUP_TIME;
