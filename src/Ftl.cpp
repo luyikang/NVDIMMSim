@@ -1043,6 +1043,7 @@ void Ftl::popFront(ChannelPacketType type)
 	}
 	else if(type == WRITE)
 	{
+	    cout << "head of the write queue being popped is " << writeQueue.front().address << "\n";
 	    writeQueue.pop_front();
 	    if(LOGGING && QUEUE_EVENT_LOG)
 	    {
