@@ -859,20 +859,6 @@ void Ftl::handle_write(bool gc)
     }
 }
 
-
-void Ftl::attemptWrite(uint64_t start, uint64_t *vAddr, uint64_t *pAddr, bool *done){
-	uint64_t block, page;
-
-	for (block = start ; block < TOTAL_SIZE / BLOCK_SIZE && !*done; block++){
-		for (page = 0 ; page < PAGES_PER_BLOCK  && !*done ; page++){
-			if (!used[block][page]){
-				*pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
-				*done = true;
-			}
-		}
-	}
-}
-
 uint64_t Ftl::get_ptr(void) {
 	// Return a pointer to the current plane.
 	return NV_PAGE_SIZE * PAGES_PER_BLOCK * BLOCKS_PER_PLANE * 
@@ -1079,6 +1065,8 @@ void Ftl::queuesNotFull(void)
 {
     read_queues_full = false;
     write_queues_full = false;
+    // any time something finishes go back and try to issue the oldest read
+    read_pointer = readQueue.begin();
     log->unlocked_up(locked_counter);
     locked_counter = 0;
 }

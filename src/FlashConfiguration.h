@@ -148,8 +148,8 @@ extern uint64_t BLOCKS_PER_PLANE;
 extern uint64_t VIRTUAL_BLOCKS_PER_PLANE;
 extern uint64_t PAGES_PER_BLOCK;
 extern uint64_t NV_PAGE_SIZE;
-extern float DEVICE_CYCLE;
-extern float CHANNEL_CYCLE;
+extern float DEVICE_CYCLE; // in nanoseconds
+extern float CHANNEL_CYCLE; // in nanoseconds
 extern uint64_t DEVICE_WIDTH;
 extern uint64_t CHANNEL_WIDTH;
 // does the device use garbage collection 
@@ -180,6 +180,7 @@ extern uint LOOKUP_TIME;
 extern uint QUEUE_ACCESS_TIME; //time it takes to read data out of the write queue
 // in nanoseconds
 extern float CYCLE_TIME;
+extern float SYSTEM_CYCLE;
 
 extern uint EPOCH_TIME;
 #define USE_EPOCHS (EPOCH_TIME > 0)

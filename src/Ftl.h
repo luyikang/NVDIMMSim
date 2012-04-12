@@ -66,7 +66,6 @@ namespace NVDSim{
 			void write_success(uint64_t block, uint64_t page, uint64_t vAddr, uint64_t pAddr, bool gc, bool mapped);
 			void handle_scripted_write(void);
 			void handle_write(bool gc);
-			void attemptWrite(uint64_t start, uint64_t *vAddr, uint64_t *pAddr, bool *done);
 			uint64_t get_ptr(void); 
 			void inc_ptr(void); 
 

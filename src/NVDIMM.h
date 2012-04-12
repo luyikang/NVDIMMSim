@@ -89,6 +89,8 @@ namespace NVDSim{
 			uint systemID, numReads, numWrites, numErases;
 			uint epoch_count, epoch_cycles;
 			uint64_t channel_cycles_per_cycle, controller_cycles_left;
+			float system_clock_counter, nv_clock_counter1, nv_clock_counter2, controller_clock_counter;
+			float *channel_clock_counter, *nv_clock_counter3;
 			uint64_t* cycles_left;
 	
 			bool faster_channel;

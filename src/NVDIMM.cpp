@@ -245,7 +245,7 @@ namespace NVDSim
 	    cycles_left[h] = 0;
 	}
 	// the channel and buffers are running faster than the other parts of the system
-	if(CYCLE_TIME > CHANNEL_CYCLE)
+	/*if(CYCLE_TIME > CHANNEL_CYCLE)
 	{
 	    channel_cycles_per_cycle = (uint64_t)(((float)CYCLE_TIME / (float)CHANNEL_CYCLE) + 0.50f);
 	    faster_channel = true;
@@ -255,8 +255,20 @@ namespace NVDSim
 	    channel_cycles_per_cycle = (uint64_t)(((float)CHANNEL_CYCLE / (float)CYCLE_TIME) + 0.50f);
 	    faster_channel = false;
 	}
-	cout << "the faster cycles computed was: " << channel_cycles_per_cycle << " \n";
+	cout << "the faster cycles computed was: " << channel_cycles_per_cycle << " \n";*/
 
+	// counters for cross clock domain calculations
+	system_clock_counter = 0.0;
+	nv_clock_counter1 = 0.0;
+	nv_clock_counter2 = 0.0;
+	controller_clock_counter = 0.0;
+	nv_clock_counter3 = new float [NUM_PACKAGES];
+	channel_clock_counter = new float [NUM_PACKAGES];
+	for(uint64_t c = 0; c < NUM_PACKAGES; c++){
+	    nv_clock_counter3[c] = 0.0;
+	    channel_clock_counter[c] = 0.0;
+	}
+	
 	ftl->loadNVState();
     }
 
@@ -310,15 +322,36 @@ namespace NVDSim
 	ftl->saveNVState();
     }
 
-    void NVDIMM::update(void){
+    void NVDIMM::update(void)
+    {
 	uint64_t i, j;
 	Package package;
+
+	//update the system clock counters
+	system_clock_counter += SYSTEM_CYCLE;
+
+	while(nv_clock_counter1 < system_clock_counter)
+	{
+	    nv_clock_counter1 += CYCLE_TIME;
 	
-	for (i= 0; i < packages->size(); i++){
+	    for (i= 0; i < packages->size(); i++){
 		package= (*packages)[i];
 		if(BUFFERED)
 		{
-		    if(faster_channel)
+		    nv_clock_counter3[i] += CYCLE_TIME;
+		    while(channel_clock_counter[i] < nv_clock_counter3[i])
+		    {
+			channel_clock_counter[i] += CHANNEL_CYCLE;
+			package.channel->update();
+			package.buffer->update();
+		    }
+
+		    if(channel_clock_counter[i] == nv_clock_counter3[i])
+		    {
+			channel_clock_counter[i] = 0.0;
+			nv_clock_counter3[i] = 0.0;
+		    }
+		    /*if(faster_channel)
 		    {
 			for(uint64_t c = 0; c < channel_cycles_per_cycle; c++)
 			{
@@ -337,7 +370,7 @@ namespace NVDSim
 			}
 			
 			cycles_left[i] = cycles_left[i] - 1;
-		    }
+		    }*/
 		}
 		else
 		{
@@ -349,68 +382,90 @@ namespace NVDSim
 			package.dies[j]->update();
 			package.dies[j]->step();
 		}
-	}
+	    }
 	
-	//cout << "updating ftl \n";
-	ftl->update();
-	ftl->step();
-
-	if(BUFFERED)
-	{
-	    if(faster_channel)
+	    //cout << "updating ftl \n";
+	    ftl->update();
+	    ftl->step();
+	    
+	    if(BUFFERED)
 	    {
-		for(uint64_t c = 0; c < channel_cycles_per_cycle; c++)
+		nv_clock_counter2 += CYCLE_TIME;
+		while(controller_clock_counter < nv_clock_counter2)
 		{
+		    controller_clock_counter += CHANNEL_CYCLE;
 		    controller->update();
 		    controller->step();
 		}
+
+		if(controller_clock_counter == nv_clock_counter2)
+		{
+		    nv_clock_counter2 = 0.0;
+		    controller_clock_counter = 0.0;
+		}
+		/*
+		if(faster_channel)
+		{
+		    for(uint64_t c = 0; c < channel_cycles_per_cycle; c++)
+		    {
+			controller->update();
+			controller->step();
+		    }
+		}
+		else
+		{
+		    // reset the update counter and update the controller
+		    if(controller_cycles_left == 0)
+		    {
+			controller->update();
+			controller->step();
+			controller_cycles_left = channel_cycles_per_cycle;
+		    }
+		    
+		    controller_cycles_left = controller_cycles_left - 1;
+		}
+		*/
 	    }
 	    else
 	    {
-		// reset the update counter and update the controller
-		if(controller_cycles_left == 0)
-		{
-		    controller->update();
-		    controller->step();
-		    controller_cycles_left = channel_cycles_per_cycle;
-		}
-		
-		controller_cycles_left = controller_cycles_left - 1;
+		controller->update();
+		controller->step();
 	    }
-	}
-	else
-	{
-	    controller->update();
-	    controller->step();
-	}
-
-	if(LOGGING == true)
-	{
-	    log->update();
-	}
-
-	step();
-
-	//saving stats at the end of each epoch
-	if(USE_EPOCHS)
-	{
-	    ftl->sendQueueLength();
-	    controller->sendQueueLength();
-	    if(epoch_cycles >= EPOCH_TIME)
+	    
+	    if(LOGGING == true)
 	    {
-		if(LOGGING == true)
-		{
-		    log->save_epoch(currentClockCycle, epoch_count);
-		    log->ftlQueueReset();
-		    log->ctrlQueueReset();
-		}
-		epoch_count++;
-		epoch_cycles = 0;		
+		log->update();
 	    }
-	    else
+	    
+	    step();
+	    
+	    //saving stats at the end of each epoch
+	    if(USE_EPOCHS)
 	    {
-		epoch_cycles++;
+		ftl->sendQueueLength();
+		controller->sendQueueLength();
+		if(epoch_cycles >= EPOCH_TIME)
+		{
+		    if(LOGGING == true)
+		    {
+			log->save_epoch(currentClockCycle, epoch_count);
+			log->ftlQueueReset();
+			log->ctrlQueueReset();
+		    }
+		    epoch_count++;
+		    epoch_cycles = 0;		
+		}
+		else
+		{
+		    epoch_cycles++;
+		}
 	    }
+	}
+
+	if(nv_clock_counter1 == system_clock_counter)
+	{
+	    nv_clock_counter1 = 0.0;
+	    system_clock_counter = 0.0;
 	}
 
 	//cout << "NVDIMM successfully updated" << endl;
