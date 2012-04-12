@@ -54,11 +54,17 @@ namespace NVDSim{
 	                Ftl(Controller *c, Logger *l, NVDIMM *p);
 
 			ChannelPacket *translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr);
+			bool attemptAdd(FlashTransaction &t, std::list<FlashTransaction> *queue, uint64_t queue_limit);
+			bool addScheduledTransaction(FlashTransaction &t);
+			bool addPerfectTransaction(FlashTransaction &t);
 			virtual bool addTransaction(FlashTransaction &t);
-			void addFfTransaction(FlashTransaction &t);
+			void scriptCurrentTransaction(void);
+			void scheduleCurrentTransaction(void);
 			virtual void update(void);
-			int handle_read(bool gc); // int now tells us when this fails so we can move to the next read
+			void handle_read(bool gc);
 			virtual void write_used_handler(uint64_t vAddr);
+			void write_success(uint64_t block, uint64_t page, uint64_t vAddr, uint64_t pAddr, bool gc, bool mapped);
+			void handle_scripted_write(void);
 			void handle_write(bool gc);
 			void attemptWrite(uint64_t start, uint64_t *vAddr, uint64_t *pAddr, bool *done);
 			uint64_t get_ptr(void); 

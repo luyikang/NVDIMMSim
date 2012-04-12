@@ -64,182 +64,22 @@ GCFtl::GCFtl(Controller *c, Logger *l, NVDIMM *p)
 bool GCFtl::addTransaction(FlashTransaction &t){
     if(t.address < (VIRTUAL_TOTAL_SIZE*1024))
     {
-	// we are going to favor reads over writes
-	// so writes get put into a special lower prioirty queue
-	if(SCHEDULE)
+	if(!panic_mode)
 	{
-	    if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
+	    // we are going to favor reads over writes
+	    // so writes get put into a special lower prioirty queue
+	    if(SCHEDULE)
 	    {
-		if(readQueue.size() >= FTL_READ_QUEUE_LENGTH && FTL_READ_QUEUE_LENGTH != 0)
-		{
-		    return false;
-		}
-		else
-		{
-		    if (!panic_mode)
-		    {
-			readQueue.push_back(t);
-			if( readQueue.size() == 1)
-			{
-			    read_pointer = readQueue.begin();
-			}
-			if(LOGGING == true)
-			{
-			    // Start the logging for this access.
-			    log->access_start(t.address);
-			    if(QUEUE_EVENT_LOG)
-			    {
-			       log->log_ftl_queue_event(false, &readQueue);
-			    }
-			}
-			return true;
-		    }
-		    
-		    return false;
-		}
+		return addScheduledTransaction(t);
 	    }
-	    else if(t.transactionType == DATA_WRITE)
+	    else if(PERFECT_SCHEDULE)
 	    {
-		if(writeQueue.size() >= FTL_WRITE_QUEUE_LENGTH && FTL_WRITE_QUEUE_LENGTH != 0)
-		{
-		    return false;
-		}
-		else
-		{
-		    if (!panic_mode)
-		    {
-			// see if this write replaces another already in the write queue
-			// if it does remove that other write from the queue
-			list<FlashTransaction>::iterator it;
-			for (it = writeQueue.begin(); it != writeQueue.end(); it++)
-			{
-			    if((*it).address == t.address)
-			    {
-				cout << "replaced a write \n";
-				cout << "head is now " << writeQueue.front().address << "\n";
-				if(LOGGING)
-				{
-				    // access_process for that write is called here since its over now.
-				    log->access_process(t.address, t.address, 0, WRITE);
-
-				    // stop_process for that write is called here since its over now.
-				    log->access_stop(t.address, t.address);
-				}
-				// issue a callback for this write
-				if (parent->WriteDataDone != NULL){
-				    (*parent->WriteDataDone)(parent->systemID, (*it).address, currentClockCycle, true);
-				}
-				writeQueue.erase(it);
-				break;
-			    }
-			}
-			cout << "write queue was: \n";
-			list<FlashTransaction>::iterator it2;
-			for (it2 = writeQueue.begin(); it2 != writeQueue.end(); it2++)
-			{
-			    cout << (*it2).address << "\n";
-			}
-			writeQueue.push_back(t);
-			cout << "added a write \n";
-			cout << "head is now " << writeQueue.front().address << "\n";
-			if(LOGGING == true)
-			{
-			    // Start the logging for this access.
-			    log->access_start(t.address);
-			    if(QUEUE_EVENT_LOG)
-			    {
-				log->log_ftl_queue_event(true, &writeQueue);
-			    }
-			}
-			return true;
-		    }
-		    
-		    return false;
-		}
+		return addPerfectTransaction(t);
 	    }
-	    return false;
-	}
-	else if(PERFECT_SCHEDULE)
-	{
-	    if(t.transactionType == DATA_READ || t.transactionType == BLOCK_ERASE)
-	    {
-		if(readQueue.size() >= FTL_READ_QUEUE_LENGTH && FTL_READ_QUEUE_LENGTH != 0)
-		{
-		    return false;
-		}
-		else
-		{
-		    if (!panic_mode)
-		    {
-			readQueue.push_back(t);
-			if( readQueue.size() == 1)
-			{
-			    read_pointer = readQueue.begin();
-			}
-			if(LOGGING == true)
-			{
-			    // Start the logging for this access.
-			    log->access_start(t.address);
-			    if(QUEUE_EVENT_LOG)
-			    {
-			       log->log_ftl_queue_event(false, &readQueue);
-			    }
-			}
-			return true;
-		    }
-		    
-		    return false;
-		}
-	    }
-	    else if(t.transactionType == DATA_WRITE)
-	    {
-		if(writeQueue.size() >= FTL_WRITE_QUEUE_LENGTH && FTL_WRITE_QUEUE_LENGTH != 0)
-		{
-		    return false;
-		}
-		else
-		{
-		    if (!panic_mode)
-		    {
-			writeQueue.push_back(t);
-			if(LOGGING == true)
-			{
-			    // Start the logging for this access.
-			    log->access_start(t.address, t.transactionType);
-			    if(QUEUE_EVENT_LOG)
-			    {
-				log->log_ftl_queue_event(true, &writeQueue);
-			    }
-			}
-			return true;
-		    }
-		    
-		    return false;
-		}
-	    }
-	    return false;
-	}
-	// no scheduling, so just shove everything into the read queue
-	else
-	{
-	    if(readQueue.size() >= FTL_READ_QUEUE_LENGTH && FTL_READ_QUEUE_LENGTH != 0)
-	    {
-		return false;
-	    }
+	    // no scheduling, so just shove everything into the read queue
 	    else
 	    {
-		readQueue.push_back(t);
-		
-		if(LOGGING == true)
-		{
-		    // Start the logging for this access.
-		    log->access_start(t.address);
-		    if(QUEUE_EVENT_LOG)
-		    {
-			log->log_ftl_queue_event(false, &readQueue);
-		    }
-		}
-		return true;
+		return attemptAdd(t, &readQueue, FTL_READ_QUEUE_LENGTH);
 	    }
 	}
     }
@@ -300,43 +140,7 @@ void GCFtl::update(void){
 				{
 				    if(!read_queues_full)
 				    {
-					//cout << "In update the current trans is " << currentTransaction.address << "\n";
-					int status = handle_read(false);
-				    /*if(SCHEDULE)
-				    {
-					if(status == 0)
-					{ // if the read failed try the next thing in the queue
-					    if(read_pointer != readQueue.end() && readQueue.size()-1 > read_iterator_counter)
-					    {
-						read_pointer++;
-						read_iterator_counter++;
-						busy = 0;
-					    }
-					    else
-					    {
-						read_pointer = readQueue.begin();
-						// if we've cycled through everything then we need to wait till something gets done
-						// before continuing
-						if( read_iterator_counter >= readQueue.size())
-						{
-						    queues_full = true;
-						    log->locked_up(currentClockCycle);
-						}
-						read_iterator_counter = 0;
-						busy = 0;
-					    }
-					}
-					else if(status == 1)
-					{
-					    cout << "Thing we thought we popped " << currentTransaction.address << "\n";
-					    cout << "read pointer in update " << (*read_pointer).address << "\n";
-					    read_pointer = readQueue.begin(); // if whatever our read_pointer was pointing to worked
-					    busy = 0;
-					    // move the read_pointer back to the front of the queue
-					}
-					// status can also be 2 in which case nothing happens cause the read is being serviced
-					// by the write queue and we need to chill for a bit
-					}*/
+					handle_read(false);
 				    }
 				    break;
 				}
@@ -412,6 +216,11 @@ void GCFtl::update(void){
 		    currentTransaction = gcQueue.front();
 		    lookupCounter = LOOKUP_TIME;
 		}
+		// do nothing
+		else
+		{
+		    busy = 0;
+		}
 	    }
 	    // if we're not in gc mode and...
 	    // we're favoring reads over writes so we need to check the write queues to make sure they
@@ -420,98 +229,41 @@ void GCFtl::update(void){
 	    {
 		if(ENABLE_WRITE_SCRIPT)
 		{
-		    // is it time to issue a write?
-		    if(currentClockCycle >= write_cycle-LOOKUP_TIME && !writeQueue.empty())
-		    {
-			busy = 1;
-			currentTransaction = writeQueue.front();
-			lookupCounter = LOOKUP_TIME;
-		    }
-		    // no? then issue a read
-		    else if(!readQueue.empty())
-		    {
-			busy = 1;
-			currentTransaction = readQueue.front();
-			lookupCounter = LOOKUP_TIME;
-		    }
-		    // still need something to do?
-		    // Check to see if GC needs to run.
-		    else {
-			if (checkGC() && !gc_status && dirty_page_count != 0)
-			{
-			    // Run the GC.
-			    start_erase = parent->numErases;
-			    gc_status = 1;
-			    runGC();
-			}
-		    }
+		    scriptCurrentTransaction();
 		}
+		// standard scheduling
 		else
 		{
-		    // do we need to issue a write?
-		    if((WRITE_ON_QUEUE_SIZE == true && writeQueue.size() >= WRITE_QUEUE_LIMIT) ||
-		       (WRITE_ON_QUEUE_SIZE == false && writeQueue.size() >= FTL_WRITE_QUEUE_LENGTH-1))
-		    {
-			cout << "write forced \n";
-			cout << "front is " << writeQueue.front().address << "\n";
-			busy = 1;
-			currentTransaction = writeQueue.front();
-			lookupCounter = LOOKUP_TIME;
-		    }
-		    // no? then issue a read
-		    else if (!readQueue.empty()) {
-			busy = 1;
-			currentTransaction = (*read_pointer);
-			lookupCounter = LOOKUP_TIME;	    
-		    }
-		    // no reads to issue? then issue a write if we have opted to issue writes during idle
-		    else if(IDLE_WRITE == true && !writeQueue.empty())
-		    {
-			if(write_wait_count != 0 && DELAY_WRITE)
-			{
-			    write_wait_count--;
-			}
-			else
-			{
-			    cout << "waitings done, issuing a write \n";
-			    cout << "front is " << writeQueue.front().address << "\n";
-			    busy = 1;
-			    currentTransaction = writeQueue.front();
-			    lookupCounter = LOOKUP_TIME;
-			    write_wait_count = DELAY_WRITE_CYCLES;
-			}
-			
-		    }
-		    // still need something to do?
-		    // Check to see if GC needs to run.
-		    else {
-			if (checkGC() && !gc_status && dirty_page_count != 0)
-			{
-			    // Run the GC.
-			    start_erase = parent->numErases;
-			    gc_status = 1;
-			    runGC();
-			}
-		    }
+		    // schedule the next transaction using the scheduler algorithm in Ftl.cpp
+		    scheduleCurrentTransaction();
 		}
+
 	    }
 	     // we're not scheduling so everything is in the read queue
 	    // just issue from there
-	    else if (!readQueue.empty()) {
+	    else {
+		if (!readQueue.empty()) {
 		    busy = 1;
 		    currentTransaction = readQueue.front();
 		    lookupCounter = LOOKUP_TIME;
+		}
+		// do nothing
+		else
+		{
+		    busy = 0;
+		}
 	    }
+
 	    // still need something to do?
 	    // Check to see if GC needs to run.
-	    else {
-		if (checkGC() && !gc_status && dirty_page_count != 0)
-		{
-		    // Run the GC.
-		    start_erase = parent->numErases;
-		    gc_status = 1;
-		    runGC();
-		}
+	    // just using lookupCounter here as an indicator or whether or not something was done 
+	    // before we got here
+	    if (lookupCounter != LOOKUP_TIME && checkGC() && !gc_status && dirty_page_count != 0)
+	    {
+		// Run the GC.
+		start_erase = parent->numErases;
+		gc_status = 1;
+		runGC();
 	    }
 	}
 
@@ -636,16 +388,6 @@ void GCFtl::addGC(uint64_t dirty_block)
 
 void GCFtl::popFront(ChannelPacketType type)
 {
-    /*cout << "Popped something \n";
-    cout << "Popped a " << type << "\n";
-    cout << "thing we popped " << (*read_pointer).address << " " << (*read_pointer).transactionType << "\n";
-    list<FlashTransaction>::iterator poop;
-    uint64_t poop_count = 0;
-    for (poop = readQueue.begin(); poop != readQueue.end(); poop++)
-    {
-	cout << poop_count << " : " << (*poop).address << " " << (*poop).transactionType << "\n";
-	poop_count++;
-	}*/
     // if its a gc operation pop from the gc queue
     if(type == ERASE || type == GC_READ || type == GC_WRITE)
     {
@@ -667,7 +409,6 @@ void GCFtl::popFront(ChannelPacketType type)
 	}
 	else if(type == WRITE)
 	{
-	    cout << "head of the write queue being popped is " << writeQueue.front().address << "\n";
 	    writeQueue.pop_front();
 	    if(LOGGING && QUEUE_EVENT_LOG)
 	    {
