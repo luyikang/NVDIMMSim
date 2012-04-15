@@ -165,7 +165,7 @@ bool Ftl::attemptAdd(FlashTransaction &t, std::list<FlashTransaction> *queue, ui
 	if(LOGGING)
 	{
 	    // Start the logging for this access.
-	    log->access_start(t.address);
+	    log->access_start(t.address, t.transactionType);
 	    if(QUEUE_EVENT_LOG)
 	    {
 		log->log_ftl_queue_event(false, queue);
@@ -194,9 +194,11 @@ bool Ftl::addScheduledTransaction(FlashTransaction &t)
 	// see if this write replaces another already in the write queue
 	// if it does remove that other write from the queue
 	list<FlashTransaction>::iterator it;
+	int count = 0;
 	for (it = writeQueue.begin(); it != writeQueue.end(); it++)
 	{
-	    if((*it).address == t.address)
+	    // don't replace the write if we're already working on it
+	    if((*it).address == t.address && currentTransaction.address != t.address)
 	    {
 		if(LOGGING)
 		{
@@ -213,6 +215,7 @@ bool Ftl::addScheduledTransaction(FlashTransaction &t)
 		writeQueue.erase(it);
 		break;
 	    }
+	    count++;
 	}
 	// if we erased the write that this write replaced then we should definitely
 	// always have room for this write
@@ -389,6 +392,7 @@ void Ftl::update(void){
 
 void Ftl::handle_read(bool gc)
 {
+
     ChannelPacket *commandPacket;
     uint64_t vAddr = currentTransaction.address;
     bool write_queue_handled = false;
@@ -497,6 +501,7 @@ void Ftl::handle_read(bool gc)
 			popFront(read_type);
 			read_iterator_counter = 0;
 			busy = 0;
+    
 		}
 		else
 		{
@@ -520,6 +525,9 @@ void Ftl::handle_read(bool gc)
 			    // before continuing
 			    if( read_iterator_counter >= readQueue.size())
 			    {
+				// since we're going to be starting again when we get unlocked up
+				// make sure its from the beginning
+				read_pointer = readQueue.begin();
 				read_queues_full = true;
 				log->locked_up(currentClockCycle);
 				read_iterator_counter = 0;
@@ -709,9 +717,7 @@ void Ftl::handle_write(bool gc)
 	    // If we didn't find a free page after scanning to the end. Scan from the beginning
 	    // to the write pointer
 	    if (!done)
-	    {
-		//attemptWrite(0, &vAddr, &pAddr, &done);							
-		
+	    {							
 		for (block = 0 ; block < start / BLOCK_SIZE && !done; block++)
 		{
 		    for (page = 0 ; page < PAGES_PER_BLOCK  && !done; page++)
@@ -1064,9 +1070,7 @@ void Ftl::loadNVState(void)
 void Ftl::queuesNotFull(void)
 {
     read_queues_full = false;
-    write_queues_full = false;
-    // any time something finishes go back and try to issue the oldest read
-    read_pointer = readQueue.begin();
+    write_queues_full = false;   
     log->unlocked_up(locked_counter);
     locked_counter = 0;
 }
