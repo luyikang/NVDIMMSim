@@ -390,6 +390,139 @@ void Ftl::update(void){
 	}
 }
 
+// fake an unmapped read for the disk case by first fast writing the page and then normally reading that page
+void Ftl::handle_disk_read(bool gc)
+{
+    ChannelPacket *commandPacket;
+    uint64_t vAddr = currentTransaction.address, pAddr;
+    uint64_t start;
+    bool done = false;;
+    uint64_t block, page, tmp_block, tmp_page;
+
+
+    //=============================================================================
+    // the fast write part
+    //=============================================================================
+    //look for first free physical page starting at the write pointer
+    start = BLOCKS_PER_PLANE * (temp_plane + PLANES_PER_DIE * (temp_die + DIES_PER_PACKAGE * temp_channel));
+    
+    // Search from the current write pointer to the end of the flash for a free page.
+    for (block = start ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++)
+    {
+	for (page = 0 ; page < PAGES_PER_BLOCK  && !done ; page++)
+	{
+	    if (!used[block][page])
+	    {
+		tmp_block = block;
+		tmp_page = page;
+		pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
+		done = true;
+	    }
+	}
+    }
+    block = tmp_block;
+    page = tmp_page;
+    
+    if (!done)
+    {							
+	for (block = 0 ; block < start / BLOCK_SIZE && !done; block++)
+	{
+	    for (page = 0 ; page < PAGES_PER_BLOCK  && !done; page++)
+	    {
+		if (!used[block][page])
+		{
+		    tmp_block = block;
+		    tmp_page = page;
+		    pAddr = (block * BLOCK_SIZE + page * NV_PAGE_SIZE);
+		    done = true;
+		}
+	    }
+	}
+	block = tmp_block;
+	page = tmp_page;
+    }
+    
+    if (!done)
+    {
+	deadlock_counter++;
+	if(deadlock_counter == deadlock_time)
+	{
+	    //bad news
+	    cout << deadlock_time;
+	    ERROR("FLASH DIMM IS COMPLETELY FULL AND DEADLOCKED - If you see this, something has gone horribly wrong.");
+	    exit(9001);
+	}
+    } 
+    else 
+    {
+	// We've found a used page. Now we need to try to add the transaction to the Controller queue.
+	
+	// first things first, we're no longer in danger of dead locking so reset the counter
+	deadlock_counter = 0;
+	used[block][page] = true;
+	used_page_count++;
+	addressMap[vAddr] = pAddr;
+	
+	// quick write the page
+	ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
+	controller->writeToPackage(tempPacket);
+	
+	//=============================================================================
+	// the read part
+        //=============================================================================
+	// so now we can read
+	// now make a read to that page we just quickly wrote
+	commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
+	
+	//send the read to the controller
+	bool result = controller->addPacket(commandPacket);
+	if(result)
+	{
+	    if(LOGGING && !gc)
+	    {
+		// Update the logger (but not for GC_READ).
+		log->read_mapped();
+	    }
+	    popFront(READ);
+	    read_iterator_counter = 0;
+	    busy = 0;
+	    
+	}
+	else
+	{
+	    // Delete the packet if it is not being used to prevent memory leaks.
+	    delete commandPacket;
+	    if(!SCHEDULE)
+	    {
+		write_queues_full = true;	
+		log->locked_up(currentClockCycle);
+	    }
+	    else
+	    {
+		read_pointer++;
+		// making sure we don't fall off of the edge of the world
+		if(read_pointer == readQueue.end())
+		{
+		    read_pointer = readQueue.begin();
+		}
+		read_iterator_counter++;
+		// if we've cycled through everything then we need to wait till something gets done
+		// before continuing
+		if( read_iterator_counter >= readQueue.size())
+		{
+		    // since we're going to be starting again when we get unlocked up
+		    // make sure its from the beginning
+		    read_pointer = readQueue.begin();
+		    read_queues_full = true;
+		    log->locked_up(currentClockCycle);
+		    read_iterator_counter = 0;
+		}
+		busy = 0;
+	    }	
+	}
+    }
+}
+
 void Ftl::handle_read(bool gc)
 {
 
@@ -458,27 +591,36 @@ void Ftl::handle_read(bool gc)
 			exit(1);
 		}
 
-		// If not, then this is an unmapped read.
-		// We return a fake result immediately.
-		// In the future, this could be an error message if we want.
-		if(LOGGING)
+		// if we are disk reading then we want to map an unmapped read and treat is normally
+		if(DISK_READ)
 		{
+		    handle_disk_read(gc);
+		}
+		else
+		{
+
+		    // If not, then this is an unmapped read.
+		    // We return a fake result immediately.
+		    // In the future, this could be an error message if we want.
+		    if(LOGGING)
+		    {
 			// Update the logger
 			log->read_unmapped();
-
+			
 			// access_process for this read is called here since this ends now.
 			log->access_process(vAddr, vAddr, 0, READ);
 
 			// stop_process for this read is called here since this ends now.
 			log->access_stop(vAddr, vAddr);
-		}
+		    }
 
-		// Miss, nothing to read so return garbage.
-		controller->returnUnmappedData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
+		    // Miss, nothing to read so return garbage.
+		    controller->returnUnmappedData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
 	       
-		popFront(READ);
-		read_iterator_counter = 0;
-		busy = 0;
+		    popFront(READ);
+		    read_iterator_counter = 0;
+		    busy = 0;
+		}
 	} 
 	else 
 	{	

@@ -61,6 +61,7 @@ namespace NVDSim{
 			void scriptCurrentTransaction(void);
 			void scheduleCurrentTransaction(void);
 			virtual void update(void);
+			void handle_disk_read(bool gc);
 			void handle_read(bool gc);
 			virtual void write_used_handler(uint64_t vAddr);
 			void write_success(uint64_t block, uint64_t page, uint64_t vAddr, uint64_t pAddr, bool gc, bool mapped);

@@ -115,6 +115,9 @@ extern std::string NV_WRITE_SCRIPT;
 extern bool DELAY_WRITE;
 extern uint DELAY_WRITE_CYCLES;
 
+// SSD Options
+extern bool DISK_READ;
+
 // Buffering Options
 extern bool BUFFERED;
 extern uint64_t IN_BUFFER_SIZE;
@@ -154,6 +157,8 @@ extern uint64_t DEVICE_WIDTH;
 extern uint64_t CHANNEL_WIDTH;
 // does the device use garbage collection 
 extern bool GARBAGE_COLLECT;
+extern bool PRESTATE;
+extern uint PERCENT_FULL;
 
 #define GC GARBAGE_COLLECT
 
