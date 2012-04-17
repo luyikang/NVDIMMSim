@@ -168,7 +168,7 @@ void Controller::receiveFromChannel(ChannelPacket *busPacket){
 	}
 
 	// Delete the ChannelPacket since READ is done. This must be done to prevent memory leaks.
-	delete(busPacket);
+	delete busPacket;
 }
 
 // this is only called on a write as the name suggests
