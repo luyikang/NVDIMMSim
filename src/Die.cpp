@@ -250,11 +250,16 @@ void Die::update(void){
 			    uint64_t temp2 = returnDataPackets.front()->package;
 			    uint64_t temp3 = returnDataPackets.front()->die;
 			    uint64_t temp4 = returnDataPackets.front()->plane;
-			    log->log_plane_state(returnDataPackets.front()->virtualAddress, 
+			    log->log_plane_state(temp1, 
+						 temp2, 
+						 temp3, 
+						 temp4, 
+						 IDLE);
+			    /*log->log_plane_state(returnDataPackets.front()->virtualAddress, 
 						 returnDataPackets.front()->package, 
 						 returnDataPackets.front()->die, 
 						 returnDataPackets.front()->plane, 
-						 IDLE);
+						 IDLE);*/
 			}
 			returnDataPackets.pop();
 		    }
