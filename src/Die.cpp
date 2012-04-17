@@ -241,12 +241,15 @@ void Die::update(void){
 			buffer->channel->releaseChannel(BUFFER, id);
 			if(LOGGING && PLANE_STATE_LOG)
 			{
-			    cout << "valgrind says we have a problem here \n";
+			    /*cout << "valgrind says we have a problem here \n";
 			    cout << "address was " << returnDataPackets.front()->virtualAddress << "\n";
 			    cout << " package was " << returnDataPackets.front()->package << "\n";
 			    cout << " die was " << returnDataPackets.front()->die << "\n";
-			    cout << " plane was " << returnDataPackets.front()->plane << "\n";
-			    log->log_plane_state(returnDataPackets.front()->virtualAddress, returnDataPackets.front()->package, returnDataPackets.front()->die, returnDataPackets.front()->plane, IDLE);
+			    cout << " plane was " << returnDataPackets.front()->plane << "\n";*/
+			    log->log_plane_state(returnDataPackets.front()->virtualAddress, 
+						 returnDataPackets.front()->package, 
+						 returnDataPackets.front()->die, 
+						 returnDataPackets.front()->plane, IDLE);
 			}
 			returnDataPackets.pop();
 		    }
