@@ -393,6 +393,7 @@ void Ftl::update(void){
 // fake an unmapped read for the disk case by first fast writing the page and then normally reading that page
 void Ftl::handle_disk_read(bool gc)
 {
+    cout << "doing a disk read \n";
     ChannelPacket *commandPacket;
     uint64_t vAddr = currentTransaction.address, pAddr;
     uint64_t start;
@@ -404,7 +405,7 @@ void Ftl::handle_disk_read(bool gc)
     // the fast write part
     //=============================================================================
     //look for first free physical page starting at the write pointer
-    start = BLOCKS_PER_PLANE * (temp_plane + PLANES_PER_DIE * (temp_die + DIES_PER_PACKAGE * temp_channel));
+    start = BLOCKS_PER_PLANE * (plane + PLANES_PER_DIE * (die + DIES_PER_PACKAGE * channel));
     
     // Search from the current write pointer to the end of the flash for a free page.
     for (block = start ; block < TOTAL_SIZE / BLOCK_SIZE && !done; block++)
@@ -459,6 +460,15 @@ void Ftl::handle_disk_read(bool gc)
 	
 	// first things first, we're no longer in danger of dead locking so reset the counter
 	deadlock_counter = 0;
+
+	//update "write pointer"
+	channel = (channel + 1) % NUM_PACKAGES;
+	if (channel == 0){
+	    die = (die + 1) % DIES_PER_PACKAGE;
+	    if (die == 0)
+		plane = (plane + 1) % PLANES_PER_DIE;
+	}
+
 	used[block][page] = true;
 	used_page_count++;
 	addressMap[vAddr] = pAddr;
