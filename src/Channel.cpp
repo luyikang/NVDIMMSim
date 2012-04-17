@@ -56,7 +56,7 @@ void Channel::attachController(Controller *c){
 }
 
 int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
-    if( p ==  NULL)
+    if( p ==  NULL && t == CONTROLLER)
     {
 	cout << "something weird happened \n";
     }
