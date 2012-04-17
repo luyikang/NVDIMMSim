@@ -501,6 +501,7 @@ void Ftl::handle_disk_read(bool gc)
 	{
 	    // Delete the packet if it is not being used to prevent memory leaks.
 	    delete commandPacket;
+
 	    if(!SCHEDULE)
 	    {
 		write_queues_full = true;	

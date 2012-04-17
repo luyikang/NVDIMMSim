@@ -56,6 +56,10 @@ void Channel::attachController(Controller *c){
 }
 
 int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
+    if( p ==  NULL)
+    {
+	cout << "something weird happened \n";
+    }
     if (sender != -1 || (t == CONTROLLER && !BUFFERED && buffer->dies[p->die]->isDieBusy(p->plane)) || busy == 1){
 	return 0;		
     }
