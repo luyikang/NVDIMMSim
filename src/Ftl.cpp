@@ -393,7 +393,6 @@ void Ftl::update(void){
 // fake an unmapped read for the disk case by first fast writing the page and then normally reading that page
 void Ftl::handle_disk_read(bool gc)
 {
-    cout << "doing a disk read \n";
     ChannelPacket *commandPacket;
     uint64_t vAddr = currentTransaction.address, pAddr;
     uint64_t start;

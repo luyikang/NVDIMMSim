@@ -421,6 +421,10 @@ void Logger::log_plane_state(uint64_t address, uint64_t package, uint64_t die, u
     }
     else
     {
+	if(savefile.is_open())
+	{
+	    cout << "was already open \n";
+	}
 	savefile.open(LOG_DIR+"PlaneState.log", ios_base::out | ios_base::app);
     }
 
