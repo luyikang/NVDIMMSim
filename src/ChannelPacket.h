@@ -58,17 +58,18 @@ namespace NVDSim
 		//Fields
 		ChannelPacketType busPacketType;
 
-		uint page;
-		uint block;
-		uint plane;
-		uint die;
-		uint package;
+		uint64_t page;
+		uint64_t block;
+		uint64_t plane;
+		uint64_t die;
+		uint64_t package;
 		uint64_t virtualAddress;
 		uint64_t physicalAddress;
 		void *data;
 
 		//Functions
-		ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr, uint page, uint block, uint plane, uint die, uint package, void *dat);
+		ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr, uint64_t page, 
+			      uint64_t block, uint64_t plane, uint64_t die, uint64_t package, void *dat);
 		ChannelPacket();
 
 		//void print();

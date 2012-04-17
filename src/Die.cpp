@@ -249,7 +249,8 @@ void Die::update(void){
 			    log->log_plane_state(returnDataPackets.front()->virtualAddress, 
 						 returnDataPackets.front()->package, 
 						 returnDataPackets.front()->die, 
-						 returnDataPackets.front()->plane, IDLE);
+						 returnDataPackets.front()->plane, 
+						 IDLE);
 			}
 			returnDataPackets.pop();
 		    }

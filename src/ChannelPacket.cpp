@@ -39,7 +39,8 @@
 using namespace NVDSim;
 using namespace std;
 
-ChannelPacket::ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr, uint page_num, uint block_num, uint plane_num, uint die_num, uint package_num, void *dat)
+ChannelPacket::ChannelPacket(ChannelPacketType packtype, uint64_t virtualAddr, uint64_t physicalAddr, uint64_t page_num, 
+			     uint64_t block_num, uint64_t plane_num, uint64_t die_num, uint64_t package_num, void *dat)
 {
         virtualAddress = virtualAddr;
 	physicalAddress = physicalAddr;
