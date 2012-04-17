@@ -246,6 +246,10 @@ void Die::update(void){
 			    cout << " package was " << returnDataPackets.front()->package << "\n";
 			    cout << " die was " << returnDataPackets.front()->die << "\n";
 			    cout << " plane was " << returnDataPackets.front()->plane << "\n";*/
+			    uint64_t temp1 = returnDataPackets.front()->virtualAddress;
+			    uint64_t temp2 = returnDataPackets.front()->package;
+			    uint64_t temp3 = returnDataPackets.front()->die;
+			    uint64_t temp4 = returnDataPackets.front()->plane;
 			    log->log_plane_state(returnDataPackets.front()->virtualAddress, 
 						 returnDataPackets.front()->package, 
 						 returnDataPackets.front()->die, 
