@@ -485,7 +485,7 @@ void Ftl::handle_disk_read(bool gc)
 	addressMap[vAddr] = pAddr;
 	
 	// quick write the page
-	//ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
+	ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
 	//controller->writeToPackage(tempPacket);
 	
 	//=============================================================================
