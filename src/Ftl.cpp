@@ -735,6 +735,8 @@ void Ftl::write_success(uint64_t block, uint64_t page, uint64_t vAddr, uint64_t 
     // Set the used bit for this page to true.
     used[block][page] = true;
     used_page_count++;
+
+    cout << used_page_count << "\n";
 	
     // Pop the transaction from the transaction queue.
     popFront(WRITE);
