@@ -462,16 +462,16 @@ void Ftl::handle_disk_read(bool gc)
 	deadlock_counter = 0;
 
 	//update "write pointer"
-	/*channel = (channel + 1) % NUM_PACKAGES;
+	channel = (channel + 1) % NUM_PACKAGES;
 	if (channel == 0){
 	    die = (die + 1) % DIES_PER_PACKAGE;
 	    if (die == 0)
 		plane = (plane + 1) % PLANES_PER_DIE;
-		}*/
+		}
 
 	used[block][page] = true;
-	//used_page_count++;
-	addressMap[vAddr] = pAddr;
+	used_page_count++;
+	//addressMap[vAddr] = pAddr;
 	
 	// quick write the page
 	ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
