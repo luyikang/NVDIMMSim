@@ -479,12 +479,12 @@ void Ftl::handle_disk_read(bool gc)
 	deadlock_counter = 0;
 
 	//update "write pointer"
-	channel = (channel + 1) % NUM_PACKAGES;
+	/*channel = (channel + 1) % NUM_PACKAGES;
 	if (channel == 0){
 	    die = (die + 1) % DIES_PER_PACKAGE;
 	    if (die == 0)
 		plane = (plane + 1) % PLANES_PER_DIE;
-	}
+		}*/
 
 	used[block][page] = true;
 	used_page_count++;
@@ -497,12 +497,35 @@ void Ftl::handle_disk_read(bool gc)
 	//=============================================================================
 	// the read part
         //=============================================================================
+
+	// If not, then this is an unmapped read.
+	// We return a fake result immediately.
+	// In the future, this could be an error message if we want.
+	if(LOGGING)
+	{
+	    // Update the logger
+	    log->read_unmapped();
+	    
+	    // access_process for this read is called here since this ends now.
+	    log->access_process(vAddr, vAddr, 0, READ);
+
+	    // stop_process for this read is called here since this ends now.
+	    log->access_stop(vAddr, vAddr);
+	}
+	
+	// Miss, nothing to read so return garbage.
+	controller->returnUnmappedData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
+	
+	popFront(READ);
+	read_iterator_counter = 0;
+	busy = 0;
+	
 	// so now we can read
 	// now make a read to that page we just quickly wrote
-	commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
+	//commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
 	
 	//send the read to the controller
-	bool result = controller->addPacket(commandPacket);
+	/*bool result = controller->addPacket(commandPacket);
 	if(result)
 	{
 	    if(LOGGING && !gc)
@@ -547,7 +570,7 @@ void Ftl::handle_disk_read(bool gc)
 		}
 		busy = 0;
 	    }	
-	}
+	    }*/
     }
 }
 
