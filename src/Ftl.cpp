@@ -469,6 +469,7 @@ void Ftl::handle_disk_read(bool gc)
 		plane = (plane + 1) % PLANES_PER_DIE;
 		}
 
+	cout << "block is " << block << " and page is " << page << "\n";
 	//used[block][page] = true;
 	used_page_count++;
 	addressMap[vAddr] = pAddr;
@@ -721,7 +722,7 @@ void Ftl::write_used_handler(uint64_t vAddr)
 		// want to reuse this block for something at some later time so mark it as unused because it is
 		used[addressMap[vAddr] / BLOCK_SIZE][(addressMap[vAddr] / NV_PAGE_SIZE) % PAGES_PER_BLOCK] = false;
 
-		//cout << "USING FTL's WRITE_USED_HANDLER!!!\n";
+		cout << "USING FTL's WRITE_USED_HANDLER!!!\n";
 }
 
 void Ftl::write_success(uint64_t block, uint64_t page, uint64_t vAddr, uint64_t pAddr, bool gc, bool mapped)
