@@ -77,6 +77,7 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 
 	// Counter to keep track of succesful writes.
 	write_counter = 0;
+	used_page_count = 0;
 
 	// Counter to keep track of how long we've been access data in the write queue
 	queue_access_counter = 0;
@@ -475,6 +476,8 @@ void Ftl::handle_disk_read(bool gc)
 	//used[block][page] = true;
 	used_page_count++;
 	addressMap[vAddr] = pAddr;
+
+	cout << used_page_count << "\n";
 	
 	// quick write the page
 	ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
