@@ -292,7 +292,7 @@ void GCFtl::runGC() {
   uint64_t block, page, count, dirty_block=0, dirty_count=0;
 	FlashTransaction trans;
 	PendingErase temp_erase;
-
+	cout << "normal gc running \n";
 	// Get the dirtiest block (assumes the flash keeps track of this with an online algorithm).
 	for (block = erase_pointer; block < TOTAL_SIZE / BLOCK_SIZE; block++) {
 	  count = 0;
@@ -316,6 +316,7 @@ void GCFtl::runGC() {
 // so we will erase a block on every independent plane at the same time
 void GCFtl::runGC(uint64_t plane) {
   uint64_t block, page, count, dirty_block=0, dirty_count=0;
+  cout << "panic mode gc running \n";
 	FlashTransaction trans;
 	PendingErase temp_erase;
 
