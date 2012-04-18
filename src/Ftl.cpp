@@ -473,7 +473,14 @@ void Ftl::handle_disk_read(bool gc)
 	{
 	    cout << "block is " << block << " and page is " << page << "\n";
 	}
-	//used[block][page] = true;
+	try
+	{
+	    used[block][page] = true;
+	}
+	catch (exception& e)
+	{
+	    cout << e.what() << endl;
+	}
 	used_page_count++;
 	addressMap[vAddr] = pAddr;
 
@@ -481,7 +488,7 @@ void Ftl::handle_disk_read(bool gc)
 	
 	// quick write the page
 	ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
-	//controller->writeToPackage(tempPacket);
+	controller->writeToPackage(tempPacket);
 	
 	//=============================================================================
 	// the read part
