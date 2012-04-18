@@ -469,9 +469,9 @@ void Ftl::handle_disk_read(bool gc)
 		plane = (plane + 1) % PLANES_PER_DIE;
 		}
 
-	used[block][page] = true;
+	//used[block][page] = true;
 	used_page_count++;
-	//addressMap[vAddr] = pAddr;
+	addressMap[vAddr] = pAddr;
 	
 	// quick write the page
 	ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
