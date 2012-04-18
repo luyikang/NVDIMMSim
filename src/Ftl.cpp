@@ -475,7 +475,7 @@ void Ftl::handle_disk_read(bool gc)
 	}
 	try
 	{
-	    used[block][page] = true;
+	    used.at(block).at(page) = true;
 	}
 	catch (exception& e)
 	{
