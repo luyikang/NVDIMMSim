@@ -468,8 +468,10 @@ void Ftl::handle_disk_read(bool gc)
 	    if (die == 0)
 		plane = (plane + 1) % PLANES_PER_DIE;
 		}
-
-	cout << "block is " << block << " and page is " << page << "\n";
+	if (block > TOTAL_SIZE / BLOCK_SIZE || page > PAGES_PER_BLOCK)
+	{
+	    cout << "block is " << block << " and page is " << page << "\n";
+	}
 	//used[block][page] = true;
 	used_page_count++;
 	addressMap[vAddr] = pAddr;
