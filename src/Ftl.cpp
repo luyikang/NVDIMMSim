@@ -465,99 +465,72 @@ void Ftl::handle_disk_read(bool gc)
 	// quick write the page
 	ChannelPacket *tempPacket = Ftl::translate(FAST_WRITE, vAddr, pAddr);
 	bool worked = controller->writeToPackage(tempPacket);
+
+	used.at(block).at(page) = true;
+	used_page_count++;
+	addressMap[vAddr] = pAddr;
 	
-	// write was successful
-	//if(worked == true)
-	//{
-	    used.at(block).at(page) = true;
-	    used_page_count++;
-	    addressMap[vAddr] = pAddr;
-	    
-	    //update "write pointer"
-	    channel = (channel + 1) % NUM_PACKAGES;
-	    if (channel == 0){
-		die = (die + 1) % DIES_PER_PACKAGE;
-		if (die == 0)
-		    plane = (plane + 1) % PLANES_PER_DIE;
-	    }
-	    //=============================================================================
-	    // the read part
-	    //=============================================================================
-	    
-	    // If not, then this is an unmapped read.
-	    // We return a fake result immediately.
-	    // In the future, this could be an error message if we want.
-	    if(LOGGING)
+	//update "write pointer"
+	channel = (channel + 1) % NUM_PACKAGES;
+	if (channel == 0){
+	    die = (die + 1) % DIES_PER_PACKAGE;
+	    if (die == 0)
+		plane = (plane + 1) % PLANES_PER_DIE;
+	}
+	//=============================================================================
+	// the read part
+	//=============================================================================    
+	// so now we can read
+	// now make a read to that page we just quickly wrote
+	commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
+	
+	//send the read to the controller
+	bool result = controller->addPacket(commandPacket);
+	if(result)
+	{
+	    if(LOGGING && !gc)
 	    {
-		// Update the logger
-		log->read_unmapped();
-		
-		// access_process for this read is called here since this ends now.
-		log->access_process(vAddr, vAddr, 0, READ);
-		
-		// stop_process for this read is called here since this ends now.
-		log->access_stop(vAddr, vAddr);
+		// Update the logger (but not for GC_READ).
+		log->read_mapped();
 	    }
-	    
-	    // Miss, nothing to read so return garbage.
-	    controller->returnUnmappedData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
-	    
 	    popFront(READ);
 	    read_iterator_counter = 0;
 	    busy = 0;
 	    
-	    // so now we can read
-	    // now make a read to that page we just quickly wrote
-	    //commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
+	}
+	else
+	{
+	    // Delete the packet if it is not being used to prevent memory leaks.
+	    delete commandPacket;
 	    
-	    //send the read to the controller
-	    /*bool result = controller->addPacket(commandPacket);
-	      if(result)
-	      {
-	      if(LOGGING && !gc)
-	      {
-	      // Update the logger (but not for GC_READ).
-	      log->read_mapped();
-	      }
-	      popFront(READ);
-	      read_iterator_counter = 0;
-	      busy = 0;
-	      
-	      }
-	      else
-	      {
-	      // Delete the packet if it is not being used to prevent memory leaks.
-	      delete commandPacket;
-	      
-	      if(!SCHEDULE)
-	      {
-	      write_queues_full = true;	
-	      log->locked_up(currentClockCycle);
-	      }
-	      else
-	      {
-	      read_pointer++;
-	      // making sure we don't fall off of the edge of the world
-	      if(read_pointer == readQueue.end())
-	      {
-	      read_pointer = readQueue.begin();
-	      }
-	      read_iterator_counter++;
-	      // if we've cycled through everything then we need to wait till something gets done
-	      // before continuing
-	      if( read_iterator_counter >= readQueue.size())
-	      {
-	      // since we're going to be starting again when we get unlocked up
-	      // make sure its from the beginning
-	      read_pointer = readQueue.begin();
-	      read_queues_full = true;
-	      log->locked_up(currentClockCycle);
-	      read_iterator_counter = 0;
-	      }
-	      busy = 0;
-	      }	
-	      }*/
-	    //}
+	    if(!SCHEDULE)
+	    {
+		write_queues_full = true;	
+		log->locked_up(currentClockCycle);
+	    }
+	    else
+	    {
+		read_pointer++;
+		// making sure we don't fall off of the edge of the world
+		if(read_pointer == readQueue.end())
+		{
+		    read_pointer = readQueue.begin();
+		}
+		read_iterator_counter++;
+		// if we've cycled through everything then we need to wait till something gets done
+		// before continuing
+		if( read_iterator_counter >= readQueue.size())
+		{
+		    // since we're going to be starting again when we get unlocked up
+		    // make sure its from the beginning
+		    read_pointer = readQueue.begin();
+		    read_queues_full = true;
+		    log->locked_up(currentClockCycle);
+		    read_iterator_counter = 0;
+		}
+		busy = 0;
+	    }	
+	}
     }
 }
 
