@@ -303,9 +303,9 @@ bool Die::writeToPlane(ChannelPacket *packet)
     ChannelPacket *test = planes[packet->plane].readFromData();
     if(test != NULL)
     {
-	cout << "test worked \n";
 	return false;
     }
+    cout << "yay we can write \n";
     ChannelPacket *temp = new ChannelPacket(DATA, packet->virtualAddress, packet->physicalAddress, packet->page, packet->block, packet->plane, packet->die, packet->package, NULL);
     planes[packet->plane].storeInData(temp);
     planes[packet->plane].write(packet);
