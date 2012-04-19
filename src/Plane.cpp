@@ -68,10 +68,10 @@ void Plane::write(ChannelPacket *busPacket){
 	else
 	{
 	    blocks[busPacket->block].write(busPacket->page, dataReg->data);
-	}
 
-	// The data packet is now done being used, so it can be deleted.
-	delete dataReg;
+	    // The data packet is now done being used, so it can be deleted.
+	    delete dataReg;
+	}
 }
 
 // should only ever erase blocks
