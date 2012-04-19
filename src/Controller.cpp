@@ -649,9 +649,9 @@ void Controller::sendQueueLength(void)
 	}
 }
 
-void Controller::writeToPackage(ChannelPacket *packet)
+bool Controller::writeToPackage(ChannelPacket *packet)
 {
-	(*packages)[packet->package].dies[packet->die]->writeToPlane(packet);
+	return (*packages)[packet->package].dies[packet->die]->writeToPlane(packet);
 }
 
 void Controller::bufferDone(uint64_t package, uint64_t die, uint64_t plane)

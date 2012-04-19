@@ -461,110 +461,103 @@ void Ftl::handle_disk_read(bool gc)
 	
 	// first things first, we're no longer in danger of dead locking so reset the counter
 	deadlock_counter = 0;
-
-	//update "write pointer"
-	channel = (channel + 1) % NUM_PACKAGES;
-	if (channel == 0){
-	    die = (die + 1) % DIES_PER_PACKAGE;
-	    if (die == 0)
-		plane = (plane + 1) % PLANES_PER_DIE;
-		}
-	if (block > TOTAL_SIZE / BLOCK_SIZE || page > PAGES_PER_BLOCK)
-	{
-	    cout << "block is " << block << " and page is " << page << "\n";
-	}
-	try
-	{
-	    used.at(block).at(page) = true;
-	}
-	catch (exception& e)
-	{
-	    cout << e.what() << endl;
-	}
-	used_page_count++;
-	addressMap[vAddr] = pAddr;
 	
 	// quick write the page
 	ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
-	//controller->writeToPackage(tempPacket);
+	bool worked = controller->writeToPackage(tempPacket);
 	
-	//=============================================================================
-	// the read part
-        //=============================================================================
-
-	// If not, then this is an unmapped read.
-	// We return a fake result immediately.
-	// In the future, this could be an error message if we want.
-	if(LOGGING)
+	// write was successful
+	if(worked == true)
 	{
-	    // Update the logger
-	    log->read_unmapped();
+	    used.at(block).at(page) = true;
+	    used_page_count++;
+	    addressMap[vAddr] = pAddr;
 	    
-	    // access_process for this read is called here since this ends now.
-	    log->access_process(vAddr, vAddr, 0, READ);
-
-	    // stop_process for this read is called here since this ends now.
-	    log->access_stop(vAddr, vAddr);
-	}
-	
-	// Miss, nothing to read so return garbage.
-	controller->returnUnmappedData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
-	
-	popFront(READ);
-	read_iterator_counter = 0;
-	busy = 0;
-	
-	// so now we can read
-	// now make a read to that page we just quickly wrote
-	//commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
-	
-	//send the read to the controller
-	/*bool result = controller->addPacket(commandPacket);
-	if(result)
-	{
-	    if(LOGGING && !gc)
-	    {
-		// Update the logger (but not for GC_READ).
-		log->read_mapped();
+	    //update "write pointer"
+	    channel = (channel + 1) % NUM_PACKAGES;
+	    if (channel == 0){
+		die = (die + 1) % DIES_PER_PACKAGE;
+		if (die == 0)
+		    plane = (plane + 1) % PLANES_PER_DIE;
 	    }
+	    //=============================================================================
+	    // the read part
+	    //=============================================================================
+	    
+	    // If not, then this is an unmapped read.
+	    // We return a fake result immediately.
+	    // In the future, this could be an error message if we want.
+	    if(LOGGING)
+	    {
+		// Update the logger
+		log->read_unmapped();
+		
+		// access_process for this read is called here since this ends now.
+		log->access_process(vAddr, vAddr, 0, READ);
+		
+		// stop_process for this read is called here since this ends now.
+		log->access_stop(vAddr, vAddr);
+	    }
+	    
+	    // Miss, nothing to read so return garbage.
+	    controller->returnUnmappedData(FlashTransaction(RETURN_DATA, vAddr, (void *)0xdeadbeef));
+	    
 	    popFront(READ);
 	    read_iterator_counter = 0;
 	    busy = 0;
 	    
+	    // so now we can read
+	    // now make a read to that page we just quickly wrote
+	    //commandPacket = Ftl::translate(READ, vAddr, addressMap[vAddr]);
+	    
+	    //send the read to the controller
+	    /*bool result = controller->addPacket(commandPacket);
+	      if(result)
+	      {
+	      if(LOGGING && !gc)
+	      {
+	      // Update the logger (but not for GC_READ).
+	      log->read_mapped();
+	      }
+	      popFront(READ);
+	      read_iterator_counter = 0;
+	      busy = 0;
+	      
+	      }
+	      else
+	      {
+	      // Delete the packet if it is not being used to prevent memory leaks.
+	      delete commandPacket;
+	      
+	      if(!SCHEDULE)
+	      {
+	      write_queues_full = true;	
+	      log->locked_up(currentClockCycle);
+	      }
+	      else
+	      {
+	      read_pointer++;
+	      // making sure we don't fall off of the edge of the world
+	      if(read_pointer == readQueue.end())
+	      {
+	      read_pointer = readQueue.begin();
+	      }
+	      read_iterator_counter++;
+	      // if we've cycled through everything then we need to wait till something gets done
+	      // before continuing
+	      if( read_iterator_counter >= readQueue.size())
+	      {
+	      // since we're going to be starting again when we get unlocked up
+	      // make sure its from the beginning
+	      read_pointer = readQueue.begin();
+	      read_queues_full = true;
+	      log->locked_up(currentClockCycle);
+	      read_iterator_counter = 0;
+	      }
+	      busy = 0;
+	      }	
+	      }*/
 	}
-	else
-	{
-	    // Delete the packet if it is not being used to prevent memory leaks.
-	    delete commandPacket;
-
-	    if(!SCHEDULE)
-	    {
-		write_queues_full = true;	
-		log->locked_up(currentClockCycle);
-	    }
-	    else
-	    {
-		read_pointer++;
-		// making sure we don't fall off of the edge of the world
-		if(read_pointer == readQueue.end())
-		{
-		    read_pointer = readQueue.begin();
-		}
-		read_iterator_counter++;
-		// if we've cycled through everything then we need to wait till something gets done
-		// before continuing
-		if( read_iterator_counter >= readQueue.size())
-		{
-		    // since we're going to be starting again when we get unlocked up
-		    // make sure its from the beginning
-		    read_pointer = readQueue.begin();
-		    read_queues_full = true;
-		    log->locked_up(currentClockCycle);
-		    read_iterator_counter = 0;
-		}
-		busy = 0;
-	    }	
-	    }*/
     }
 }
 

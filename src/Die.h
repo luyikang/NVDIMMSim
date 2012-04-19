@@ -62,7 +62,7 @@ namespace NVDSim{
 			void critLineDone(void);
 
 			// for fast forwarding
-			void writeToPlane(ChannelPacket *packet);
+			bool writeToPlane(ChannelPacket *packet);
 
 		private:
 			uint64_t id;
