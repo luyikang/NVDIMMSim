@@ -300,13 +300,13 @@ void Die::critLineDone()
 
 bool Die::writeToPlane(ChannelPacket *packet)
 {
-    ChannelPacket *test = planes[packet->plane].readFromData();
-    if(test != NULL)
+    //ChannelPacket *test = planes[packet->plane].readFromData();
+    /*if(test != NULL)
     {
 	return false;
-    }
-    ChannelPacket *temp = new ChannelPacket(DATA, packet->virtualAddress, packet->physicalAddress, packet->page, packet->block, packet->plane, packet->die, packet->package, NULL);
-    planes[packet->plane].storeInData(temp);
+	}*/
+    //ChannelPacket *temp = new ChannelPacket(DATA, packet->virtualAddress, packet->physicalAddress, packet->page, packet->block, packet->plane, packet->die, packet->package, NULL);
+    //planes[packet->plane].storeInData(temp);
     planes[packet->plane].write(packet);
 
     return true;

@@ -61,11 +61,17 @@ void Plane::write(ChannelPacket *busPacket){
 	if (blocks.find(busPacket->block) == blocks.end())
 		blocks[busPacket->block] = Block(busPacket->block);
 
-	blocks[busPacket->block].write(busPacket->page, dataReg->data);
+	if(busPacket->busPacketType == FAST_WRITE)
+	{
+	    blocks[busPacket->block].write(busPacket->page, NULL);
+	}
+	else
+	{
+	    blocks[busPacket->block].write(busPacket->page, dataReg->data);
+	}
 
 	// The data packet is now done being used, so it can be deleted.
 	delete dataReg;
-	dataReg = NULL;
 }
 
 // should only ever erase blocks

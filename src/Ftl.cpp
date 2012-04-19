@@ -463,12 +463,12 @@ void Ftl::handle_disk_read(bool gc)
 	deadlock_counter = 0;
 	
 	// quick write the page
-	ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
+	ChannelPacket *tempPacket = Ftl::translate(FAST_WRITE, vAddr, pAddr);
 	bool worked = controller->writeToPackage(tempPacket);
 	
 	// write was successful
-	if(worked == true)
-	{
+	//if(worked == true)
+	//{
 	    used.at(block).at(page) = true;
 	    used_page_count++;
 	    addressMap[vAddr] = pAddr;
@@ -557,7 +557,7 @@ void Ftl::handle_disk_read(bool gc)
 	      busy = 0;
 	      }	
 	      }*/
-	}
+	    //}
     }
 }
 
