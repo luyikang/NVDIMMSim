@@ -555,7 +555,7 @@ void GCFtl::loadNVState(void)
 		{
 		    pAddr = (row * BLOCK_SIZE + column * NV_PAGE_SIZE);
 		    vAddr = tempMap[pAddr];
-		    ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
+		    ChannelPacket *tempPacket = Ftl::translate(FAST_WRITE, vAddr, pAddr);
 		    controller->writeToPackage(tempPacket);
 
 		    used_page_count++;
