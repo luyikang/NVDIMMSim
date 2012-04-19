@@ -222,6 +222,7 @@ bool Ftl::addScheduledTransaction(FlashTransaction &t)
 	// always have room for this write
 	return attemptAdd(t, &writeQueue, FTL_WRITE_QUEUE_LENGTH);
     }
+    return false;
 }
 
 bool Ftl::addPerfectTransaction(FlashTransaction &t)
@@ -242,6 +243,7 @@ bool Ftl::addPerfectTransaction(FlashTransaction &t)
     {
 	return attemptAdd(t, &writeQueue, FTL_WRITE_QUEUE_LENGTH);
     }
+    return false;
 }
 
 bool Ftl::addTransaction(FlashTransaction &t){
@@ -464,7 +466,7 @@ void Ftl::handle_disk_read(bool gc)
 	
 	// quick write the page
 	ChannelPacket *tempPacket = Ftl::translate(FAST_WRITE, vAddr, pAddr);
-	bool worked = controller->writeToPackage(tempPacket);
+	controller->writeToPackage(tempPacket);
 
 	used.at(block).at(page) = true;
 	used_page_count++;
@@ -536,7 +538,6 @@ void Ftl::handle_disk_read(bool gc)
 
 void Ftl::handle_read(bool gc)
 {
-
     ChannelPacket *commandPacket;
     uint64_t vAddr = currentTransaction.address;
     bool write_queue_handled = false;
@@ -1187,7 +1188,7 @@ void Ftl::loadNVState(void)
 				{
 					pAddr = (row * BLOCK_SIZE + column * NV_PAGE_SIZE);
 					vAddr = tempMap[pAddr];
-					ChannelPacket *tempPacket = Ftl::translate(WRITE, vAddr, pAddr);
+					ChannelPacket *tempPacket = Ftl::translate(FAST_WRITE, vAddr, pAddr);
 					controller->writeToPackage(tempPacket);
 				}
 

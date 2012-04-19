@@ -89,7 +89,7 @@ namespace NVDSim{
 			void bufferDone(uint64_t package, uint64_t die, uint64_t plane);
 
 			// for fast forwarding
-			bool writeToPackage(ChannelPacket *packet);
+			void writeToPackage(ChannelPacket *packet);
 
 			NVDIMM *parentNVDIMM;
 			Logger *log;

@@ -139,7 +139,7 @@ void test_obj::power_cb(uint id, vector<vector<double>> data, uint64_t cycle, bo
 
 void test_obj::run_test(void){
 	clock_t start= clock(), end;
-	uint write, cycle;
+	uint cycle;
 	NVDIMM *NVDimm= new NVDIMM(1,"ini/samsung_K9XXG08UXM_gc_test.ini","ini/def_system.ini","","");
 	//NVDIMM *NVDimm= new NVDIMM(1,"ini/PCM_TEST.ini","ini/def_system.ini","","");
 	typedef CallbackBase<void,uint,uint64_t,uint64_t,bool> Callback_t;

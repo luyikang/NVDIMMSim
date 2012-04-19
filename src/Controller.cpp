@@ -536,6 +536,8 @@ void Controller::update(void){
 			    case DATA:
 				log->log_ctrl_queue_event(true, readQueues[i][die_pointers[i]].front()->package, &readQueues[i][die_pointers[i]]);
 				break;
+			    case FAST_WRITE:
+				break;
 			    }
 			}
 			readQueues[i][die_pointers[i]].pop_front();
@@ -649,7 +651,7 @@ void Controller::sendQueueLength(void)
 	}
 }
 
-bool Controller::writeToPackage(ChannelPacket *packet)
+void Controller::writeToPackage(ChannelPacket *packet)
 {
 	return (*packages)[packet->package].dies[packet->die]->writeToPlane(packet);
 }
