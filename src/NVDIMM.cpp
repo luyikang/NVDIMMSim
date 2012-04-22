@@ -333,6 +333,54 @@ namespace NVDSim
 	while(nv_clock_counter1 < system_clock_counter)
 	{
 	    nv_clock_counter1 += CYCLE_TIME;
+
+	    //cout << "updating ftl \n";
+	    ftl->update();
+	    ftl->step();
+	    
+	    if(BUFFERED)
+	    {
+		nv_clock_counter2 += CYCLE_TIME;
+		while(controller_clock_counter < nv_clock_counter2)
+		{
+		    controller_clock_counter += CHANNEL_CYCLE;
+		    controller->update();
+		    controller->step();
+		}
+
+		if(controller_clock_counter == nv_clock_counter2)
+		{
+		    nv_clock_counter2 = 0.0;
+		    controller_clock_counter = 0.0;
+		}
+		/*
+		if(faster_channel)
+		{
+		    for(uint64_t c = 0; c < channel_cycles_per_cycle; c++)
+		    {
+			controller->update();
+			controller->step();
+		    }
+		}
+		else
+		{
+		    // reset the update counter and update the controller
+		    if(controller_cycles_left == 0)
+		    {
+			controller->update();
+			controller->step();
+			controller_cycles_left = channel_cycles_per_cycle;
+		    }
+		    
+		    controller_cycles_left = controller_cycles_left - 1;
+		}
+		*/
+	    }
+	    else
+	    {
+		controller->update();
+		controller->step();
+	    }
 	
 	    for (i= 0; i < packages->size(); i++){
 		package= (*packages)[i];
@@ -382,54 +430,6 @@ namespace NVDSim
 			package.dies[j]->update();
 			package.dies[j]->step();
 		}
-	    }
-	
-	    //cout << "updating ftl \n";
-	    ftl->update();
-	    ftl->step();
-	    
-	    if(BUFFERED)
-	    {
-		nv_clock_counter2 += CYCLE_TIME;
-		while(controller_clock_counter < nv_clock_counter2)
-		{
-		    controller_clock_counter += CHANNEL_CYCLE;
-		    controller->update();
-		    controller->step();
-		}
-
-		if(controller_clock_counter == nv_clock_counter2)
-		{
-		    nv_clock_counter2 = 0.0;
-		    controller_clock_counter = 0.0;
-		}
-		/*
-		if(faster_channel)
-		{
-		    for(uint64_t c = 0; c < channel_cycles_per_cycle; c++)
-		    {
-			controller->update();
-			controller->step();
-		    }
-		}
-		else
-		{
-		    // reset the update counter and update the controller
-		    if(controller_cycles_left == 0)
-		    {
-			controller->update();
-			controller->step();
-			controller_cycles_left = channel_cycles_per_cycle;
-		    }
-		    
-		    controller_cycles_left = controller_cycles_left - 1;
-		}
-		*/
-	    }
-	    else
-	    {
-		controller->update();
-		controller->step();
 	    }
 	    
 	    if(LOGGING == true)

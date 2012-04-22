@@ -60,7 +60,7 @@ int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
     {
 	cout << "something weird happened \n";
     }
-    if (sender != -1 || (t == CONTROLLER && !BUFFERED && buffer->dies[p->die]->isDieBusy(p->plane)) || busy == 1){
+    if (sender != -1 || (t == CONTROLLER && p->busPacketType != DATA && !BUFFERED && buffer->dies[p->die]->isDieBusy(p->plane)) || busy == 1){
 	return 0;		
     }
     else
