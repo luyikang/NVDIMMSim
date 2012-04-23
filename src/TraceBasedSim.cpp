@@ -47,8 +47,8 @@
 #include <time.h>
 #include "TraceBasedSim.h"
 
-#define NUM_WRITES 5000
-#define SIM_CYCLES 1000000
+#define NUM_WRITES 10000
+#define SIM_CYCLES 100000000
 
 /*temporary assignments for externed variables.
  * This should really be done with another class

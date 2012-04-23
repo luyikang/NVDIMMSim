@@ -70,7 +70,12 @@ void Plane::write(ChannelPacket *busPacket){
 	    blocks[busPacket->block].write(busPacket->page, dataReg->data);
 
 	    // The data packet is now done being used, so it can be deleted.
-	    delete dataReg;
+	    // Safety first...
+	    if(dataReg != NULL)
+	    {
+		delete dataReg;
+		dataReg = NULL;
+	    }
 	}
 }
 
