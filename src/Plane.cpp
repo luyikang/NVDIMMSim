@@ -61,7 +61,7 @@ void Plane::write(ChannelPacket *busPacket){
 	if (blocks.find(busPacket->block) == blocks.end())
 		blocks[busPacket->block] = Block(busPacket->block);
 
-	if(busPacket->busPacketType == FAST_WRITE)
+	if(busPacket->busPacketType == FAST_WRITE || dataReg == NULL)
 	{
 	    blocks[busPacket->block].write(busPacket->page, NULL);
 	}
