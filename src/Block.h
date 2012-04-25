@@ -48,7 +48,6 @@ namespace NVDSim{
 			void erase(void);
 		private:
 			uint block_num;
-
 	                std::unordered_map<uint, void *> page_data;
 	};
 }

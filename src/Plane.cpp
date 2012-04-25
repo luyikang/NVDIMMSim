@@ -43,6 +43,8 @@ using namespace std;
 Plane::Plane(void){
 	dataReg= NULL;
 	cacheReg= NULL;
+	write_reg = 0;
+	read_reg = 0;
 }
 
 void Plane::read(ChannelPacket *busPacket){
@@ -52,8 +54,23 @@ void Plane::read(ChannelPacket *busPacket){
 		DEBUG("Invalid read: Block "<<busPacket->block<<" hasn't been written to");
 	}
 
-	// Put this packet on the data register to send it back (it will eventually end up in Controller::receieveFromChannel).
-	dataReg= busPacket;
+	// Put this packet on either the data register or the cache register to send it back (it will 
+	// eventually end up in Controller::receieveFromChannel).
+	if(dataReg == NULL)
+	{
+	    dataReg = busPacket;
+	    read_reg = 1;
+	}
+	else if(dataReg != NULL && cacheReg == NULL)
+	{
+	    cacheReg = busPacket;
+	    read_reg = 2;
+	}
+	else
+	{
+	    // no more room in this inn, somebody fucked up and it was probably me
+	    DEBUG("tried to add read data to plane "<<busPacket->plane<<" but both of its registers were full");
+	}
 }
 
 void Plane::write(ChannelPacket *busPacket){
@@ -61,21 +78,44 @@ void Plane::write(ChannelPacket *busPacket){
 	if (blocks.find(busPacket->block) == blocks.end())
 		blocks[busPacket->block] = Block(busPacket->block);
 
-	if(busPacket->busPacketType == FAST_WRITE || dataReg == NULL)
+	if(busPacket->busPacketType == FAST_WRITE)
 	{
 	    blocks[busPacket->block].write(busPacket->page, NULL);
 	}
-	else
+	// safety first...
+	else if(write_reg == 1)
 	{
-	    blocks[busPacket->block].write(busPacket->page, dataReg->data);
-
-	    // The data packet is now done being used, so it can be deleted.
-	    // Safety first...
 	    if(dataReg != NULL)
 	    {
+		blocks[busPacket->block].write(busPacket->page, dataReg->data);
+	    
+		// The data packet is now done being used, so it can be deleted.
 		delete dataReg;
 		dataReg = NULL;
 	    }
+	    else
+	    {
+		DEBUG("Invalid write: dataReg was NULL when block "<<busPacket->block<<"was written to");
+	    }
+	}
+	else if(write_reg == 2)
+	{
+	    if(cacheReg != NULL)
+	    {
+		blocks[busPacket->block].write(busPacket->page, cacheReg->data);
+	    
+		// The data packet is now done being used, so it can be deleted.
+		delete cacheReg;
+		cacheReg = NULL;
+	    }
+	    else
+	    {
+		DEBUG("Invalid write: dataReg was NULL when block "<<busPacket->block<<"was written to");
+	    }
+	}
+	else
+	{
+	    DEBUG("Invalid write: dataReg and cacheReg were NULL when block "<<busPacket->block<<"was written to");
 	}
 }
 
@@ -89,9 +129,65 @@ void Plane::erase(ChannelPacket *busPacket){
 
 
 void Plane::storeInData(ChannelPacket *busPacket){
+    if(dataReg == NULL && cacheReg == NULL)
+    {
 	dataReg= busPacket;
+	write_reg = 1;
+    }
+    else if(dataReg != NULL && cacheReg == NULL)
+    {
+	cacheReg = busPacket;
+	if(read_reg == 1)
+	{
+	    write_reg = 2; // the data in the data reg is for a read, so the the cache reg will be used by the next write
+	}
+	else
+	{
+	    write_reg = 1; // if there was data in the data reg then its going to be used by the next write
+	}
+    }
+    else if(dataReg == NULL && cacheReg != NULL)
+    {
+	dataReg= busPacket;
+	if(read_reg == 2)
+	{
+	    write_reg = 1; // the data in the cache reg is for a read so the next write should use the data reg
+	}
+	else
+	{
+	    write_reg = 2; // if there was data in the cache reg then its going to be used by the next write
+	}
+    }
+    else
+    {
+	// no more room in this inn, somebody fucked up and it was probably me
+	ERROR("tried to add write data to plane "<<busPacket->plane<<" but both of its registers were full");
+    }
+
 }
 
 ChannelPacket *Plane::readFromData(void){
-	return dataReg;
+    ChannelPacket *temp =  NULL; // so we can free the register
+    if(read_reg == 1)
+    {
+	// read no longer needs this register
+	read_reg = 0;
+	temp = dataReg;
+	dataReg = NULL;
+	return temp;
+    }
+    else if(read_reg == 2)
+    {
+	// read no longer needs this register
+	read_reg = 0;
+	temp = cacheReg;
+	cacheReg = NULL;
+	return temp;
+    }
+    else
+    {
+	ERROR("tried to read from a plane but there was no read data on either of its registers");
+	abort();
+    }
+
 }

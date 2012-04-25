@@ -50,6 +50,12 @@ namespace NVDSim{
 			void storeInData(ChannelPacket *busPacket); 
 			ChannelPacket *readFromData(void);
 		private:
+			int write_reg;   // 0 no pending write data
+                                         // 1 if the data reg is being used for write data, this reg should be used for the next write to arrive
+			                 // 2 if the cache reg is being used for write data, this reg should be used for the next write to arrive
+			int read_reg;    // 0 no pending read data
+			                 // 1 if the data reg is being used for read data
+			                 // 2 if the cache reg is being used for read data
 			ChannelPacket *dataReg, *cacheReg;
 			std::unordered_map<uint, Block> blocks;
 	};
