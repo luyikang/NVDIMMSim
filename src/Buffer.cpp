@@ -205,16 +205,28 @@ void Buffer::update(void){
 		}
 	    }
 	    // its not a command but it is the first time we've dealt with this data
-	    else if(inDataLeft[i] == 0 && waiting[i] != true && inData[i].front()->number >= DEVICE_WIDTH)
+	    else if(inDataLeft[i] == 0 && waiting[i] != true)
 	    {
-		inDataLeft[i] = (NV_PAGE_SIZE*8192);
-		cyclesLeft[i] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
-		processInData(i);
+		// cut through routing enabled
+		// starting the transaction as soon as we have enough data to send one beat
+		if(CUT_THROUGH && inData[i].front()->number >= DEVICE_WIDTH)
+		{
+		    inDataLeft[i] = (NV_PAGE_SIZE*8192);
+		    cyclesLeft[i] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+		    processInData(i);
+		}
+		// don't do cut through routing
+		// wait until we have the whole page before sending
+		else if(!CUT_THROUGH && inData[i].front()->number >= (NV_PAGE_SIZE*8192))
+		{
+		    inDataLeft[i] = (NV_PAGE_SIZE*8192);
+		    cyclesLeft[i] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+		    processInData(i);
+		}
 	    }
 	    // its not a command and its not the first time we've seen it but we still need to make sure either
 	    // there is enough data to warrant sending out the data or all of the data for this particular packet has already
-	    // been loaded into the buffer
-	    
+	    // been loaded into the buffer	    
 	    else if (inData[i].front()->number >= (((NV_PAGE_SIZE*8192)-inDataLeft[i])+DEVICE_WIDTH) ||
 		     (inData[i].front()->number >= (NV_PAGE_SIZE*8192)))
 	    {
@@ -227,26 +239,37 @@ void Buffer::update(void){
 	// first scan through to see if we have stuff to send if we're not busy
 	if(!outData[i].empty())
 	{
-	    if(outData[i].front()->number >= CHANNEL_WIDTH)
+	    // we're sending data as quickly as we get it
+	    if(CUT_THROUGH && outData[i].front()->number >= CHANNEL_WIDTH)
 	    {
-		//cout << "buffer tried to get the channel \n";
-		// then see if we have control of the channel
-		if (channel->hasChannel(BUFFER, id) && sendingDie == i && sendingPlane == outData[i].front()->plane)
-		{
-		    if((outData[i].front()->number >= (((NV_PAGE_SIZE*8192)-outDataLeft[i])+CHANNEL_WIDTH)) ||
-		       (outData[i].front()->number >= (NV_PAGE_SIZE*8192)))
-		    {
-			processOutData(i);
-		    }
-		}
-		else if (channel->obtainChannel(id, BUFFER, NULL)){
-		    outDataLeft[i] = (NV_PAGE_SIZE*8192);
-		    sendingDie = i;
-		    sendingPlane = outData[i].front()->plane;
-		    processOutData(i);
-		}
+		prepareOutChannel(i);
+	    }
+	    // waiting to send data until we have a whole page to send
+	    else if(!CUT_THROUGH && outData[i].front()->number >= (NV_PAGE_SIZE*8192))
+	    {
+		prepareOutChannel(i);
 	    }
 	}
+    }
+}
+
+void Buffer::prepareOutChannel(uint64_t die)
+{
+    // see if we have control of the channel
+    if (channel->hasChannel(BUFFER, id) && sendingDie == die && sendingPlane == outData[die].front()->plane)
+    {
+	if((outData[die].front()->number >= (((NV_PAGE_SIZE*8192)-outDataLeft[die])+CHANNEL_WIDTH)) ||
+	   (outData[die].front()->number >= (NV_PAGE_SIZE*8192)))
+	{
+	    processOutData(die);
+	}
+    }
+    // if we don't have the channel, get it
+    else if (channel->obtainChannel(id, BUFFER, NULL)){
+	outDataLeft[die] = (NV_PAGE_SIZE*8192);
+	sendingDie = die;
+	sendingPlane = outData[die].front()->plane;
+	processOutData(die);
     }
 }
 

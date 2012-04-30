@@ -56,6 +56,8 @@ namespace NVDSim{
 	    
 	    void update(void);
 
+	    void prepareOutChannel(uint64_t die);
+
 	    void processInData(uint64_t die);
 	    void processOutData(uint64_t die);
 

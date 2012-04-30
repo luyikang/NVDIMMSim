@@ -120,6 +120,7 @@ extern bool DISK_READ;
 
 // Buffering Options
 extern bool BUFFERED;
+extern bool CUT_THROUGH;
 extern uint64_t IN_BUFFER_SIZE;
 extern uint64_t OUT_BUFFER_SIZE;
 
