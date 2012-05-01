@@ -43,35 +43,31 @@ using namespace std;
 Plane::Plane(void){
 	dataReg= NULL;
 	cacheReg= NULL;
-	write_reg = 0;
-	read_reg = 0;
 }
 
 void Plane::read(ChannelPacket *busPacket){
 	if (blocks.find(busPacket->block) != blocks.end()){
 	    busPacket->data= blocks[busPacket->block].read(busPacket->page);
 	} else{
-		DEBUG("Invalid read: Block "<<busPacket->block<<" hasn't been written to");
+		ERROR("Invalid read: Block "<<busPacket->block<<" hasn't been written to");
 	}
 
-	// Put this packet on either the data register or the cache register to send it back (it will 
-	// eventually end up in Controller::receieveFromChannel).
-	if(dataReg == NULL)
+	// Put this packet on the data register if the cache register is occupied,
+	// on the data register otherwise
+	if(cacheReg == NULL)
 	{
 	    cout << "started read from dataReg \n";
 	    dataReg = busPacket;
-	    read_reg = 1;
 	}
-	else if(cacheReg == NULL)
+	else if(dataReg == NULL)
 	{
 	    cout << "started read from cacheReg \n";
 	    cacheReg = busPacket;
-	    read_reg = 2;
 	}
 	else
 	{
 	    // no more room in this inn, somebody fucked up and it was probably me
-	    DEBUG("tried to add read data to plane "<<busPacket->plane<<" but both of its registers were full");
+	    ERROR("tried to add read data to plane "<<busPacket->plane<<" but both of its registers were full");
 	}
 }
 
@@ -84,43 +80,27 @@ void Plane::write(ChannelPacket *busPacket){
 	{
 	    blocks[busPacket->block].write(busPacket->page, NULL);
 	}
+	// move the data from the cacheReg to the dataReg for input into the flash array
 	// safety first...
-	else if(write_reg == 1)
+	if(cacheReg != NULL)
 	{
-	    if(dataReg != NULL)
-	    {
-		blocks[busPacket->block].write(busPacket->page, dataReg->data);
-		cout << "wrote data from the dataReg of plane \n";
-	    
-		// The data packet is now done being used, so it can be deleted.
-		delete dataReg;
-		dataReg = NULL;
-	    }
-	    else
-	    {
-		DEBUG("Invalid write: dataReg was NULL when block "<<busPacket->block<<"was written to");
-	    }
-	}
-	else if(write_reg == 2)
-	{
-	    if(cacheReg != NULL)
-	    {
-		blocks[busPacket->block].write(busPacket->page, cacheReg->data);
-		cout << "wrote data from the cacheReg of plane \n";
-	    
-		// The data packet is now done being used, so it can be deleted.
-		delete cacheReg;
-		cacheReg = NULL;
-	    }
-	    else
-	    {
-		DEBUG("Invalid write: dataReg was NULL when block "<<busPacket->block<<"was written to");
-	    }
+	    dataReg = cacheReg;
+	    cacheReg = NULL;
 	}
 	else
 	{
-	    DEBUG("Invalid write: dataReg and cacheReg were NULL when block "<<busPacket->block<<"was written to");
+	    DEBUG("Invalid write: cacheReg was NULL when block "<<busPacket->block<<"was written to");
 	}
+}
+
+void Plane::writeDone(ChannelPacket *busPacket)
+{
+    blocks[busPacket->block].write(busPacket->page, dataReg->data);
+    cout << "wrote data from the dataReg of plane \n";
+	    
+    // The data packet is now done being used, so it can be deleted.
+    delete dataReg;
+    dataReg = NULL;
 }
 
 // should only ever erase blocks
@@ -133,37 +113,10 @@ void Plane::erase(ChannelPacket *busPacket){
 
 
 void Plane::storeInData(ChannelPacket *busPacket){
-    if(dataReg == NULL && cacheReg == NULL)
+    if(cacheReg == NULL)
     {
 	cout << "stored in data to the dataReg \n";
-	dataReg= busPacket;
-	write_reg = 1;
-    }
-    else if(dataReg != NULL && cacheReg == NULL)
-    {
-	cout << "stored in data to the cacheReg \n";
-	cacheReg = busPacket;
-	if(read_reg == 1)
-	{
-	    write_reg = 2; // the data in the data reg is for a read, so the the cache reg will be used by the next write
-	}
-	else
-	{
-	    write_reg = 1; // if there was data in the data reg then its going to be used by the next write
-	}
-    }
-    else if(dataReg == NULL && cacheReg != NULL)
-    {
-	cout << "stored in data to the dataReg \n";
-	dataReg= busPacket;
-	if(read_reg == 2)
-	{
-	    write_reg = 1; // the data in the cache reg is for a read so the next write should use the data reg
-	}
-	else
-	{
-	    write_reg = 2; // if there was data in the cache reg then its going to be used by the next write
-	}
+	cacheReg= busPacket;
     }
     else
     {
@@ -174,27 +127,28 @@ void Plane::storeInData(ChannelPacket *busPacket){
 
 ChannelPacket *Plane::readFromData(void){
     ChannelPacket *temp =  NULL; // so we can free the register
-    if(read_reg == 1)
-    {
-	cout << "read data from the dataReg \n";
-	// read no longer needs this register
-	read_reg = 0;
-	temp = dataReg;
-	dataReg = NULL;
-	return temp;
-    }
-    else if(read_reg == 2)
+    if(cacheReg != NULL)
     {
 	cout << "read data from the cacheReg \n";
-	// read no longer needs this register
-	read_reg = 0;
-	temp = cacheReg;
-	cacheReg = NULL;
+	// interleaving reads
+	if(dataReg != NULL)
+	{
+	    temp = cacheReg;
+	    cacheReg = dataReg;
+	    dataReg = NULL;
+	}
+	// just this one read
+	else
+	{
+	    // read no longer needs this register
+	    temp = cacheReg;
+	    cacheReg = NULL;
+	}
 	return temp;
     }
     else
     {
-	ERROR("tried to read from a plane but there was no read data on either of its registers");
+	ERROR("tried to read from a plane but there was no read data on the cacheReg");
 	abort();
     }
 

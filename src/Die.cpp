@@ -80,6 +80,7 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 		switch (busPacket->busPacketType){
 			case READ:
 			case GC_READ:
+			        planes[busPacket->plane].read(busPacket);
 				controlCyclesLeft[busPacket->plane]= READ_TIME;
 				// log the new state of this plane
 				if(LOGGING && PLANE_STATE_LOG)
@@ -96,6 +97,8 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				break;
 			case WRITE:
 			case GC_WRITE:
+			    	planes[busPacket->plane].write(busPacket);
+				parentNVDIMM->numWrites++;			
 			        if((DEVICE_TYPE.compare("PCM") == 0 || DEVICE_TYPE.compare("P8P") == 0) && GARBAGE_COLLECT == 0)
 				{
 					controlCyclesLeft[busPacket->plane]= ERASE_TIME;
@@ -118,6 +121,8 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				}
 				break;
 			case ERASE:
+			        planes[busPacket->plane].erase(busPacket);
+			        parentNVDIMM->numErases++;
 			        controlCyclesLeft[busPacket->plane]= ERASE_TIME;
 
 				// log the new state of this plane
@@ -208,30 +213,22 @@ void Die::update(void){
 				switch (currentCommand->busPacketType){
 					case READ:	
 					    cout << "reading data from " << currentCommand->package << " " << currentCommand->die << " " << currentCommand->plane << "\n"; 
-						planes[currentCommand->plane].read(currentCommand);
 						returnDataPackets.push(planes[currentCommand->plane].readFromData());
 						break;
 					case GC_READ:
-					        planes[currentCommand->plane].read(currentCommand);
 						returnDataPackets.push(planes[currentCommand->plane].readFromData());
 						parentNVDIMM->GCReadDone(currentCommand->virtualAddress);
 						break;
 					case WRITE:	
-					    cout << "writing data to " << currentCommand->package << " " << currentCommand->die << " " << currentCommand->plane << "\n"; 
-						planes[currentCommand->plane].write(currentCommand);
-						parentNVDIMM->numWrites++;					
+					    cout << "writing data to " << currentCommand->package << " " << currentCommand->die << " " << currentCommand->plane << "\n"; 	
 						//call write callback
 						if (parentNVDIMM->WriteDataDone != NULL){
 						    (*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->virtualAddress, currentClockCycle,true);
 						}
 						break;
 					case GC_WRITE:
-						planes[currentCommand->plane].write(currentCommand);
-						parentNVDIMM->numWrites++;
 						break;
 					case ERASE:
-						planes[currentCommand->plane].erase(currentCommand);
-						parentNVDIMM->numErases++;
 						break;
 					case DATA:
 						// Nothing to do.
