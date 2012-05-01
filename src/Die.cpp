@@ -68,6 +68,7 @@ void Die::attachToBuffer(Buffer *buff){
 
 void Die::receiveFromBuffer(ChannelPacket *busPacket){
 	if (busPacket->busPacketType == DATA){
+	         cout << "storing in data for " << busPacket->package << " " << busPacket->die << " " << busPacket->plane << "\n"; 
 		planes[busPacket->plane].storeInData(busPacket);
 	} else if (currentCommands[busPacket->plane] == NULL) {
 		currentCommands[busPacket->plane] = busPacket;
@@ -206,6 +207,7 @@ void Die::update(void){
 				// Process each command based on the packet type.
 				switch (currentCommand->busPacketType){
 					case READ:	
+					    cout << "reading data from " << currentCommand->package << " " << currentCommand->die << " " << currentCommand->plane << "\n"; 
 						planes[currentCommand->plane].read(currentCommand);
 						returnDataPackets.push(planes[currentCommand->plane].readFromData());
 						break;
@@ -214,7 +216,8 @@ void Die::update(void){
 						returnDataPackets.push(planes[currentCommand->plane].readFromData());
 						parentNVDIMM->GCReadDone(currentCommand->virtualAddress);
 						break;
-					case WRITE:				     
+					case WRITE:	
+					    cout << "writing data to " << currentCommand->package << " " << currentCommand->die << " " << currentCommand->plane << "\n"; 
 						planes[currentCommand->plane].write(currentCommand);
 						parentNVDIMM->numWrites++;					
 						//call write callback

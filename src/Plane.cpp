@@ -88,6 +88,7 @@ void Plane::write(ChannelPacket *busPacket){
 	    if(dataReg != NULL)
 	    {
 		blocks[busPacket->block].write(busPacket->page, dataReg->data);
+		cout << "wrote data from the dataReg of plane \n";
 	    
 		// The data packet is now done being used, so it can be deleted.
 		delete dataReg;
@@ -103,6 +104,7 @@ void Plane::write(ChannelPacket *busPacket){
 	    if(cacheReg != NULL)
 	    {
 		blocks[busPacket->block].write(busPacket->page, cacheReg->data);
+		cout << "wrote data from the cacheReg of plane \n";
 	    
 		// The data packet is now done being used, so it can be deleted.
 		delete cacheReg;
@@ -131,11 +133,13 @@ void Plane::erase(ChannelPacket *busPacket){
 void Plane::storeInData(ChannelPacket *busPacket){
     if(dataReg == NULL && cacheReg == NULL)
     {
+	cout << "stored in data to the dataReg \n";
 	dataReg= busPacket;
 	write_reg = 1;
     }
     else if(dataReg != NULL && cacheReg == NULL)
     {
+	cout << "stored in data to the cacheReg \n";
 	cacheReg = busPacket;
 	if(read_reg == 1)
 	{
@@ -148,6 +152,7 @@ void Plane::storeInData(ChannelPacket *busPacket){
     }
     else if(dataReg == NULL && cacheReg != NULL)
     {
+	cout << "stored in data to the dataReg \n";
 	dataReg= busPacket;
 	if(read_reg == 2)
 	{
@@ -163,13 +168,13 @@ void Plane::storeInData(ChannelPacket *busPacket){
 	// no more room in this inn, somebody fucked up and it was probably me
 	ERROR("tried to add write data to plane "<<busPacket->plane<<" but both of its registers were full");
     }
-
 }
 
 ChannelPacket *Plane::readFromData(void){
     ChannelPacket *temp =  NULL; // so we can free the register
     if(read_reg == 1)
     {
+	cout << "read data from the dataReg \n";
 	// read no longer needs this register
 	read_reg = 0;
 	temp = dataReg;
@@ -178,6 +183,7 @@ ChannelPacket *Plane::readFromData(void){
     }
     else if(read_reg == 2)
     {
+	cout << "read data from the cacheReg \n";
 	// read no longer needs this register
 	read_reg = 0;
 	temp = cacheReg;
