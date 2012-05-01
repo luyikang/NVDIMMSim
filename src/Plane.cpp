@@ -58,11 +58,13 @@ void Plane::read(ChannelPacket *busPacket){
 	// eventually end up in Controller::receieveFromChannel).
 	if(dataReg == NULL)
 	{
+	    cout << "started read from dataReg \n";
 	    dataReg = busPacket;
 	    read_reg = 1;
 	}
-	else if(dataReg != NULL && cacheReg == NULL)
+	else if(cacheReg == NULL)
 	{
+	    cout << "started read from cacheReg \n";
 	    cacheReg = busPacket;
 	    read_reg = 2;
 	}
