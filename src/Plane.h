@@ -50,6 +50,7 @@ namespace NVDSim{
 			void erase(ChannelPacket *busPacket);
 			void storeInData(ChannelPacket *busPacket); 
 			ChannelPacket *readFromData(void);
+			void dataGone(void);
 		private:
 			ChannelPacket *dataReg, *cacheReg;
 			std::unordered_map<uint, Block> blocks;

@@ -83,6 +83,7 @@ namespace NVDSim{
 			bool addPacket(ChannelPacket *p);
 			bool nextDie(uint64_t package);
 			void update(void);
+			bool dataReady(uint64_t package, uint64_t die); // die asking to send data back
 
 			void sendQueueLength(void);
 

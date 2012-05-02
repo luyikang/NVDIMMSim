@@ -309,7 +309,7 @@ void Buffer::processInData(uint64_t die){
     // we're done here
     if(inDataLeft[die] == 0)
     {
-	if(!dies[die]->isDieBusy(inData[die].front()->plane))
+	if(dies[die]->isDieBusy(inData[die].front()->plane) == 0)
 	{   
 	    channel->bufferDone(id, die, inData[die].front()->plane);
 	    inData[die].pop_front();
@@ -354,4 +354,17 @@ void Buffer::processOutData(uint64_t die){
 	critData[die] = 0;
 	outData[die].pop_front();
     }
+}
+
+bool Buffer::dataReady(uint64_t die)
+{					       
+    if(!outData[die].empty())
+    {
+	if(outData[die].front()->type == 0)
+	{
+	    return true;
+	}
+	return false;
+    }
+    return false;
 }

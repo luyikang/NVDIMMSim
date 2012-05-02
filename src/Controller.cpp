@@ -638,6 +638,19 @@ void Controller::update(void){
     }
 }
 
+bool Controller::dataReady(uint64_t package, uint64_t die)
+{
+    if(!readQueues[package][die].empty())
+    {
+	if(readQueues[package][die].front()->busPacketType == READ)
+	{
+	    return true;
+	}
+	return false;
+    }
+    return false;
+}
+
 void Controller::sendQueueLength(void)
 {
 	vector<uint64_t> temp = vector<uint64_t>(writeQueues.size(),0);

@@ -61,6 +61,8 @@ namespace NVDSim{
 	    void processInData(uint64_t die);
 	    void processOutData(uint64_t die);
 
+	    bool dataReady(uint64_t die); // die asking to send data back
+
 	    Channel *channel;
 	    std::vector<Die *> dies;
 

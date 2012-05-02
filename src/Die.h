@@ -60,7 +60,6 @@ namespace NVDSim{
 			void bufferDone(uint64_t plane);
 			void bufferLoaded(void);
 			void critLineDone(void);
-			void readWaiting(void);
 
 			// for fast forwarding
 			void writeToPlane(ChannelPacket *packet);

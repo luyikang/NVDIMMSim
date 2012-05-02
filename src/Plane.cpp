@@ -53,16 +53,16 @@ void Plane::read(ChannelPacket *busPacket){
 	}
 
 	// Put this packet on the data register if the cache register is occupied,
-	// on the data register otherwise
+	// on the cache register otherwise
 	if(cacheReg == NULL)
-	{
-	    cout << "started read from dataReg \n";
-	    dataReg = busPacket;
-	}
-	else if(dataReg == NULL)
 	{
 	    cout << "started read from cacheReg \n";
 	    cacheReg = busPacket;
+	}
+	else if(dataReg == NULL)
+	{
+	    cout << "started read from dataReg \n";
+	    dataReg = busPacket;
 	}
 	else
 	{
@@ -82,7 +82,7 @@ void Plane::write(ChannelPacket *busPacket){
 	}
 	// move the data from the cacheReg to the dataReg for input into the flash array
 	// safety first...
-	if(cacheReg != NULL)
+	else if(cacheReg != NULL)
 	{
 	    dataReg = cacheReg;
 	    cacheReg = NULL;
@@ -126,25 +126,10 @@ void Plane::storeInData(ChannelPacket *busPacket){
 }
 
 ChannelPacket *Plane::readFromData(void){
-    ChannelPacket *temp =  NULL; // so we can free the register
     if(cacheReg != NULL)
     {
 	cout << "read data from the cacheReg \n";
-	// interleaving reads
-	if(dataReg != NULL)
-	{
-	    temp = cacheReg;
-	    cacheReg = dataReg;
-	    dataReg = NULL;
-	}
-	// just this one read
-	else
-	{
-	    // read no longer needs this register
-	    temp = cacheReg;
-	    cacheReg = NULL;
-	}
-	return temp;
+	return cacheReg;
     }
     else
     {
@@ -152,4 +137,20 @@ ChannelPacket *Plane::readFromData(void){
 	abort();
     }
 
+}
+
+void Plane::dataGone(void)
+{
+    // interleaving reads
+	if(dataReg != NULL)
+	{
+	    cacheReg = dataReg;
+	    dataReg = NULL;
+	}
+	// just this one read
+	else
+	{
+	    // read no longer needs this register
+	    cacheReg = NULL;
+	}
 }
