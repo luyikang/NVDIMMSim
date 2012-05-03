@@ -68,7 +68,6 @@ void Die::attachToBuffer(Buffer *buff){
 
 void Die::receiveFromBuffer(ChannelPacket *busPacket){
 	if (busPacket->busPacketType == DATA){
-	         cout << "storing in data for " << busPacket->package << " " << busPacket->die << " " << busPacket->plane << "\n"; 
 		planes[busPacket->plane].storeInData(busPacket);
 	} else if (currentCommands[busPacket->plane] == NULL) {
 		currentCommands[busPacket->plane] = busPacket;
@@ -159,91 +158,22 @@ int Die::isDieBusy(uint64_t plane){
 void Die::update(void){
 	uint64_t i;
 	ChannelPacket *currentCommand;
-
-	if (!returnDataPackets.empty())
-	{
-	    if( BUFFERED == true)
-	    {
-		// is there a read waiting for us and are we not doing something already
-		if(buffer->dataReady(returnDataPackets.front()->die) == false ||
-		   currentCommands[returnDataPackets.front()->plane] != NULL)
-		{
-		    if(deviceBeatsLeft == 0 && sending == false){
-			dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
-			deviceBeatsLeft = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
-			sending = true;
-		    }
-		    
-		    if(dataCyclesLeft == 0 && deviceBeatsLeft > 0){
-			bool success = false;
-			success = buffer->sendPiece(BUFFER, 0, id, returnDataPackets.front()->plane);
-			if(success == true)
-			{
-			    deviceBeatsLeft--;
-			    dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
-			}
-		    }
-		    
-		    if(dataCyclesLeft > 0 && deviceBeatsLeft > 0){
-			dataCyclesLeft--;
-		    }
-		}
-	    }
-	    else
-	    {
-		// is there a read waiting for us and are we not doing something already
-		if(buffer->channel->controller->dataReady(returnDataPackets.front()->package, returnDataPackets.front()->die) == false ||
-		   currentCommands[returnDataPackets.front()->plane] != NULL)
-		{
-		    if(buffer->channel->hasChannel(BUFFER, id)){
-			if(dataCyclesLeft == 0){
-			    if(LOGGING && PLANE_STATE_LOG)
-			    {
-				log->log_plane_state(returnDataPackets.front()->virtualAddress, 
-						     returnDataPackets.front()->package, 
-						     returnDataPackets.front()->die, 
-						     returnDataPackets.front()->plane, 
-						     IDLE);
-			    }
-			    buffer->channel->sendToController(returnDataPackets.front());
-			    buffer->channel->releaseChannel(BUFFER, id);
-			    planes[returnDataPackets.front()->plane].dataGone();
-			    returnDataPackets.pop();
-			}
-			if(CRIT_LINE_FIRST && dataCyclesLeft == critBeat)
-			{
-			    buffer->channel->controller->returnCritLine(returnDataPackets.front());
-			}
-			
-			dataCyclesLeft--;
-		    }else{
-			if(buffer->channel->obtainChannel(id, BUFFER, NULL))
-			{
-			    dataCyclesLeft = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
-			}
-		    }
-		}
-	    }
-	}
+	bool spinning = true;
 
 	for (i = 0 ; i < PLANES_PER_DIE ; i++){
-	    bool no_reg_room = false; // is there a spare reg for the read data, if not we must wait
+	    bool no_reg_room = true; // is there a spare reg for the read data, if not we must wait
 		currentCommand = currentCommands[i];
 		if (currentCommand != NULL){
 			if (controlCyclesLeft[i] <= 0){
 
 				// Process each command based on the packet type.
 				switch (currentCommand->busPacketType){
-					case READ:	
-					    cout << "return data size is " << returnDataPackets.size() << "\n";
-					    if(returnDataPackets.size() <= PLANES_PER_DIE)
+					case READ:
+					    if(planes[currentCommand->plane].checkCacheReg())
 					    {
-						cout << "reading data from " << currentCommand->package << " " << currentCommand->die << " " << currentCommand->plane << "\n"; 
 						returnDataPackets.push(planes[currentCommand->plane].readFromData());
-					    }
-					    else
-					    {
-						no_reg_room = true;
+						no_reg_room = false;
+						spinning = false;
 					    }
 					    break;
 					case GC_READ:
@@ -251,10 +181,6 @@ void Die::update(void){
 					    {
 						returnDataPackets.push(planes[currentCommand->plane].readFromData());
 						parentNVDIMM->GCReadDone(currentCommand->virtualAddress);
-					    }
-					    else
-					    {
-						no_reg_room = true;
 					    }
 					    break;
 					case WRITE:	
@@ -300,12 +226,79 @@ void Die::update(void){
 				    //sim output
 				    currentCommands[i]= NULL;
 				}
+				else
+				{
+				    cout << "no reg room spinning \n";
+				}
 			}
 			controlCyclesLeft[i]--;
 		}
 	}
 
-	
+	if (!returnDataPackets.empty())
+	{
+	    if( BUFFERED == true)
+	    {
+		// is there a read waiting for us and are we not doing something already
+		if(deviceBeatsLeft == 0 && sending == false && 		
+		   (buffer->dataReady(returnDataPackets.front()->die) == false ||
+		    currentCommands[returnDataPackets.front()->plane] != NULL))
+		{
+		    dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+		    deviceBeatsLeft = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
+		    sending = true;
+		}
+		    
+		if(dataCyclesLeft == 0 && deviceBeatsLeft > 0){
+		    bool success = false;
+		    success = buffer->sendPiece(BUFFER, 0, id, returnDataPackets.front()->plane);
+		    if(success == true)
+		    {
+			deviceBeatsLeft--;
+			dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+		    }
+		}
+		
+		if(dataCyclesLeft > 0 && deviceBeatsLeft > 0){
+		    dataCyclesLeft--;
+		}
+	    }
+	    else
+	    {
+		if(buffer->channel->hasChannel(BUFFER, id)){
+		    if(dataCyclesLeft == 0){
+			if(LOGGING && PLANE_STATE_LOG)
+			{
+			    log->log_plane_state(returnDataPackets.front()->virtualAddress, 
+						 returnDataPackets.front()->package, 
+						 returnDataPackets.front()->die, 
+						 returnDataPackets.front()->plane, 
+						 IDLE);
+			}
+			planes[returnDataPackets.front()->plane].dataGone();
+			buffer->channel->sendToController(returnDataPackets.front());
+			buffer->channel->releaseChannel(BUFFER, id);		
+			returnDataPackets.pop();
+		    }
+		    if(CRIT_LINE_FIRST && dataCyclesLeft == critBeat)
+		    {
+			buffer->channel->controller->returnCritLine(returnDataPackets.front());
+		    }
+		    dataCyclesLeft--;
+		}else{
+		    // is there a read waiting for us and are we not doing something already
+		    if(buffer->channel->controller->dataReady(returnDataPackets.front()->package, returnDataPackets.front()->die, 
+							      returnDataPackets.front()->plane) == false
+		       || currentCommands[returnDataPackets.front()->plane] != NULL)
+		    {
+			if(buffer->channel->obtainChannel(id, BUFFER, NULL))
+			{
+			    dataCyclesLeft = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
+			}
+		    }
+		}
+	    }
+	}
 }
 
 void Die::bufferDone(uint64_t plane)

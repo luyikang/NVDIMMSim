@@ -53,16 +53,13 @@ void Plane::read(ChannelPacket *busPacket){
 	}
 
 	// Put this packet on the data register if the cache register is occupied,
-	// on the cache register otherwise
-	if(cacheReg == NULL)
+	if(dataReg == NULL)
 	{
-	    cout << "started read from cacheReg \n";
-	    cacheReg = busPacket;
-	}
-	else if(dataReg == NULL)
-	{
-	    cout << "started read from dataReg \n";
+	    //cout << "started read from dataReg \n";
 	    dataReg = busPacket;
+	    //cout << "when added cacheReg pointer was " << cacheReg << " and dataReg pointer was " << dataReg << " \n";
+	    //cout << "now data reg type in read " << dataReg->busPacketType << "\n";
+	    //cout << "cache reg type in read " << cacheReg->busPacketType << "\n";
 	}
 	else
 	{
@@ -96,7 +93,7 @@ void Plane::write(ChannelPacket *busPacket){
 void Plane::writeDone(ChannelPacket *busPacket)
 {
     blocks[busPacket->block].write(busPacket->page, dataReg->data);
-    cout << "wrote data from the dataReg of plane \n";
+    //cout << "wrote data from the dataReg of plane \n";
 	    
     // The data packet is now done being used, so it can be deleted.
     delete dataReg;
@@ -115,7 +112,7 @@ void Plane::erase(ChannelPacket *busPacket){
 void Plane::storeInData(ChannelPacket *busPacket){
     if(cacheReg == NULL)
     {
-	cout << "stored in data to the dataReg \n";
+	//cout << "stored in data to the dataReg \n";
 	cacheReg= busPacket;
     }
     else
@@ -126,31 +123,28 @@ void Plane::storeInData(ChannelPacket *busPacket){
 }
 
 ChannelPacket *Plane::readFromData(void){
-    if(cacheReg != NULL)
+    if(cacheReg == NULL && dataReg != NULL)
     {
-	cout << "read data from the cacheReg \n";
+	//cout << "read data from the cacheReg \n";
+	cacheReg = dataReg;
+	dataReg = NULL;
 	return cacheReg;
     }
-    else
-    {
-	ERROR("tried to read from a plane but there was no read data on the cacheReg");
-	abort();
-    }
+    // should never get here
+    abort();
+}
 
+bool Plane::checkCacheReg(void)
+{
+    if(cacheReg == NULL)
+    {
+	return true;
+    }
+    return false;
 }
 
 void Plane::dataGone(void)
 {
-    // interleaving reads
-	if(dataReg != NULL)
-	{
-	    cacheReg = dataReg;
-	    dataReg = NULL;
-	}
-	// just this one read
-	else
-	{
-	    // read no longer needs this register
-	    cacheReg = NULL;
-	}
+    // read no longer needs this register
+    cacheReg = NULL;
 }

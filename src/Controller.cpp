@@ -164,11 +164,13 @@ void Controller::receiveFromChannel(ChannelPacket *busPacket){
 			break;
 		default:
 			ERROR("Illegal busPacketType " << busPacket->busPacketType << " in Controller::receiveFromChannel\n");
+			abort();
 			break;
 	}
 
 	// Delete the ChannelPacket since READ is done. This must be done to prevent memory leaks.
-	delete busPacket;
+	cout << "deleted a busPacket for package " << busPacket->package << " die " << busPacket->die << " plane " << busPacket->plane << "\n";
+	//delete busPacket;
 }
 
 // this is only called on a write as the name suggests
@@ -638,11 +640,11 @@ void Controller::update(void){
     }
 }
 
-bool Controller::dataReady(uint64_t package, uint64_t die)
+bool Controller::dataReady(uint64_t package, uint64_t die, uint64_t plane)
 {
     if(!readQueues[package][die].empty())
     {
-	if(readQueues[package][die].front()->busPacketType == READ)
+	if(readQueues[package][die].front()->busPacketType == READ && readQueues[package][die].front()->plane == plane)
 	{
 	    return true;
 	}

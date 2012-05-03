@@ -70,6 +70,14 @@ int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
     }
     else
     {
+	if(t == CONTROLLER)
+	{
+	    cout << "controller has the channel \n";
+	}
+	else
+	{
+	    cout << "die has the channel \n";
+	}
 	sType = t;
 	sender = (int) s;
 	return 1;
