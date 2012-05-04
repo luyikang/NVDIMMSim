@@ -193,7 +193,6 @@ void Buffer::update(void){
 		    inDataLeft[i] = COMMAND_LENGTH;
 		    cyclesLeft[i] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 		    processInData(i);
-		    cout << inData[i].size() << "\n";
 		}
 		// need to make sure either enough data has been transfered to the buffer to warrant
 		// sending out more data or all of the data for this particular packet has already

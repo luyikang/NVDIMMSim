@@ -96,7 +96,6 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				break;
 			case WRITE:
 			case GC_WRITE:
-			    cout << "added a write to die " << id << "\n";
 			    	planes[busPacket->plane].write(busPacket);
 				parentNVDIMM->numWrites++;			
 			        if((DEVICE_TYPE.compare("PCM") == 0 || DEVICE_TYPE.compare("P8P") == 0) && GARBAGE_COLLECT == 0)
@@ -191,7 +190,6 @@ void Die::update(void){
 					    break;
 					case WRITE:	
 						//call write callback
-					    cout << "write done on die " << id << "\n";
 					    if (parentNVDIMM->WriteDataDone != NULL){
 						(*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->virtualAddress, currentClockCycle,true);
 					    }
