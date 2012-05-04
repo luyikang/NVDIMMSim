@@ -184,7 +184,6 @@ void Buffer::update(void){
 	if(!inData[i].empty())
 	{
 	    // *NOTE* removed check for inDataLeft == inData which i think was to make sure this didn't get called when things where just empty
-	    //cout << "we have enough data to send \n";
 	    // if it is a command, set the number of beats if we've not set them yet
 	    if(inData[i].front()->type != 5)
 	    {
@@ -194,6 +193,7 @@ void Buffer::update(void){
 		    inDataLeft[i] = COMMAND_LENGTH;
 		    cyclesLeft[i] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 		    processInData(i);
+		    cout << inData[i].size() << "\n";
 		}
 		// need to make sure either enough data has been transfered to the buffer to warrant
 		// sending out more data or all of the data for this particular packet has already
@@ -356,11 +356,11 @@ void Buffer::processOutData(uint64_t die){
     }
 }
 
-bool Buffer::dataReady(uint64_t die)
+bool Buffer::dataReady(uint64_t die, uint64_t plane)
 {					       
     if(!outData[die].empty())
     {
-	if(outData[die].front()->type == 0)
+	if(outData[die].front()->type == 0 && outData[die].front()->plane == plane)
 	{
 	    return true;
 	}

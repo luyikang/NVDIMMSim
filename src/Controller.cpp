@@ -169,8 +169,7 @@ void Controller::receiveFromChannel(ChannelPacket *busPacket){
 	}
 
 	// Delete the ChannelPacket since READ is done. This must be done to prevent memory leaks.
-	cout << "deleted a busPacket for package " << busPacket->package << " die " << busPacket->die << " plane " << busPacket->plane << "\n";
-	//delete busPacket;
+	delete busPacket;
 }
 
 // this is only called on a write as the name suggests
@@ -646,11 +645,11 @@ bool Controller::dataReady(uint64_t package, uint64_t die, uint64_t plane)
     {
 	if(readQueues[package][die].front()->busPacketType == READ && readQueues[package][die].front()->plane == plane)
 	{
-	    return true;
+	    return 1;
 	}
-	return false;
+	return 0;
     }
-    return false;
+    return 0;
 }
 
 void Controller::sendQueueLength(void)

@@ -55,11 +55,7 @@ void Plane::read(ChannelPacket *busPacket){
 	// Put this packet on the data register if the cache register is occupied,
 	if(dataReg == NULL)
 	{
-	    //cout << "started read from dataReg \n";
 	    dataReg = busPacket;
-	    //cout << "when added cacheReg pointer was " << cacheReg << " and dataReg pointer was " << dataReg << " \n";
-	    //cout << "now data reg type in read " << dataReg->busPacketType << "\n";
-	    //cout << "cache reg type in read " << cacheReg->busPacketType << "\n";
 	}
 	else
 	{
@@ -93,7 +89,6 @@ void Plane::write(ChannelPacket *busPacket){
 void Plane::writeDone(ChannelPacket *busPacket)
 {
     blocks[busPacket->block].write(busPacket->page, dataReg->data);
-    //cout << "wrote data from the dataReg of plane \n";
 	    
     // The data packet is now done being used, so it can be deleted.
     delete dataReg;
@@ -112,7 +107,6 @@ void Plane::erase(ChannelPacket *busPacket){
 void Plane::storeInData(ChannelPacket *busPacket){
     if(cacheReg == NULL)
     {
-	//cout << "stored in data to the dataReg \n";
 	cacheReg= busPacket;
     }
     else

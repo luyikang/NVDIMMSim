@@ -96,6 +96,7 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				break;
 			case WRITE:
 			case GC_WRITE:
+			    cout << "added a write to die " << id << "\n";
 			    	planes[busPacket->plane].write(busPacket);
 				parentNVDIMM->numWrites++;			
 			        if((DEVICE_TYPE.compare("PCM") == 0 || DEVICE_TYPE.compare("P8P") == 0) && GARBAGE_COLLECT == 0)
@@ -147,9 +148,12 @@ int Die::isDieBusy(uint64_t plane){
 	return 0;
     }
     // writing, send back a special number so we know that this plane can recieve data
-    else if (currentCommands[plane]->busPacketType == WRITE)
+    else if (currentCommands[plane] != NULL)
     {
-	return 2;
+	if(currentCommands[plane]->busPacketType == WRITE)
+	{
+	    return 2;
+	}
     }
     // busy but not writing so no data, please, we're all full up here
     return 1;
@@ -158,10 +162,9 @@ int Die::isDieBusy(uint64_t plane){
 void Die::update(void){
 	uint64_t i;
 	ChannelPacket *currentCommand;
-	bool spinning = true;
 
 	for (i = 0 ; i < PLANES_PER_DIE ; i++){
-	    bool no_reg_room = true; // is there a spare reg for the read data, if not we must wait
+	    bool no_reg_room = false; // is there a spare reg for the read data, if not we must wait
 		currentCommand = currentCommands[i];
 		if (currentCommand != NULL){
 			if (controlCyclesLeft[i] <= 0){
@@ -173,7 +176,10 @@ void Die::update(void){
 					    {
 						returnDataPackets.push(planes[currentCommand->plane].readFromData());
 						no_reg_room = false;
-						spinning = false;
+					    }
+					    else
+					    {
+						no_reg_room = true;
 					    }
 					    break;
 					case GC_READ:
@@ -184,8 +190,8 @@ void Die::update(void){
 					    }
 					    break;
 					case WRITE:	
-					    cout << "writing data to " << currentCommand->package << " " << currentCommand->die << " " << currentCommand->plane << "\n"; 	
 						//call write callback
+					    cout << "write done on die " << id << "\n";
 					    if (parentNVDIMM->WriteDataDone != NULL){
 						(*parentNVDIMM->WriteDataDone)(parentNVDIMM->systemID, currentCommand->virtualAddress, currentClockCycle,true);
 					    }
@@ -226,12 +232,12 @@ void Die::update(void){
 				    //sim output
 				    currentCommands[i]= NULL;
 				}
-				else
-				{
-				    cout << "no reg room spinning \n";
-				}
 			}
-			controlCyclesLeft[i]--;
+			// sanity check
+			if(controlCyclesLeft[i] > 0)
+			{
+			    controlCyclesLeft[i]--;
+			}
 		}
 	}
 
@@ -241,7 +247,7 @@ void Die::update(void){
 	    {
 		// is there a read waiting for us and are we not doing something already
 		if(deviceBeatsLeft == 0 && sending == false && 		
-		   (buffer->dataReady(returnDataPackets.front()->die) == false ||
+		   (buffer->dataReady(returnDataPackets.front()->die, returnDataPackets.front()->plane) == false ||
 		    currentCommands[returnDataPackets.front()->plane] != NULL))
 		{
 		    dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
@@ -287,9 +293,9 @@ void Die::update(void){
 		    dataCyclesLeft--;
 		}else{
 		    // is there a read waiting for us and are we not doing something already
-		    if(buffer->channel->controller->dataReady(returnDataPackets.front()->package, returnDataPackets.front()->die, 
-							      returnDataPackets.front()->plane) == false
-		       || currentCommands[returnDataPackets.front()->plane] != NULL)
+		    if((buffer->channel->controller->dataReady(returnDataPackets.front()->package, returnDataPackets.front()->die, 
+							      returnDataPackets.front()->plane) == 0 ||
+			currentCommands[returnDataPackets.front()->plane] != NULL))
 		    {
 			if(buffer->channel->obtainChannel(id, BUFFER, NULL))
 			{
