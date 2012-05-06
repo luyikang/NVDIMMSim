@@ -64,6 +64,8 @@ int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
 	(t == CONTROLLER && !BUFFERED && (buffer->dies[p->die]->isDieBusy(p->plane) == 1)) ||
 	// should allow us to send write data to a buffer that is currently writing
 	(t == CONTROLLER && !BUFFERED && p->busPacketType != DATA && buffer->dies[p->die]->isDieBusy(p->plane) == 2) ||
+	// should allow us to send a write command to a plane that has a loaded cache register
+	(t == CONTROLLER && !BUFFERED && p->busPacketType ==DATA && buffer->dies[p->die]->isDieBusy(p->plane) == 3) ||
 	(busy == 1))
     {
 	return 0;		

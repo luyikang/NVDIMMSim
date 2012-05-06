@@ -308,7 +308,11 @@ void Buffer::processInData(uint64_t die){
     // we're done here
     if(inDataLeft[die] == 0)
     {
-	if(dies[die]->isDieBusy(inData[die].front()->plane) == 0)
+	//cout << dies[die]->isDieBusy(inData[die].front()->plane) << "\n";
+	//cout << inData[die].front()->type << "\n";
+	if(dies[die]->isDieBusy(inData[die].front()->plane) == 0 ||
+	   (inData[die].front()->type == 5 && dies[die]->isDieBusy(inData[die].front()->plane) == 2) ||
+	   (inData[die].front()->type != 5 && dies[die]->isDieBusy(inData[die].front()->plane) == 3))
 	{   
 	    channel->bufferDone(id, die, inData[die].front()->plane);
 	    inData[die].pop_front();

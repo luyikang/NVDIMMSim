@@ -144,12 +144,19 @@ int Die::isDieBusy(uint64_t plane){
     // if we're sending, then we're buffering and the channel between the buffer and the die
     // is busy and data can't be sent to the die right now
     if (currentCommands[plane] == NULL && sending == false){
-	return 0;
+	if(planes[plane].checkCacheReg() == true)
+	{
+	    return 0;
+	}
+	else
+	{
+	    return 3;
+	}
     }
     // writing, send back a special number so we know that this plane can recieve data
     else if (currentCommands[plane] != NULL)
     {
-	if(currentCommands[plane]->busPacketType == WRITE)
+	if(currentCommands[plane]->busPacketType == WRITE && planes[plane].checkCacheReg() == true)
 	{
 	    return 2;
 	}

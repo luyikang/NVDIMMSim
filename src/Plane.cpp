@@ -61,6 +61,7 @@ void Plane::read(ChannelPacket *busPacket){
 	{
 	    // no more room in this inn, somebody fucked up and it was probably me
 	    ERROR("tried to add read data to plane "<<busPacket->plane<<" but both of its registers were full");
+	    abort();
 	}
 }
 
@@ -82,7 +83,8 @@ void Plane::write(ChannelPacket *busPacket){
 	}
 	else
 	{
-	    DEBUG("Invalid write: cacheReg was NULL when block "<<busPacket->block<<"was written to");
+	    ERROR("Invalid write: cacheReg was NULL when block "<<busPacket->block<<"was written to");
+	    abort();
 	}
 }
 
@@ -112,6 +114,7 @@ void Plane::storeInData(ChannelPacket *busPacket){
     {
 	// no more room in this inn, somebody fucked up and it was probably me
 	ERROR("tried to add write data to plane "<<busPacket->plane<<" but both of its registers were full");
+	abort();
     }
 }
 
