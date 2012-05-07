@@ -269,6 +269,10 @@ void Die::update(void){
 			deviceBeatsLeft--;
 			dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 		    }
+		    else
+		    {
+			cout << "send to buffer failed at die " << id << "\n";
+		    }
 		}
 		
 		if(dataCyclesLeft > 0 && deviceBeatsLeft > 0){

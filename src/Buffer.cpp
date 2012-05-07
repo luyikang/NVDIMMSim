@@ -115,6 +115,8 @@ bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
 	}
 	else
 	{
+	    cout << "controller sent packet to buffer " << die << " and plane " << plane << " that didn't fit \n";
+	    cout << "packet type was " << type << "\n";
 	    return false;
 	}
     }
@@ -143,6 +145,8 @@ bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
 	}
 	else
 	{
+	    cout << "die sent packet to buffer " << die << " and plane " << plane << " that didn't fit \n";
+	    cout << "packet type was " << type << "\n";
 	    return false;
 	}
     }
