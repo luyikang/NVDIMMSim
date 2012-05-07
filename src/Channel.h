@@ -59,7 +59,7 @@ namespace NVDSim{
 			void sendToBuffer(ChannelPacket *busPacket);
 			void sendToController(ChannelPacket *busPacket);
 			void sendPiece(SenderType t, uint type, uint die, uint plane);
-			bool isBufferFull(SenderType t, uint die);
+			bool isBufferFull(SenderType t, ChannelPacketType bt, uint die);
 			int notBusy(void);
 
 			void update(void);

@@ -585,7 +585,8 @@ void Controller::update(void){
 	for (i= 0; i < outgoingPackets.size(); i++){
 	    if (outgoingPackets[i] != NULL){
 		if(paused[outgoingPackets[i]->package] == true && 
-		   !(*packages)[outgoingPackets[i]->package].channel->isBufferFull(CONTROLLER, outgoingPackets[i]->die))
+		   !(*packages)[outgoingPackets[i]->package].channel->isBufferFull(CONTROLLER, outgoingPackets[i]->busPacketType, 
+										   outgoingPackets[i]->die))
 		{
 		    if ((*packages)[outgoingPackets[i]->package].channel->obtainChannel(0, CONTROLLER, outgoingPackets[i])){
 			paused[outgoingPackets[i]->package] = false;
@@ -597,7 +598,8 @@ void Controller::update(void){
 			pendingPackets[i].push_back(outgoingPackets[i]);
 			outgoingPackets[i] = NULL;
 		    }else if ((*packages)[outgoingPackets[i]->package].channel->notBusy()){
-			if(!(*packages)[outgoingPackets[i]->package].channel->isBufferFull(CONTROLLER, outgoingPackets[i]->die))
+			if(!(*packages)[outgoingPackets[i]->package].channel->isBufferFull(CONTROLLER, outgoingPackets[i]->busPacketType, 
+											   outgoingPackets[i]->die))
 			{
 			    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, outgoingPackets[i]->busPacketType, 
 											outgoingPackets[i]->die, outgoingPackets[i]->plane);

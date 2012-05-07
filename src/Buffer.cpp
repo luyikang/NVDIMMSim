@@ -149,11 +149,13 @@ bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
     return false;
 }
 
-bool Buffer::isFull(SenderType t, uint64_t die)
+bool Buffer::isFull(SenderType t, ChannelPacketType bt, uint64_t die)
 {
     if(t == CONTROLLER)
     {
-	if(IN_BUFFER_SIZE == 0 || inDataSize[die] <= (IN_BUFFER_SIZE-(CHANNEL_WIDTH)))
+	if(IN_BUFFER_SIZE == 0 || (bt == 5 && inDataSize[die] <= (IN_BUFFER_SIZE-(NV_PAGE_SIZE*8192))) || 
+	   (bt != 5 && inDataSize[die] <= (IN_BUFFER_SIZE-COMMAND_LENGTH)) ||
+	   (inDataSize[die] <= (IN_BUFFER_SIZE-CHANNEL_WIDTH) && waiting[die] == false))
 	{
 	    return false;
 	}

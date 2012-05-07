@@ -108,9 +108,9 @@ void Channel::sendPiece(SenderType t, uint type, uint die, uint plane){
 	packetType = type;
 }
 
-bool Channel::isBufferFull(SenderType t, uint die)
+bool Channel::isBufferFull(SenderType t, ChannelPacketType bt, uint die)
 {
-    return buffer->isFull(t, die);
+    return buffer->isFull(t, bt, die);
 }
 
 int Channel::notBusy(void){
