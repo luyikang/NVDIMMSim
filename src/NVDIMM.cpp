@@ -338,7 +338,7 @@ namespace NVDSim
 	    ftl->update();
 	    ftl->step();
 	    
-	    	    if(BUFFERED)
+	    if(BUFFERED)
 	    {
 		nv_clock_counter2 += CYCLE_TIME;
 		while(controller_clock_counter < nv_clock_counter2)

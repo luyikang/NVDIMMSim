@@ -157,8 +157,8 @@ bool Buffer::isFull(SenderType t, ChannelPacketType bt, uint64_t die)
 {
     if(t == CONTROLLER)
     {
-	if(IN_BUFFER_SIZE == 0 || (bt == 5 && inDataSize[die] <= (IN_BUFFER_SIZE-(NV_PAGE_SIZE*8192))) || 
-	   (bt != 5 && inDataSize[die] <= (IN_BUFFER_SIZE-COMMAND_LENGTH))) // ||
+	if(IN_BUFFER_SIZE == 0 || (bt == 5 && inDataSize[die] <= (IN_BUFFER_SIZE-(divide_params((NV_PAGE_SIZE*8192), CHANNEL_WIDTH)*CHANNEL_WIDTH))) || 
+	   (bt != 5 && inDataSize[die] <= (IN_BUFFER_SIZE-(divide_params(COMMAND_LENGTH, CHANNEL_WIDTH)*CHANNEL_WIDTH)))) // ||
 	   //(inDataSize[die] <= (IN_BUFFER_SIZE-CHANNEL_WIDTH) && waiting[die] == false))
 	{
 	    return false;
