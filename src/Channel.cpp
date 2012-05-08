@@ -128,6 +128,7 @@ void Channel::update(void){
 		if(success == false)
 		{
 		    ERROR("Tried to push data into a full buffer");
+		    abort();
 		}
 	    }
 	    busy = 0;
