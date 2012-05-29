@@ -91,6 +91,8 @@ namespace NVDSim{
 	    uint64_t* inDataLeft;
 	    bool* waiting;
 	    bool* sending;
+	    uint64_t lookupTimeLeft;
+	    uint64_t dieLookingUp;
 
 	    uint64_t sendingDie;
 	    uint64_t sendingPlane;

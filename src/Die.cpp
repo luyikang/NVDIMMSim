@@ -271,7 +271,7 @@ void Die::update(void){
 		    }
 		    else
 		    {
-			cout << "send to buffer failed at die " << id << "\n";
+		      //cout << "send to buffer failed at die " << id << "\n";
 		    }
 		}
 		
@@ -279,6 +279,7 @@ void Die::update(void){
 		    dataCyclesLeft--;
 		}
 	    }
+	    // not buffered
 	    else
 	    {
 		if(buffer->channel->hasChannel(BUFFER, id)){
