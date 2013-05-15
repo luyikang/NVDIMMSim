@@ -100,6 +100,9 @@
 
 namespace NVDSim{
 
+// constants
+#define BITS_PER_KB 8192
+
 // Scheduling Options
 extern bool SCHEDULE;
 extern bool WRITE_ON_QUEUE_SIZE;
@@ -119,6 +122,9 @@ extern uint DELAY_WRITE_CYCLES;
 extern bool DISK_READ;
 
 // Buffering Options
+extern bool FRONT_BUFFER;
+extern uint64_t REQUEST_BUFFER_SIZE;
+extern uint64_t RESPONSE_BUFFER_SIZE;
 extern bool BUFFERED;
 extern bool CUT_THROUGH;
 extern uint64_t IN_BUFFER_SIZE;
@@ -153,9 +159,18 @@ extern uint64_t VIRTUAL_BLOCKS_PER_PLANE;
 extern uint64_t PAGES_PER_BLOCK;
 extern uint64_t NV_PAGE_SIZE;
 extern float DEVICE_CYCLE; // in nanoseconds
-extern float CHANNEL_CYCLE; // in nanoseconds
 extern uint64_t DEVICE_WIDTH;
+
+// Channel options
+extern float CHANNEL_CYCLE; //default channel, becomes up channel when down channel is enabled
 extern uint64_t CHANNEL_WIDTH;
+
+extern bool ENABLE_COMMAND_CHANNEL;
+extern uint64_t COMMAND_CHANNEL_WIDTH;
+
+extern bool ENABLE_REQUEST_CHANNEL;
+extern uint64_t REQUEST_CHANNEL_WIDTH;
+
 // does the device use garbage collection 
 extern bool GARBAGE_COLLECT;
 extern bool PRESTATE;

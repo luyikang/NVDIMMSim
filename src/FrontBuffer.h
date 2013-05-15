@@ -31,75 +31,84 @@
 *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *********************************************************************************/
 
-#ifndef NVDIMM_H
-#define NVDIMM_H
-//NVDIMM.h
-//Header for nonvolatile memory dimm system wrapper
+#ifndef NVFRONTBUFFER_H
+#define NVFRONTBUFFER_H
+//Channel.h
+//header file for the Package class
 
 #include "SimObj.h"
 #include "FlashConfiguration.h"
-#include "Controller.h"
-#include "Ftl.h"
-#include "GCFtl.h"
-#include "Die.h"
 #include "FlashTransaction.h"
-#include "Callbacks.h"
-#include "Logger.h"
-#include "GCLogger.h"
-#include "P8PLogger.h"
-#include "P8PGCLogger.h"
-#include "FrontBuffer.h"
+#include "Util.h"
 
-using std::string;
-
-namespace NVDSim{
-    typedef CallbackBase<void,uint,uint64_t,uint64_t,bool> Callback_t;
-    typedef CallbackBase<void,uint,vector<vector<double>>,uint64_t,bool> Callback_v;
-	class NVDIMM : public SimObj{
+namespace NVDSim{	
+	class NVDIMM;
+	class Ftl;
+	class FrontBuffer : public SimObj{
 		public:
-			NVDIMM(uint id, string dev, string sys, string pwd, string trc);
+			FrontBuffer(NVDIMM* parent);
+			void attachFTL(Ftl *f);
+
+			bool addTransaction(FlashTransaction *transaction);		        		
+
+			// decrements the counters on the transfers and initiates new
+			// transfers
+			// really just calls the appropriate methods
 			void update(void);
-			bool add(FlashTransaction &trans);
-			bool addTransaction(bool isWrite, uint64_t addr);
-			void printStats(void);
-			void saveStats(void);
-			string SetOutputFileName(string tracefilename);
-			void RegisterCallbacks(Callback_t *readDone, Callback_t *writeDone, Callback_v *Power);
-			void RegisterCallbacks(Callback_t *readDone, Callback_t *critLine, Callback_t *writeDone, Callback_v *Power); 
 
-			void powerCallback(void);
+			// update routines for each of the possible channels
+			void updateRequest(void);
+			void updateResponse(void);
+			void updateCommand(void);
 
-			void saveNVState(string filename);
-			void loadNVState(string filename);
+			// common code for determining how many cycles are needed to move
+			// the data protion of a request transaction
+			uint64_t setDataCycles(FlashTransaction *transaction, uint64_t width);
 
-			void queuesNotFull(void);
+			// common code for determining if transaction is actually complete
+			void finishTransaction(FlashTransaction *transaction, std::vector<FlashTransaction *> pending);
 
-			void GCReadDone(uint64_t vAddr);
+			// called after request delay
+			void sendToFTL(FlashTransaction *transaction);
 
-			Controller *controller;
+			// called after return delay
+			void sendToHybrid(const FlashTransaction &transaction);
+			
 			Ftl *ftl;
-			Logger *log;
-
-			vector<Package> *packages;
-
-			Callback_t* ReturnReadData;
-			Callback_t* CriticalLineDone;
-			Callback_t* WriteDataDone;
-			Callback_v* ReturnPowerData;
-
-			uint systemID, numReads, numWrites, numErases;
-			uint epoch_count, epoch_cycles;
-			uint64_t channel_cycles_per_cycle, controller_cycles_left;
-			float system_clock_counter, nv_clock_counter1, nv_clock_counter2, controller_clock_counter;
-			float *channel_clock_counter, *nv_clock_counter3;
-			uint64_t* cycles_left;
-	
-			bool faster_channel;
+			NVDIMM *parentNVDIMM;
 
 		private:
-			string dev, sys, cDirectory;
-	};
+			uint transType;
+			int sender;
+			
+			// channel status identifiers
+			bool responseBusy;
+			bool requestBusy;
+			bool commandBusy;
+			
+			// transaction queues
+			std::queue<FlashTransaction *>  requests;
+			std::queue<FlashTransaction *>  responses;
 
-	NVDIMM *getNVDIMMInstance(uint id, string deviceFile, string sysFile, string pwd, string trc);
+			// queue size tracking
+			uint64_t requestsSize;
+			uint64_t responsesSize;
+
+			// transaction currently being serviced
+			FlashTransaction * requestTrans;
+			FlashTransaction * responseTrans;
+			FlashTransaction * commandTrans;
+
+			// transactions that have been partially completed due to split
+			// command or data channels
+			std::vector<FlashTransaction *>  pendingData;
+			std::vector<FlashTransaction *>  pendingCommand;
+
+			// counters for transfer tracking
+			uint64_t requestCyclesLeft;
+			uint64_t responseCyclesLeft;
+			uint64_t commandCyclesLeft;
+	};
 }
+
 #endif

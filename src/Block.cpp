@@ -5,7 +5,7 @@
 *                             Ishwar Bhati
 *                             Mu-Tien Chang
 *                             Bruce Jacob
-*                             University of Maryland 
+*                             University of Maryland
 *                             pkt3c [at] umd [dot] edu
 *  All rights reserved.
 *  

@@ -114,3 +114,15 @@ uint divide_params(float num, float denom)
     
     return temp;
 }
+
+uint64_t subtract_params(uint64_t a, uint64_t b)
+{
+    if(a < b)
+    {
+	return 0;
+    }
+    else
+    {
+	return (a - b);
+    }
+}

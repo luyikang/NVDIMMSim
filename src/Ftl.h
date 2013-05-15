@@ -46,6 +46,7 @@
 #include "Controller.h"
 #include "Logger.h"
 #include "Util.h"
+#include "FrontBuffer.h"
 
 namespace NVDSim{
         class NVDIMM;

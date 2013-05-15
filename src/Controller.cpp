@@ -615,42 +615,28 @@ void Controller::update(void){
 			    }
 			    else
 			    {
-				    if(outgoingPackets[i]->busPacketType == DATA && channelBeatsLeft[i] == divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH))
-				    {
-					    if(!(*packages)[outgoingPackets[i]->package].channel->isBufferFull(CONTROLLER, outgoingPackets[i]->busPacketType, 
+				if((outgoingPackets[i]->busPacketType == DATA && channelBeatsLeft[i] == divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH)) ||
+				   (outgoingPackets[i]->busPacketType != DATA && channelBeatsLeft[i] == divide_params(COMMAND_LENGTH,CHANNEL_WIDTH)))
+				{
+				    if(!(*packages)[outgoingPackets[i]->package].channel->isBufferFull(CONTROLLER, outgoingPackets[i]->busPacketType, 
 												       outgoingPackets[i]->die))
-					    {
-						    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, outgoingPackets[i]->busPacketType, 
-														outgoingPackets[i]->die, outgoingPackets[i]->plane);
-						    channelBeatsLeft[i]--;
-					    }
-					    else
-					    {
-						    (*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
-						    paused[outgoingPackets[i]->package] = true;
-					    }
-				    }
-				    else if(outgoingPackets[i]->busPacketType != DATA && channelBeatsLeft[i] == divide_params(COMMAND_LENGTH,CHANNEL_WIDTH))
 				    {
-					    if(!(*packages)[outgoingPackets[i]->package].channel->isBufferFull(CONTROLLER, outgoingPackets[i]->busPacketType, 
-												       outgoingPackets[i]->die))
-					    {
-						    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, outgoingPackets[i]->busPacketType, 
-														outgoingPackets[i]->die, outgoingPackets[i]->plane);
-						    channelBeatsLeft[i]--;
-					    }
-					    else
-					    {
-						    (*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
-						    paused[outgoingPackets[i]->package] = true;
-					    }
+					(*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, outgoingPackets[i]->busPacketType, 
+												    outgoingPackets[i]->die, outgoingPackets[i]->plane);
+					channelBeatsLeft[i]--;
 				    }
 				    else
 				    {
-					    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, outgoingPackets[i]->busPacketType, 
-													outgoingPackets[i]->die, outgoingPackets[i]->plane);
-					    channelBeatsLeft[i]--;					    
+					(*packages)[outgoingPackets[i]->package].channel->releaseChannel(CONTROLLER, 0);
+					paused[outgoingPackets[i]->package] = true;
 				    }
+				}
+				else
+				{
+				    (*packages)[outgoingPackets[i]->package].channel->sendPiece(CONTROLLER, outgoingPackets[i]->busPacketType, 
+												   outgoingPackets[i]->die, outgoingPackets[i]->plane);
+				    channelBeatsLeft[i]--;					    
+				}
 			    }
 		    }
 		}
