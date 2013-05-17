@@ -35,33 +35,34 @@
 // class file for the front side buffer for nvdimm
 
 #include "FrontBuffer.h"
-#include "Ftl.h"
+//#include "Ftl.h"
 #include "NVDIMM.h"
 
 using namespace NVDSim;
 
-FrontBuffer::FrontBuffer(NVDIMM* parent){
+FrontBuffer::FrontBuffer(NVDIMM* parent, Ftl* f){
     parentNVDIMM = parent;
     sender = -1;
-    
+    ftl = f;
+
     // transaction queues, separate command queue not needed because commands
     // always accompany requests
-    requests = queue<FlashTransaction *>();
-    responses = queue<FlashTransaction *>();
+    requests = queue<FlashTransaction>();
+    responses = queue<FlashTransaction>();
 
     // usage of buffer space
     requestsSize = 0;
     responsesSize = 0;
     
     // transaction currently being serviced by each potential channel
-    requestTrans = NULL;
-    responseTrans = NULL;
-    commandTrans = NULL;
+    requestTrans = FlashTransaction();
+    responseTrans = FlashTransaction();
+    commandTrans = FlashTransaction();
     
     // queue of transactions that have been finished by command or data channels but
     // still waiting on the other channel in a split channel setup
-    pendingData = vector<FlashTransaction *>();
-    pendingCommand = vector<FlashTransaction *>();
+    pendingData = vector<FlashTransaction>();
+    pendingCommand = vector<FlashTransaction>();
 
     // channel progress counters
     requestCyclesLeft = 0;
@@ -69,14 +70,9 @@ FrontBuffer::FrontBuffer(NVDIMM* parent){
     commandCyclesLeft = 0;
 }
 
-// allows us to push a transaction into the FTL
-void FrontBuffer::attachFTL(Ftl *f){
-    ftl = f;
-}
-
 // place the transaction in the appropriate queue
-bool FrontBuffer::addTransaction(FlashTransaction *transaction){
-    switch (transaction->transactionType)
+bool FrontBuffer::addTransaction(FlashTransaction transaction){
+    switch (transaction.transactionType)
     {
     case DATA_READ: 
 	if(requestsSize <= (REQUEST_BUFFER_SIZE - COMMAND_LENGTH))
@@ -122,7 +118,7 @@ void FrontBuffer::update(void){
     // always check the response channel status cause we will always have a
     // response channel
     // channel already doing something, keep doing it
-    if(responseTrans != NULL)
+    if(responseTrans.transactionType != EMPTY)
     {
 	updateResponse();
     }
@@ -157,7 +153,7 @@ void FrontBuffer::update(void){
     if(ENABLE_REQUEST_CHANNEL)
     {
 	// channel already doing something, keep doing it
-	if(requestTrans != NULL)
+	if(requestTrans.transactionType != EMPTY)
 	{
 	    updateRequest();
 	}
@@ -184,7 +180,7 @@ void FrontBuffer::update(void){
     if(ENABLE_COMMAND_CHANNEL)
     {
 	// channel already doing something, keep doing it
-	if(commandTrans != NULL)
+	if(commandTrans.transactionType != EMPTY)
 	{
 	    updateCommand();
 	}
@@ -203,7 +199,7 @@ void FrontBuffer::updateResponse(void){
     // need to figure out how many cycles we need to move the transaction to the FTL or Hybrid controller
     if(responseCyclesLeft == 0)
     {
-	if(responseTrans->transactionType == RETURN_DATA)
+	if(responseTrans.transactionType == RETURN_DATA)
 	{
 	    // number of channel cycles to go equals the total number of data bits divided by the bits 
 	    // moved per channel cycle
@@ -232,27 +228,27 @@ void FrontBuffer::updateResponse(void){
 	// just to make sure we precisely tigger the first if statement
 	responseCyclesLeft = 0;
 
-	if(responseTrans->transactionType == RETURN_DATA)
+	if(responseTrans.transactionType == RETURN_DATA)
 	{
 	    // data has been moved, do the callback to hybrid
-	    sendToHybrid(*responseTrans);
-	    responseTrans = NULL;
+	    sendToHybrid(responseTrans);
+	    responseTrans = FlashTransaction();
 	}
 	else{
 	// *** TODO this code is also replicated between the response and request update functions and needs to be pulled out ******************************************
 	    if(ENABLE_COMMAND_CHANNEL)
 	    {
 		// see if the command had already been sent over the command channel
-		vector<FlashTransaction*>::iterator it;
+		vector<FlashTransaction>::iterator it;
 		for (it = pendingData.begin(); it != pendingData.end(); it++)
 		{
-		    // if the pointers point ot the same thing then the command channel has sent this
+		    // if the transactions are for the same address then the command channel has sent this
 		    // transactions command already
-		    if((*it) == responseTrans)
+		    if((*it).address == responseTrans.address)
 		    {
 			// command has already been sent, now data is done so send to FTL
 			sendToFTL(responseTrans);
-			responseTrans = NULL;
+			responseTrans = FlashTransaction();
 			
 			// clear pending entry
 			pendingData.erase(it);
@@ -266,20 +262,20 @@ void FrontBuffer::updateResponse(void){
 		// didn't find anything, still have a transaction
 		// need to wait for command channel to send command
 		// so push onto the pendingCommand vector
-		if(responseTrans != NULL)
+		if(responseTrans.transactionType != EMPTY)
 		{
 		    pendingCommand.push_back(responseTrans);
 		    
 		    // we can use the response channel for other things though
 		    // while waiting on the command channel
-		    responseTrans = NULL;
+		    responseTrans = FlashTransaction();
 		}
 	    }
 	    else
 	    {
 		// no command channel to wait on so if we're done then just send to the FTL
 		sendToFTL(responseTrans);
-		responseTrans = NULL;
+		responseTrans = FlashTransaction();
 	    }
 	}
     }
@@ -304,16 +300,16 @@ void FrontBuffer::updateRequest(void){
 	if(ENABLE_COMMAND_CHANNEL)
 	{
 	    // see if the command had already been sent over the command channel
-	    vector<FlashTransaction*>::iterator it;
+	    vector<FlashTransaction>::iterator it;
 	    for (it = pendingData.begin(); it != pendingData.end(); it++)
 	    {
-		// if the pointers point ot the same thing then the command channel has sent this
+		// if the transactions have the same address then the command channel has sent this
 		// transactions command already
-		if((*it) == requestTrans)
+		if((*it).address == requestTrans.address)
 		{
 		    // command has already been sent, now data is done so send to FTL
 		    sendToFTL(requestTrans);
-		    requestTrans = NULL;
+		    requestTrans = FlashTransaction();
 		    
 		    // clear pending entry
 		    pendingData.erase(it);
@@ -327,20 +323,20 @@ void FrontBuffer::updateRequest(void){
 	    // didn't find anything, still have a transaction
 	    // need to wait for command channel to send command
 	    // so push onto the pendingCommand vector
-	    if(requestTrans != NULL)
+	    if(requestTrans.transactionType != EMPTY)
 	    {
 		pendingCommand.push_back(requestTrans);
 		
 		// we can use the response channel for other things though
 		// while waiting on the command channel
-		requestTrans = NULL;
+		requestTrans = FlashTransaction();
 	    }
 	}
 	else
 	{
 	    // no command channel to wait on so if we're done then just send to the FTL
 	    sendToFTL(requestTrans);
-	    responseTrans = NULL;
+	    responseTrans = FlashTransaction();
 	}
     }
 }
@@ -363,16 +359,16 @@ void FrontBuffer::updateCommand(void){
     if(commandCyclesLeft <= 0)
     {
 	// see if the command had already been sent over the command channel
-	vector<FlashTransaction*>::iterator it;
+	vector<FlashTransaction>::iterator it;
 	for (it = pendingCommand.begin(); it != pendingCommand.end(); it++)
 	{
-	    // if the pointers point ot the same thing then the command channel has sent this
+	    // if the transactions have the same address then the command channel has sent this
 	    // transactions command already
-	    if((*it) == commandTrans)
+	    if((*it).address == commandTrans.address)
 	    {
 		// command has already been sent, now data is done so send to FTL
 		sendToFTL(commandTrans);
-		commandTrans = NULL;
+		commandTrans = FlashTransaction();
 		
 		// clear pending entry
 		pendingCommand.erase(it);
@@ -386,19 +382,19 @@ void FrontBuffer::updateCommand(void){
 	// didn't find anything, still have a transaction
 	// need to wait for data channel to send the data
 	// so push onto the pendingData vector
-	if(commandTrans != NULL)
+	if(commandTrans.transactionType != EMPTY)
 	{
 	    pendingData.push_back(commandTrans);
 	    
 	    // we can use the command channel for other things though
 	    // while waiting on the request channel
-	    commandTrans = NULL;
+	    commandTrans = FlashTransaction();
 	}
     }
 }
 
-uint64_t FrontBuffer::setDataCycles(FlashTransaction *transaction, uint64_t width){
-    if(transaction->transactionType == DATA_READ)
+uint64_t FrontBuffer::setDataCycles(FlashTransaction transaction, uint64_t width){
+    if(transaction.transactionType == DATA_READ)
     {
 	if(!ENABLE_COMMAND_CHANNEL)
 	{
@@ -413,7 +409,7 @@ uint64_t FrontBuffer::setDataCycles(FlashTransaction *transaction, uint64_t widt
 	    return 1;
 	}
     }
-    else if(transaction->transactionType == DATA_WRITE)
+    else if(transaction.transactionType == DATA_WRITE)
     {
 	if(!ENABLE_COMMAND_CHANNEL)
 	{
@@ -434,8 +430,8 @@ uint64_t FrontBuffer::setDataCycles(FlashTransaction *transaction, uint64_t widt
 
 // we are done, these functions handle the finish cases
 // done with outgoing data to dies, so add this transaction to the FTL cause the data has been sent
-void FrontBuffer::sendToFTL(FlashTransaction *transaction){
-    ftl->addTransaction(*transaction);
+void FrontBuffer::sendToFTL(FlashTransaction transaction){
+    ftl->addTransaction(transaction);
 }
 
 // done with returning data from dies, so initiate a callback 

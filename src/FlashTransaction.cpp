@@ -42,7 +42,10 @@
 using namespace NVDSim;
 using namespace std;
 
-FlashTransaction::FlashTransaction(){}
+FlashTransaction::FlashTransaction()
+{
+    transactionType = EMPTY;
+}
 
 FlashTransaction::FlashTransaction(TransactionType transType, uint64_t addr, void *dat)
 {

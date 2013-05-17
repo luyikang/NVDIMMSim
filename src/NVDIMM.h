@@ -79,6 +79,7 @@ namespace NVDSim{
 			Controller *controller;
 			Ftl *ftl;
 			Logger *log;
+			FrontBuffer  *frontBuffer;
 
 			vector<Package> *packages;
 

@@ -229,7 +229,10 @@ namespace NVDSim
 	    packages->push_back(pack);
 	}
 	controller->attachPackages(packages);
-	
+
+	frontBuffer = new FrontBuffer(this, ftl);
+	controller->attachFrontBuffer(frontBuffer);
+
 	ReturnReadData= NULL;
 	WriteDataDone= NULL;
 
@@ -279,13 +282,27 @@ namespace NVDSim
     }
 
     bool NVDIMM::add(FlashTransaction &trans){
-	return ftl->addTransaction(trans);	
+	if(FRONT_BUFFER)
+	{
+	    return frontBuffer->addTransaction(trans);
+	}
+	else
+	{
+	    return ftl->addTransaction(trans);
+	}
     }
 
     bool NVDIMM::addTransaction(bool isWrite, uint64_t addr){
 	TransactionType type = isWrite ? DATA_WRITE : DATA_READ;
 	FlashTransaction trans = FlashTransaction(type, addr, NULL);
-	return ftl->addTransaction(trans);
+	if(FRONT_BUFFER)
+	{
+	    return frontBuffer->addTransaction(trans);
+	}
+	else
+	{
+	    return ftl->addTransaction(trans);
+	}
     }
 
     string NVDIMM::SetOutputFileName(string tracefilename){
@@ -419,6 +436,25 @@ namespace NVDSim
 			
 			cycles_left[i] = cycles_left[i] - 1;
 		    }*/
+		}
+		else if(FRONT_BUFFER)
+		{
+		    nv_clock_counter3[i] += CYCLE_TIME;
+		    while(channel_clock_counter[i] < nv_clock_counter3[i])
+		    {
+			channel_clock_counter[i] += CHANNEL_CYCLE;
+			frontBuffer->update();
+			frontBuffer->step();
+		    }
+
+		    if(channel_clock_counter[i] == nv_clock_counter3[i])
+		    {
+			channel_clock_counter[i] = 0.0;
+			nv_clock_counter3[i] = 0.0;
+		    }
+
+		    package.channel->update();
+		    package.buffer->update();
 		}
 		else
 		{

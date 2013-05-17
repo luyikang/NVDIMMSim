@@ -36,6 +36,7 @@
 
 #include "Controller.h"
 #include "NVDIMM.h"
+#include "FrontBuffer.h"
 
 using namespace NVDSim;
 
@@ -67,6 +68,10 @@ Controller::Controller(NVDIMM* parent, Logger* l){
 
 void Controller::attachPackages(vector<Package> *packages){
 	this->packages= packages;
+}
+
+void Controller::attachFrontBuffer(FrontBuffer *fb){
+    this->front_buffer = fb;
 }
 
 void Controller::returnReadData(const FlashTransaction  &trans){
@@ -663,9 +668,27 @@ void Controller::update(void){
 
     //See if any read data is ready to return
     while (!returnTransaction.empty()){
-	//call return callback
-	returnReadData(returnTransaction.back());
-	returnTransaction.pop_back();
+	if(FRONT_BUFFER)
+	{
+	    // attempt to add the return transaction to the host channel buffer
+	    bool return_success = front_buffer->addTransaction(returnTransaction.back());
+	    if(return_success)
+	    {
+		// attempt was successful so pop the transaction and try again
+		returnTransaction.pop_back();
+	    }
+	    else
+	    {
+		// attempt failed so stop trying to add things for now
+		break;
+	    }
+	}
+	else
+	{
+	    //call return callback
+	    returnReadData(returnTransaction.back());
+	    returnTransaction.pop_back();
+	}
     }
 }
 

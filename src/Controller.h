@@ -53,12 +53,14 @@ namespace NVDSim{
 		std::vector<Die *> dies;
 	} Package;
 
+	class FrontBuffer;
 	class NVDIMM;
 	class Controller : public SimObj{
 		public:
 	                Controller(NVDIMM* parent, Logger* l);
 
 			void attachPackages(vector<Package> *packages);
+			void attachFrontBuffer(FrontBuffer *fb);
 			void returnReadData(const FlashTransaction &trans);
 			void returnUnmappedData(const FlashTransaction &trans);
 			void returnCritLine(ChannelPacket *busPacket);
@@ -94,6 +96,7 @@ namespace NVDSim{
 
 			NVDIMM *parentNVDIMM;
 			Logger *log;
+			FrontBuffer *front_buffer;
 
 		private:
 			bool* paused;

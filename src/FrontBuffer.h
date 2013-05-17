@@ -39,17 +39,16 @@
 #include "SimObj.h"
 #include "FlashConfiguration.h"
 #include "FlashTransaction.h"
+#include "Ftl.h"
 #include "Util.h"
 
 namespace NVDSim{	
 	class NVDIMM;
-	class Ftl;
 	class FrontBuffer : public SimObj{
 		public:
-			FrontBuffer(NVDIMM* parent);
-			void attachFTL(Ftl *f);
+	                FrontBuffer(NVDIMM* parent, Ftl *f);
 
-			bool addTransaction(FlashTransaction *transaction);		        		
+			bool addTransaction(FlashTransaction transaction);		        		
 
 			// decrements the counters on the transfers and initiates new
 			// transfers
@@ -63,13 +62,13 @@ namespace NVDSim{
 
 			// common code for determining how many cycles are needed to move
 			// the data protion of a request transaction
-			uint64_t setDataCycles(FlashTransaction *transaction, uint64_t width);
+			uint64_t setDataCycles(FlashTransaction transaction, uint64_t width);
 
 			// common code for determining if transaction is actually complete
-			void finishTransaction(FlashTransaction *transaction, std::vector<FlashTransaction *> pending);
+			void finishTransaction(FlashTransaction *transaction, std::vector<FlashTransaction> *pending);
 
 			// called after request delay
-			void sendToFTL(FlashTransaction *transaction);
+			void sendToFTL(FlashTransaction transaction);
 
 			// called after return delay
 			void sendToHybrid(const FlashTransaction &transaction);
@@ -81,28 +80,23 @@ namespace NVDSim{
 			uint transType;
 			int sender;
 			
-			// channel status identifiers
-			bool responseBusy;
-			bool requestBusy;
-			bool commandBusy;
-			
-			// transaction queues
-			std::queue<FlashTransaction *>  requests;
-			std::queue<FlashTransaction *>  responses;
+			// transaction pointer queues
+			std::queue<FlashTransaction>  requests;
+			std::queue<FlashTransaction>  responses;
 
 			// queue size tracking
 			uint64_t requestsSize;
 			uint64_t responsesSize;
 
 			// transaction currently being serviced
-			FlashTransaction * requestTrans;
-			FlashTransaction * responseTrans;
-			FlashTransaction * commandTrans;
+			FlashTransaction requestTrans;
+			FlashTransaction responseTrans;
+			FlashTransaction commandTrans;
 
 			// transactions that have been partially completed due to split
 			// command or data channels
-			std::vector<FlashTransaction *>  pendingData;
-			std::vector<FlashTransaction *>  pendingCommand;
+			std::vector<FlashTransaction >  pendingData;
+			std::vector<FlashTransaction >  pendingCommand;
 
 			// counters for transfer tracking
 			uint64_t requestCyclesLeft;

@@ -52,7 +52,8 @@ namespace NVDSim
 		GC_DATA_READ,
 		GC_DATA_WRITE,
 		RETURN_DATA,
-		BLOCK_ERASE
+		BLOCK_ERASE,
+		EMPTY
 	};
 
 	class FlashTransaction
