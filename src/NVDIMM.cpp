@@ -393,6 +393,25 @@ namespace NVDSim
 		}
 		*/
 	    }
+	    else if(FRONT_BUFFER)
+	    {
+		nv_clock_counter2 += CYCLE_TIME;
+		while(controller_clock_counter < nv_clock_counter2)
+		{
+		    controller_clock_counter += CHANNEL_CYCLE;
+		    frontBuffer->update();
+		    frontBuffer->step();
+		}
+
+		if(controller_clock_counter == nv_clock_counter2)
+		{
+		    nv_clock_counter2 = 0.0;
+		    controller_clock_counter = 0.0;
+		}
+
+		controller->update();
+		controller->step();
+	    }
 	    else
 	    {
 		controller->update();
@@ -436,25 +455,6 @@ namespace NVDSim
 			
 			cycles_left[i] = cycles_left[i] - 1;
 		    }*/
-		}
-		else if(FRONT_BUFFER)
-		{
-		    nv_clock_counter3[i] += CYCLE_TIME;
-		    while(channel_clock_counter[i] < nv_clock_counter3[i])
-		    {
-			channel_clock_counter[i] += CHANNEL_CYCLE;
-			frontBuffer->update();
-			frontBuffer->step();
-		    }
-
-		    if(channel_clock_counter[i] == nv_clock_counter3[i])
-		    {
-			channel_clock_counter[i] = 0.0;
-			nv_clock_counter3[i] = 0.0;
-		    }
-
-		    package.channel->update();
-		    package.buffer->update();
 		}
 		else
 		{

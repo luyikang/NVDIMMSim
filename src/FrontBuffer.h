@@ -68,7 +68,7 @@ namespace NVDSim{
 			void finishTransaction(FlashTransaction *transaction, std::vector<FlashTransaction> *pending);
 
 			// called after request delay
-			void sendToFTL(FlashTransaction transaction);
+			bool sendToFTL(FlashTransaction transaction);
 
 			// called after return delay
 			void sendToHybrid(const FlashTransaction &transaction);
@@ -83,6 +83,7 @@ namespace NVDSim{
 			// transaction pointer queues
 			std::queue<FlashTransaction>  requests;
 			std::queue<FlashTransaction>  responses;
+			std::queue<FlashTransaction>  commands;
 
 			// queue size tracking
 			uint64_t requestsSize;
@@ -95,13 +96,22 @@ namespace NVDSim{
 
 			// transactions that have been partially completed due to split
 			// command or data channels
-			std::vector<FlashTransaction >  pendingData;
-			std::vector<FlashTransaction >  pendingCommand;
+			std::vector<FlashTransaction>  pendingData;
+			std::vector<FlashTransaction>  pendingCommand;
 
 			// counters for transfer tracking
 			uint64_t requestCyclesLeft;
 			uint64_t responseCyclesLeft;
 			uint64_t commandCyclesLeft;
+
+			//debug stuff
+			int requestStartedCount;
+			int responseStartedCount;
+			int commandStartedCount;
+			
+			int requestCompletedCount;
+			int responseCompletedCount;
+			int commandCompletedCount;
 	};
 }
 
