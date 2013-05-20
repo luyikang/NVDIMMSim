@@ -35,7 +35,6 @@
 // class file for the front side buffer for nvdimm
 
 #include "FrontBuffer.h"
-//#include "Ftl.h"
 #include "NVDIMM.h"
 
 using namespace NVDSim;
@@ -151,7 +150,7 @@ void FrontBuffer::update(void){
 	responsesSize = subtract_params(responsesSize, (NV_PAGE_SIZE*BITS_PER_KB));
 	updateResponse();
 
-	responseStartedCount++;
+	//responseStartedCount++;
 	//cout << "Added new reponse transaction to response channel, count is now: " << responseStartedCount << "\n";
     }
     // half duplex case, requests also use the response channel
@@ -171,7 +170,7 @@ void FrontBuffer::update(void){
 	requests.pop();
 	updateResponse();
 
-	responseStartedCount++;
+	//responseStartedCount++;
 	//cout << "Added new request transaction to response channel, count is now: " << responseStartedCount << "\n";
     }
 
@@ -199,7 +198,7 @@ void FrontBuffer::update(void){
 	    requests.pop();
 	    updateRequest();
 
-	    requestStartedCount++;
+	    //requestStartedCount++;
 	    //cout << "Added new request transaction to request channel, count is now: " << requestStartedCount << "\n";
 	}
     }
@@ -219,7 +218,7 @@ void FrontBuffer::update(void){
 	    requestsSize = subtract_params(requestsSize, COMMAND_LENGTH);
 	    updateCommand();
 
-	    commandStartedCount++;
+	    //commandStartedCount++;
 	    //cout << "Added new command transaction, count is now: " << commandStartedCount << "\n";
 	}
     }
@@ -265,7 +264,7 @@ void FrontBuffer::updateResponse(void){
 	    sendToHybrid(responseTrans);
 	    responseTrans = FlashTransaction();
 
-	    responseCompletedCount++;
+	    //responseCompletedCount++;
 	    //cout << "Completed response transaction on the response channel, count is now: " << responseCompletedCount << "\n";
 	}
 	else{
@@ -288,7 +287,7 @@ void FrontBuffer::updateResponse(void){
 			{
 			    responseTrans = FlashTransaction();
 			    
-			    responseCompletedCount++;
+			    //responseCompletedCount++;
 			    //cout << "Completed request transaction on the response channel after command finished, count is now: " << responseCompletedCount << "\n";
 			
 			    // clear pending entry
@@ -325,7 +324,7 @@ void FrontBuffer::updateResponse(void){
 		{
 		    responseTrans = FlashTransaction();
 
-		    responseCompletedCount++;
+		    //responseCompletedCount++;
 		    //cout << "Completed request transaction on the response channel without command, count is now: " << responseCompletedCount << "\n";
 		}
 	    }
@@ -354,6 +353,9 @@ void FrontBuffer::updateRequest(void){
 	
 	if(ENABLE_COMMAND_CHANNEL)
 	{
+	    // switch to identify the situation where we are done but the FTL doesn't have room
+	    bool full = false;
+
 	    // see if the command had already been sent over the command channel
 	    vector<FlashTransaction>::iterator it;
 	    for (it = pendingData.begin(); it != pendingData.end(); it++)
@@ -370,11 +372,17 @@ void FrontBuffer::updateRequest(void){
 		    {
 			requestTrans = FlashTransaction();
 
-			requestCompletedCount++;
+			//requestCompletedCount++;
 			//cout << "Completed request transaction on the request channel after command finished, count is now: " << requestCompletedCount << "\n";
 		    
 			// clear pending entry
 			pendingData.erase(it);
+		    }
+		    else
+		    {
+			// FTL doesn't have room so we need to do this all again
+			// setting this to true keeps the following if statement from triggering
+			full = true;
 		    }
 		    
 		    // iterators now invalid due to reordering, have to break
@@ -386,7 +394,7 @@ void FrontBuffer::updateRequest(void){
 	    // didn't find anything, still have a transaction
 	    // need to wait for command channel to send command
 	    // so push onto the pendingCommand vector
-	    if(requestTrans.transactionType != EMPTY)
+	    if(requestTrans.transactionType != EMPTY && full == false)
 	    {
 		pendingCommand.push_back(requestTrans);
 		
@@ -406,7 +414,7 @@ void FrontBuffer::updateRequest(void){
 	    {
 		requestTrans = FlashTransaction();
 
-		requestCompletedCount++;
+		//requestCompletedCount++;
 		//cout << "Completed request transaction on the request channel without command, count is now: " << requestCompletedCount << "\n";
 	    }
 	}
@@ -430,6 +438,9 @@ void FrontBuffer::updateCommand(void){
     // we're done here
     if(commandCyclesLeft <= 0)
     {
+	// switch to identify the situation where we are done but the FTL doesn't have room
+	bool full = false;
+
 	// just to make sure we precisely tigger the first if statement
 	commandCyclesLeft = 0;
 	
@@ -455,6 +466,12 @@ void FrontBuffer::updateCommand(void){
 		    // clear pending entry
 		    pendingCommand.erase(it);
 		}
+		else
+		{
+		    // FTL doesn't have room so we need to do this all again
+		    // setting this to true keeps the following if statement from triggering
+		    full = true;
+		}
 		
 		// iterators now invalid due to reordering, have to break
 		// should only be one entry that matches anyway
@@ -465,7 +482,7 @@ void FrontBuffer::updateCommand(void){
 	// didn't find anything, still have a transaction
 	// need to wait for data channel to send the data
 	// so push onto the pendingData vector
-	if(commandTrans.transactionType != EMPTY)
+	if(commandTrans.transactionType != EMPTY && full == false)
 	{
 	    pendingData.push_back(commandTrans);
 	    
