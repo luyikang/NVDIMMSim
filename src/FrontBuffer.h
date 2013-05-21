@@ -55,6 +55,9 @@ namespace NVDSim{
 			// really just calls the appropriate methods
 			void update(void);
 
+			// common code for updating request queue
+			FlashTransaction newRequestTrans(void);
+
 			// update routines for each of the possible channels
 			void updateRequest(void);
 			void updateResponse(void);
@@ -64,8 +67,9 @@ namespace NVDSim{
 			// the data protion of a request transaction
 			uint64_t setDataCycles(FlashTransaction transaction, uint64_t width);
 
-			// common code for determining if transaction is actually complete
-			void finishTransaction(FlashTransaction *transaction, std::vector<FlashTransaction> *pending);
+			// common code for finding if a transaction is present in the pendingData or 
+			// pendingCommand vectors
+			FlashTransaction findTransaction(std::vector<FlashTransaction> *pendingSearch, std::vector<FlashTransaction> *pendingAdd, FlashTransaction transaction);
 
 			// called after request delay
 			bool sendToFTL(FlashTransaction transaction);
