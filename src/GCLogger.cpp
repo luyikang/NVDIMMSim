@@ -301,9 +301,12 @@ void GCLogger::save(uint64_t cycle, uint epoch)
 	savefile<<"========================\n";
 	savefile<<"Maximum Length of Ftl Queue: " <<max_ftl_queue_length<<"\n";
 	savefile<<"Maximum Length of GC Queue: " <<max_gc_queue_length<<"\n";
-	for(uint i = 0; i < ctrl_queue_length.size(); i++)
+	for(uint i = 0; i < max_ctrl_queue_length.size(); i++)
 	{
-	    savefile<<"Maximum Length of Controller Queue for Package " << i << ": "<<max_ctrl_queue_length[i]<<"\n";
+	    for(uint j = 0; j < max_ctrl_queue_length[i].size(); j++)
+	    {
+		savefile<<"Maximum Length of Controller Queue for Package " << i << ", Die " << j << ": "<<max_ctrl_queue_length[i][j]<<"\n";
+	    }
 	}
 
 	if(WEAR_LEVEL_LOG)
@@ -437,10 +440,13 @@ void GCLogger::save_epoch(uint64_t cycle, uint epoch)
     this_epoch.gc_queue_length = gc_queue_length;
 
     this_epoch.writes_per_address = writes_per_address;
-
+    
     for(uint i = 0; i < ctrl_queue_length.size(); i++)
     {
-	this_epoch.ctrl_queue_length[i] = ctrl_queue_length[i];
+	for(uint j = 0; j < ctrl_queue_length[i].size(); j++)
+	{
+	    this_epoch.ctrl_queue_length[i][j] = ctrl_queue_length[i][j];
+	}
     }
 
     for(uint i = 0; i < NUM_PACKAGES; i++)
@@ -597,7 +603,10 @@ void GCLogger::write_epoch(EpochEntry *e)
 	savefile<<"Length of GC Queue: " <<e->gc_queue_length<<"\n";
 	for(uint i = 0; i < e->ctrl_queue_length.size(); i++)
 	{
-	    savefile<<"Length of Controller Queue for Package " << i << ": "<<e->ctrl_queue_length[i]<<"\n";
+	    for(uint j = 0; j < e->ctrl_queue_length[i].size(); j++)
+	    {
+		savefile<<"Length of Controller Queue for Package " << i << ", Die " << j << ": "<<e->ctrl_queue_length[i][j]<<"\n";
+	    }
 	}
 
 	if(WEAR_LEVEL_LOG)

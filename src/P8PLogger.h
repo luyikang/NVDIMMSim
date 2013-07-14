@@ -91,7 +91,7 @@ namespace NVDSim
 	    uint64_t average_queue_latency;
 
 	    uint64_t ftl_queue_length;
-	    std::vector<uint64_t> ctrl_queue_length;
+	    std::vector<std::vector <uint64_t> > ctrl_queue_length;
 
 	    std::unordered_map<uint64_t, uint64_t> writes_per_address;
 
@@ -121,7 +121,7 @@ namespace NVDSim
 		average_queue_latency = 0;
 		
 		ftl_queue_length = 0;
-		ctrl_queue_length = std::vector<uint64_t>(NUM_PACKAGES, 0);
+		ctrl_queue_length = std::vector<std::vector<uint64_t> >(NUM_PACKAGES, std::vector<uint64_t>(DIES_PER_PACKAGE, 0));
 
 		idle_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
 		access_energy = std::vector<double>(NUM_PACKAGES, 0.0); 

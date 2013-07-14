@@ -167,6 +167,7 @@ bool Ftl::attemptAdd(FlashTransaction &t, std::list<FlashTransaction> *queue, ui
 	{
 	    // Start the logging for this access.
 	    log->access_start(t.address, t.transactionType);
+	    log->ftlQueueLength(queue->size());
 	    if(QUEUE_EVENT_LOG)
 	    {
 		log->log_ftl_queue_event(false, queue);

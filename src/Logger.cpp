@@ -64,10 +64,10 @@ Logger::Logger()
 	average_queue_latency = 0;
 
 	ftl_queue_length = 0;
-	ctrl_queue_length = vector<uint64_t>(NUM_PACKAGES, 0);
+	ctrl_queue_length = vector<vector <uint64_t> >(NUM_PACKAGES, vector<uint64_t>(DIES_PER_PACKAGE, 0));
 
 	max_ftl_queue_length = 0;
-	max_ctrl_queue_length = vector<uint64_t>(NUM_PACKAGES, 0);
+	max_ctrl_queue_length = vector<vector <uint64_t> >(NUM_PACKAGES, vector<uint64_t>(DIES_PER_PACKAGE, 0));
 
 	first_write_log = true;
 	first_read_log = true;
@@ -589,18 +589,33 @@ void Logger::ftlQueueLength(uint64_t length, uint64_t length2)
     }
 }
 
-void Logger::ctrlQueueLength(vector<uint64_t> length)
+void Logger::ctrlQueueLength(vector<vector <uint64_t> > length)
 {
     for(uint i = 0; i < length.size(); i++)
     {
-	if(length[i] > ctrl_queue_length[i])
+	for(uint j = 0; j < length[i].size(); j++)
 	{
-	    ctrl_queue_length[i] = length[i];
+	    if(length[i][j] > ctrl_queue_length[i][j])
+	    {
+		ctrl_queue_length[i][j] = length[i][j];
+	    }
+	    if(length[i][j] > max_ctrl_queue_length[i][j])
+	    {
+		max_ctrl_queue_length[i][j] = length[i][j];
+	    }
 	}
-	if(length[i] > max_ctrl_queue_length[i])
-	{
-	    max_ctrl_queue_length[i] = length[i];
-	}
+    }
+}
+
+void Logger::ctrlQueueSingleLength(uint package, uint die, uint64_t length)
+{
+    if(length > ctrl_queue_length[package][die])
+    {
+	ctrl_queue_length[package][die] = length;
+    }
+    if(length > max_ctrl_queue_length[package][die])
+    {
+	max_ctrl_queue_length[package][die] = length;
     }
 }
 
@@ -613,7 +628,10 @@ void Logger::ctrlQueueReset()
 {
     for(uint i = 0; i < ctrl_queue_length.size(); i++)
     {
-	ctrl_queue_length[i] = 0;
+	for(uint j = 0; j < ctrl_queue_length[i].size(); j++)
+	{
+	    ctrl_queue_length[i][j] = 0;
+	}
     }
 }
 
@@ -704,7 +722,10 @@ void Logger::save(uint64_t cycle, uint epoch)
 	savefile<<"Maximum Length of Ftl Queue: " <<max_ftl_queue_length<<"\n";
 	for(uint i = 0; i < max_ctrl_queue_length.size(); i++)
 	{
-	    savefile<<"Maximum Length of Controller Queue for Package " << i << ": "<<max_ctrl_queue_length[i]<<"\n";
+	    for(uint j = 0; j < max_ctrl_queue_length[i].size(); j++)
+	    {
+		savefile<<"Maximum Length of Controller Queue for Package " << i << ", Die " << j << ": "<<max_ctrl_queue_length[i][j]<<"\n";
+	    }
 	}
 
 	if(WEAR_LEVEL_LOG)
@@ -825,7 +846,10 @@ void Logger::save_epoch(uint64_t cycle, uint epoch)
 
     for(uint i = 0; i < ctrl_queue_length.size(); i++)
     {
-	this_epoch.ctrl_queue_length[i] = ctrl_queue_length[i];
+	for(uint j = 0; j < ctrl_queue_length[i].size(); j++)
+	{
+	    this_epoch.ctrl_queue_length[i][j] = ctrl_queue_length[i][j];
+	}
     }
 
     for(uint i = 0; i < NUM_PACKAGES; i++)
@@ -962,7 +986,10 @@ void Logger::write_epoch(EpochEntry *e)
 	savefile<<"Length of Ftl Queue: " <<e->ftl_queue_length<<"\n";
 	for(uint i = 0; i < e->ctrl_queue_length.size(); i++)
 	{
-	    savefile<<"Length of Controller Queue for Package " << i << ": "<<e->ctrl_queue_length[i]<<"\n";
+	    for(uint j = 0; j < e->ctrl_queue_length[i].size(); j++)
+	    {
+		savefile<<"Length of Controller Queue for Package " << i << ", Die " << j << ": "<<e->ctrl_queue_length[i][j]<<"\n";
+	    }
 	}
 
 	if(WEAR_LEVEL_LOG)

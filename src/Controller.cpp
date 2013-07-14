@@ -288,9 +288,13 @@ bool Controller::addPacket(ChannelPacket *p){
 	{
 	    readQueues[p->package][p->die].push_back(p);
     
-	    if(LOGGING && QUEUE_EVENT_LOG)
+	    if(LOGGING)
 	    {
-		log->log_ctrl_queue_event(false, p->package, &readQueues[p->package][p->die]);
+		log->ctrlQueueSingleLength(p->package, p->die, readQueues[p->package][p->die].size());
+		if(QUEUE_EVENT_LOG)
+		{
+		    log->log_ctrl_queue_event(false, p->package, &readQueues[p->package][p->die]);
+		}
 	    }
 	    return true;
 	}
@@ -723,10 +727,13 @@ bool Controller::dataReady(uint64_t package, uint64_t die, uint64_t plane)
 
 void Controller::sendQueueLength(void)
 {
-	vector<uint64_t> temp = vector<uint64_t>(writeQueues.size(),0);
-	for(uint i = 0; i < writeQueues.size(); i++)
+    vector<vector<uint64_t> > temp = vector<vector<uint64_t> >(NUM_PACKAGES, vector<uint64_t>(DIES_PER_PACKAGE, 0));
+	for(uint i = 0; i < readQueues.size(); i++)
 	{
-		temp[i] = writeQueues[i].size();
+	    for(uint j = 0; j < readQueues[i].size(); j++)
+	    {
+		temp[i][j] = writeQueues[i][j].size();
+	    }
 	}
 	if(LOGGING == true)
 	{
