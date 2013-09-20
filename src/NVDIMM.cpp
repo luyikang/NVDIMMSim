@@ -90,7 +90,7 @@ namespace NVDSim
 	PRINT("Package Size: "<<PACKAGE_SIZE);
 	PRINT("Total Size: "<<TOTAL_SIZE);
 	PRINT("Packages/Channels: "<<NUM_PACKAGES);
-	PRINT("Page size (KB): "<<NV_PAGE_SIZE);
+	PRINT("Page size: "<<NV_PAGE_SIZE);
 	if(GARBAGE_COLLECT == 1)
 	{
 	  PRINT("Device is using garbage collection");
