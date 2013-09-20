@@ -73,7 +73,7 @@ namespace NVDSim
 		 exit(-1);
 	 }
 	
-	BLOCKS_PER_PLANE = (uint64_t) VIRTUAL_BLOCKS_PER_PLANE * PBLOCKS_PER_VBLOCK;
+	BLOCKS_PER_PLANE = (uint64_t)(VIRTUAL_BLOCKS_PER_PLANE * PBLOCKS_PER_VBLOCK);
 	if(LOGGING == 1)
 	{
 	    PRINT("Logs are being generated");
@@ -82,7 +82,8 @@ namespace NVDSim
 	}
 	PRINT("\nDevice Information:\n");
 	PRINT("Device Type: "<<DEVICE_TYPE);
-	PRINT("Size (GB): "<<TOTAL_SIZE/(1024*1024));
+	uint64_t bits_per_GB = (uint64_t)(1024*8192)*(1024);
+	PRINT("Size (GB): "<<TOTAL_SIZE/bits_per_GB);
 	PRINT("Block Size: "<<BLOCK_SIZE);
 	PRINT("Plane Size: "<<PLANE_SIZE);
 	PRINT("Die Size: "<<DIE_SIZE);
@@ -96,7 +97,7 @@ namespace NVDSim
 	}else{
 	  PRINT("Device is not using garbage collection");
 	}
-	if(BUFFERED == 1)
+	if(BUFFERED == 1 || FRONT_BUFFER == 1)
 	{
 	  PRINT("Memory is using a buffer between the channel and dies");
 	}else{

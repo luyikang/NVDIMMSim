@@ -95,7 +95,7 @@ bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
       if(IN_BUFFER_SIZE == 0 || inDataSize[die] <= (IN_BUFFER_SIZE-(CHANNEL_WIDTH)))
 	{
 	    if(!inData[die].empty() && inData[die].back()->type == type && inData[die].back()->plane == plane &&
-	       type == 5 && inData[die].back()->number < (NV_PAGE_SIZE*8192))
+	       type == 5 && inData[die].back()->number < (NV_PAGE_SIZE))
 	    {
 		inData[die].back()->number = inData[die].back()->number + CHANNEL_WIDTH;
 		inDataSize[die] = inDataSize[die] + CHANNEL_WIDTH;
@@ -129,11 +129,11 @@ bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
 	if(OUT_BUFFER_SIZE == 0 || outDataSize[die] <= (OUT_BUFFER_SIZE-DEVICE_WIDTH))
 	{
 	    if(!outData[die].empty() && outData[die].back()->type == type && outData[die].back()->plane == plane &&
-	       outData[die].back()->number < (NV_PAGE_SIZE*8192)){
+	       outData[die].back()->number < (NV_PAGE_SIZE)){
 		outData[die].back()->number = outData[die].back()->number + DEVICE_WIDTH;
 		outDataSize[die] = outDataSize[die] + DEVICE_WIDTH;
 		// if ths was the last piece of this packet, tell the die
-		if( outData[die].back()->number >= (NV_PAGE_SIZE*8192))
+		if( outData[die].back()->number >= (NV_PAGE_SIZE))
 		{
 		    dies[die]->bufferLoaded();
 		}
@@ -167,7 +167,7 @@ bool Buffer::isFull(SenderType t, ChannelPacketType bt, uint64_t die)
       {
 	      return false;
       }
-      else if(!CUT_THROUGH && bt == 5 && inDataSize[die] <= (IN_BUFFER_SIZE-(divide_params((NV_PAGE_SIZE*8192), CHANNEL_WIDTH)*CHANNEL_WIDTH)))
+      else if(!CUT_THROUGH && bt == 5 && inDataSize[die] <= (IN_BUFFER_SIZE-(divide_params((NV_PAGE_SIZE), CHANNEL_WIDTH)*CHANNEL_WIDTH)))
       {
 	      return false;
       }
@@ -191,7 +191,7 @@ bool Buffer::isFull(SenderType t, ChannelPacketType bt, uint64_t die)
 	    {
 		    return false;
 	    }
-	    else if(!CUT_THROUGH && outDataSize[die] <= (OUT_BUFFER_SIZE-(divide_params((NV_PAGE_SIZE*8192), DEVICE_WIDTH)*DEVICE_WIDTH)))
+	    else if(!CUT_THROUGH && outDataSize[die] <= (OUT_BUFFER_SIZE-(divide_params((NV_PAGE_SIZE), DEVICE_WIDTH)*DEVICE_WIDTH)))
 	    {
 		    return false;
 	    }
@@ -262,15 +262,15 @@ void Buffer::update(void){
 		// starting the transaction as soon as we have enough data to send one beat
 		if(CUT_THROUGH && inData[i].front()->number >= DEVICE_WIDTH)
 		{
-		    inDataLeft[i] = (NV_PAGE_SIZE*8192);
+		    inDataLeft[i] = (NV_PAGE_SIZE);
 		    cyclesLeft[i] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 		    processInData(i);
 		}
 		// don't do cut through routing
 		// wait until we have the whole page before sending
-		else if(!CUT_THROUGH && inData[i].front()->number >= (NV_PAGE_SIZE*8192))
+		else if(!CUT_THROUGH && inData[i].front()->number >= (NV_PAGE_SIZE))
 		{
-		    inDataLeft[i] = (NV_PAGE_SIZE*8192);
+		    inDataLeft[i] = (NV_PAGE_SIZE);
 		    cyclesLeft[i] = divide_params(DEVICE_CYCLE,CYCLE_TIME);
 		    processInData(i);
 		}
@@ -278,8 +278,8 @@ void Buffer::update(void){
 	    // its not a command and its not the first time we've seen it but we still need to make sure either
 	    // there is enough data to warrant sending out the data or all of the data for this particular packet has already
 	    // been loaded into the buffer	    
-	    else if (inData[i].front()->number >= (((NV_PAGE_SIZE*8192)-inDataLeft[i])+DEVICE_WIDTH) ||
-		     (inData[i].front()->number >= (NV_PAGE_SIZE*8192)))
+	    else if (inData[i].front()->number >= (((NV_PAGE_SIZE)-inDataLeft[i])+DEVICE_WIDTH) ||
+		     (inData[i].front()->number >= (NV_PAGE_SIZE)))
 	    {
 		processInData(i);
 	    }
@@ -296,7 +296,7 @@ void Buffer::update(void){
 		prepareOutChannel(i);
 	    }
 	    // waiting to send data until we have a whole page to send
-	    else if(!CUT_THROUGH && outData[i].front()->number >= (NV_PAGE_SIZE*8192))
+	    else if(!CUT_THROUGH && outData[i].front()->number >= (NV_PAGE_SIZE))
 	    {
 		prepareOutChannel(i);
 	    }
@@ -309,15 +309,15 @@ void Buffer::prepareOutChannel(uint64_t die)
     // see if we have control of the channel
     if (channel->hasChannel(BUFFER, id) && sendingDie == die && sendingPlane == outData[die].front()->plane)
     {
-	if((outData[die].front()->number >= (((NV_PAGE_SIZE*8192)-outDataLeft[die])+CHANNEL_WIDTH)) ||
-	   (outData[die].front()->number >= (NV_PAGE_SIZE*8192)))
+	if((outData[die].front()->number >= (((NV_PAGE_SIZE)-outDataLeft[die])+CHANNEL_WIDTH)) ||
+	   (outData[die].front()->number >= (NV_PAGE_SIZE)))
 	{
 	    processOutData(die);
 	}
     }
     // if we don't have the channel, get it
     else if (channel->obtainChannel(id, BUFFER, NULL)){
-	outDataLeft[die] = (NV_PAGE_SIZE*8192);
+	outDataLeft[die] = (NV_PAGE_SIZE);
 	sendingDie = die;
 	sendingPlane = outData[die].front()->plane;
 	processOutData(die);
@@ -377,9 +377,9 @@ void Buffer::processInData(uint64_t die){
 	    {
 		    if(inData[die].front()->type == 5)
 		    {
-			    if( inDataSize[die] >= (divide_params((NV_PAGE_SIZE*8192), CHANNEL_WIDTH)*CHANNEL_WIDTH))
+			    if( inDataSize[die] >= (divide_params((NV_PAGE_SIZE), CHANNEL_WIDTH)*CHANNEL_WIDTH))
 			    {
-				    inDataSize[die] = inDataSize[die] - (divide_params((NV_PAGE_SIZE*8192), CHANNEL_WIDTH)*CHANNEL_WIDTH);
+				    inDataSize[die] = inDataSize[die] - (divide_params((NV_PAGE_SIZE), CHANNEL_WIDTH)*CHANNEL_WIDTH);
 			    }
 			    else
 			    {
@@ -443,9 +443,9 @@ void Buffer::processOutData(uint64_t die){
     {
 	    if(!CUT_THROUGH)
 	    {
-		     if( outDataSize[die] >= (divide_params((NV_PAGE_SIZE*8192), CHANNEL_WIDTH)*CHANNEL_WIDTH))
+		     if( outDataSize[die] >= (divide_params((NV_PAGE_SIZE), CHANNEL_WIDTH)*CHANNEL_WIDTH))
 		     {
-			     outDataSize[die] = outDataSize[die] - (divide_params((NV_PAGE_SIZE*8192), CHANNEL_WIDTH)*CHANNEL_WIDTH);
+			     outDataSize[die] = outDataSize[die] - (divide_params((NV_PAGE_SIZE), CHANNEL_WIDTH)*CHANNEL_WIDTH);
 		     }
 		     else
 		     {

@@ -1,5 +1,4 @@
-/*********************************************************************************
-*  Copyright (c) 2011-2012, Paul Tschirhart
+/* (c) 2011-2012, Paul Tschirhart
 *                             Peter Enns
 *                             Jim Stevens
 *                             Ishwar Bhati

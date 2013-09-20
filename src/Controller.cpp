@@ -357,7 +357,7 @@ void Controller::update(void){
 			    case DATA:
 				// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
 				// are in 1 KB (1024 * 8).
-				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
+				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE),CHANNEL_WIDTH); 
 				break;
 			    default:
 				channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
@@ -488,7 +488,7 @@ void Controller::update(void){
 			case DATA:
 			    // Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
 			    // are in 1 KB (1024 * 8).
-			    channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
+			    channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE),CHANNEL_WIDTH); 
 			    break;
 			default:
 			    channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
@@ -558,7 +558,7 @@ void Controller::update(void){
 			    case DATA:
 				// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
 				// are in 1 KB (1024 * 8).
-				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH); 
+				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE),DEVICE_WIDTH); 
 				break;
 			    default:
 				channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,DEVICE_WIDTH);
@@ -571,7 +571,7 @@ void Controller::update(void){
 			    case DATA:
 				// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
 				// are in 1 KB (1024 * 8).
-				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
+				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE),CHANNEL_WIDTH); 
 				break;
 			    default:
 				channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
@@ -640,7 +640,7 @@ void Controller::update(void){
 			    }
 			    else
 			    {
-				if((outgoingPackets[i]->busPacketType == DATA && channelBeatsLeft[i] == divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH)) ||
+				if((outgoingPackets[i]->busPacketType == DATA && channelBeatsLeft[i] == divide_params((NV_PAGE_SIZE),CHANNEL_WIDTH)) ||
 				   (outgoingPackets[i]->busPacketType != DATA && channelBeatsLeft[i] == divide_params(COMMAND_LENGTH,CHANNEL_WIDTH)))
 				{
 				    if(!(*packages)[outgoingPackets[i]->package].channel->isBufferFull(CONTROLLER, outgoingPackets[i]->busPacketType, 
