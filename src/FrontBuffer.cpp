@@ -90,14 +90,14 @@ bool FrontBuffer::addTransaction(FlashTransaction transaction){
 	    return false;
 	}
     case DATA_WRITE:
-	if(requestsSize <= (REQUEST_BUFFER_SIZE - (COMMAND_LENGTH + (NV_PAGE_SIZE))))
+	if(requestsSize <= (REQUEST_BUFFER_SIZE - (COMMAND_LENGTH + (NV_PAGE_SIZE*8))))
 	{
 	    requests.push(transaction);
 	    if(ENABLE_COMMAND_CHANNEL)
 	    {
 		commands.push(transaction);
 	    }
-	    requestsSize += (COMMAND_LENGTH + (NV_PAGE_SIZE));
+	    requestsSize += (COMMAND_LENGTH + (NV_PAGE_SIZE*8));
 	    return true;
 	}
 	else
@@ -105,10 +105,10 @@ bool FrontBuffer::addTransaction(FlashTransaction transaction){
 	    return false;
 	}
     case RETURN_DATA:
-	if(responsesSize <= (RESPONSE_BUFFER_SIZE - (NV_PAGE_SIZE)))
+	if(responsesSize <= (RESPONSE_BUFFER_SIZE - (NV_PAGE_SIZE*8)))
 	{
 	    responses.push(transaction);
-	    responsesSize += (NV_PAGE_SIZE);
+	    responsesSize += (NV_PAGE_SIZE*8);
 	    return true;
 	}
 	else
@@ -135,7 +135,7 @@ void FrontBuffer::update(void){
     {
 	responseTrans = responses.front();
 	responses.pop();
-	responsesSize = subtract_params(responsesSize, (NV_PAGE_SIZE));
+	responsesSize = subtract_params(responsesSize, (NV_PAGE_SIZE*8));
 	updateResponse();
     }
     // half duplex case, requests also use the response channel
@@ -187,11 +187,11 @@ FlashTransaction FrontBuffer::newRequestTrans(void){
     FlashTransaction new_requestTrans = requests.front();
     if(!ENABLE_COMMAND_CHANNEL)
     {
-	requestsSize = subtract_params(requestsSize, (COMMAND_LENGTH + (NV_PAGE_SIZE)));
+	requestsSize = subtract_params(requestsSize, (COMMAND_LENGTH + (NV_PAGE_SIZE*8)));
     }
     else
     {
-	requestsSize = subtract_params(requestsSize, (NV_PAGE_SIZE));
+	requestsSize = subtract_params(requestsSize, (NV_PAGE_SIZE*8));
     }
     requests.pop();
     return new_requestTrans;
@@ -206,7 +206,7 @@ void FrontBuffer::updateResponse(void){
 	{
 	    // number of channel cycles to go equals the total number of data bits divided by the bits 
 	    // moved per channel cycle
-	    responseCyclesLeft = divide_params((NV_PAGE_SIZE), CHANNEL_WIDTH);
+	    responseCyclesLeft = divide_params((NV_PAGE_SIZE*8), CHANNEL_WIDTH);
 	}
 	// no request channel to handle request data and commands so we need to handle those cases
 	else if(!ENABLE_REQUEST_CHANNEL)
@@ -338,13 +338,13 @@ uint64_t FrontBuffer::setDataCycles(FlashTransaction transaction, uint64_t width
 	{
 	    // number of channel cycles to go equals the total number of data bits plus the number of command bits
 	    // divided by the bits moved per channel cycle
-	    return divide_params(((NV_PAGE_SIZE)+COMMAND_LENGTH), width);
+	    return divide_params(((NV_PAGE_SIZE*8)+COMMAND_LENGTH), width);
 	}
 	else
 	{
 	    // number of channel cycles to go equals the total number of data bits divided by the bits 
 	    // moved per channel cycle
-	    return divide_params((NV_PAGE_SIZE), width);
+	    return divide_params((NV_PAGE_SIZE*8), width);
 	}
     }
     ERROR("Something bad happened in setDataCycles");
