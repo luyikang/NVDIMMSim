@@ -53,11 +53,11 @@
 using std::string;
 
 namespace NVDSim{
-    typedef CallbackBase<void,uint,uint64_t,uint64_t,bool> Callback_t;
-    typedef CallbackBase<void,uint,vector<vector<double>>,uint64_t,bool> Callback_v;
+    typedef CallbackBase<void,uint64_t,uint64_t,uint64_t,bool> Callback_t;
+    typedef CallbackBase<void,uint64_t,vector<vector<double>>,uint64_t,bool> Callback_v;
 	class NVDIMM : public SimObj{
 		public:
-			NVDIMM(uint id, string dev, string sys, string pwd, string trc);
+			NVDIMM(uint64_t id, string dev, string sys, string pwd, string trc);
 			void update(void);
 			bool add(FlashTransaction &trans);
 			bool addTransaction(bool isWrite, uint64_t addr);
@@ -88,8 +88,8 @@ namespace NVDSim{
 			Callback_t* WriteDataDone;
 			Callback_v* ReturnPowerData;
 
-			uint systemID, numReads, numWrites, numErases;
-			uint epoch_count, epoch_cycles;
+			uint64_t systemID, numReads, numWrites, numErases;
+			uint64_t epoch_count, epoch_cycles;
 			uint64_t channel_cycles_per_cycle, controller_cycles_left;
 			float system_clock_counter, nv_clock_counter1, nv_clock_counter2, controller_clock_counter;
 			float *channel_clock_counter, *nv_clock_counter3;
@@ -101,6 +101,6 @@ namespace NVDSim{
 			string dev, sys, cDirectory;
 	};
 
-	NVDIMM *getNVDIMMInstance(uint id, string deviceFile, string sysFile, string pwd, string trc);
+	NVDIMM *getNVDIMMInstance(uint64_t id, string deviceFile, string sysFile, string pwd, string trc);
 }
 #endif

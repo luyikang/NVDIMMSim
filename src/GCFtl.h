@@ -71,10 +71,10 @@ namespace NVDSim{
 			void GCReadDone(uint64_t vAddr);
 
 		protected:
-			uint gc_status, panic_mode;
+			bool gc_status, panic_mode;
 			uint64_t start_erase;
 
-			uint erase_pointer;			
+			uint64_t erase_pointer;			
 			
 			class PendingErase
 			{

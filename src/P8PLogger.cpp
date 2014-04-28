@@ -47,7 +47,7 @@ void P8PLogger::update()
 {
     	//update idle energy
 	//since this is already subtracted from the access energies we just do it every time
-	for(uint i = 0; i < (NUM_PACKAGES); i++)
+	for(uint64_t i = 0; i < (NUM_PACKAGES); i++)
 	{
 	  idle_energy[i] += STANDBY_I;
 	  vpp_idle_energy[i] += VPP_STANDBY_I;
@@ -112,7 +112,7 @@ void P8PLogger::access_stop(uint64_t addr, uint64_t paddr)
 	}
 }
 
-void P8PLogger::save(uint64_t cycle, uint epoch) 
+void P8PLogger::save(uint64_t cycle, uint64_t epoch) 
 {
         // Power stuff
 	// Total power used
@@ -125,7 +125,7 @@ void P8PLogger::save(uint64_t cycle, uint epoch)
 	vector<double> ave_vpp_access_power = vector<double>(NUM_PACKAGES, 0.0);
 	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
 
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	     if(cycle != 0)
 	     {
@@ -197,9 +197,9 @@ void P8PLogger::save(uint64_t cycle, uint epoch)
 	savefile<<"\nQueue Length Data: \n";
 	savefile<<"========================\n";
 	savefile<<"Maximum Length of Ftl Queue: " <<max_ftl_queue_length<<"\n";
-	for(uint i = 0; i < max_ctrl_queue_length.size(); i++)
+	for(uint64_t i = 0; i < max_ctrl_queue_length.size(); i++)
 	{
-	    for(uint j = 0; j < max_ctrl_queue_length[i].size(); j++)
+	    for(uint64_t j = 0; j < max_ctrl_queue_length[i].size(); j++)
 	    {
 		savefile<<"Maximum Length of Controller Queue for Package " << i << ", Die " << j << ": "<<max_ctrl_queue_length[i][j]<<"\n";
 	    }
@@ -219,7 +219,7 @@ void P8PLogger::save(uint64_t cycle, uint epoch)
 	savefile<<"\nPower Data: \n";
 	savefile<<"========================\n";
 
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	    savefile<<"Package: "<<i<<"\n";
 	    savefile<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
@@ -261,7 +261,7 @@ void P8PLogger::print(uint64_t cycle) {
 	vector<double> ave_vpp_access_power = vector<double>(NUM_PACKAGES, 0.0);
 	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
 
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	  total_energy[i] = ((idle_energy[i] + access_energy[i]) * VCC)
 	                    + ((vpp_idle_energy[i] + vpp_access_energy[i]) * VPP);
@@ -278,7 +278,7 @@ void P8PLogger::print(uint64_t cycle) {
 	cout<<"\nPower Data: \n";
 	cout<<"========================\n";
 
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	    cout<<"Package: "<<i<<"\n";
 	    cout<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
@@ -300,7 +300,7 @@ void P8PLogger::print(uint64_t cycle) {
 vector<vector<double> > P8PLogger::getEnergyData(void)
 {
     vector<vector<double> > temp = vector<vector<double> >(4, vector<double>(NUM_PACKAGES, 0.0));
-    for(uint i = 0; i < NUM_PACKAGES; i++)
+    for(uint64_t i = 0; i < NUM_PACKAGES; i++)
     {
 	temp[0][i] = idle_energy[i];
 	temp[1][i] = access_energy[i];
@@ -310,7 +310,7 @@ vector<vector<double> > P8PLogger::getEnergyData(void)
     return temp;
 }
 
-void P8PLogger::save_epoch(uint64_t cycle, uint epoch)
+void P8PLogger::save_epoch(uint64_t cycle, uint64_t epoch)
 {    
     EpochEntry this_epoch;
     this_epoch.cycle = cycle;
@@ -337,15 +337,15 @@ void P8PLogger::save_epoch(uint64_t cycle, uint epoch)
 
     this_epoch.writes_per_address = writes_per_address;
 
-    for(uint i = 0; i < ctrl_queue_length.size(); i++)
+    for(uint64_t i = 0; i < ctrl_queue_length.size(); i++)
     {
-	for(uint j = 0; j < ctrl_queue_length[i].size(); j++)
+	for(uint64_t j = 0; j < ctrl_queue_length[i].size(); j++)
 	{
 	    this_epoch.ctrl_queue_length[i][j] = ctrl_queue_length[i][j];
 	}
     }
 
-    for(uint i = 0; i < NUM_PACKAGES; i++)
+    for(uint64_t i = 0; i < NUM_PACKAGES; i++)
     {	
 	this_epoch.idle_energy[i] = idle_energy[i]; 
 	this_epoch.access_energy[i] = access_energy[i]; 
@@ -379,7 +379,7 @@ void P8PLogger::save_epoch(uint64_t cycle, uint epoch)
 	this_epoch.average_write_latency -= last_epoch.average_write_latency;
 	this_epoch.average_queue_latency -= last_epoch.average_queue_latency;
 
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{	
 	    this_epoch.idle_energy[i] -= last_epoch.idle_energy[i]; 
 	    this_epoch.access_energy[i] -= last_epoch.access_energy[i];
@@ -436,7 +436,7 @@ void P8PLogger::write_epoch(EpochEntry *e)
 	vector<double> ave_vpp_access_power = vector<double>(NUM_PACKAGES, 0.0);
 	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
 
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	     if(e->cycle != 0)
 	     {
@@ -489,9 +489,9 @@ void P8PLogger::write_epoch(EpochEntry *e)
 	savefile<<"\nQueue Length Data: \n";
 	savefile<<"========================\n";
 	savefile<<"Length of Ftl Queue: " <<e->ftl_queue_length<<"\n";
-	for(uint i = 0; i < e->ctrl_queue_length.size(); i++)
+	for(uint64_t i = 0; i < e->ctrl_queue_length.size(); i++)
 	{
-	    for(uint j = 0; j < e->ctrl_queue_length[i].size(); j++)
+	    for(uint64_t j = 0; j < e->ctrl_queue_length[i].size(); j++)
 	    {
 		savefile<<"Length of Controller Queue for Package " << i << ", Die " << j << ": "<<e->ctrl_queue_length[i][j]<<"\n";
 	    }
@@ -511,7 +511,7 @@ void P8PLogger::write_epoch(EpochEntry *e)
 	savefile<<"\nPower Data: \n";
 	savefile<<"========================\n";
 
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	    savefile<<"Package: "<<i<<"\n";
 	    savefile<<"Accumulated Idle Energy: "<<(e->idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";

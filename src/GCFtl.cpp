@@ -100,7 +100,7 @@ void GCFtl::addGcTransaction(FlashTransaction &t){
 }
 
 void GCFtl::update(void){
-	uint i;
+	uint64_t i;
 	if (gc_status){
 		if (!panic_mode && parent->numErases == start_erase + 1)
 			gc_status = 0;
@@ -457,9 +457,9 @@ void GCFtl::saveNVState(void)
 
         // save the dirty table
 	save_file << "Dirty \n";
-	for(uint i = 0; i < dirty.size(); i++)
+	for(uint64_t i = 0; i < dirty.size(); i++)
 	{
-	    for(uint j = 0; j < dirty[i].size(); j++)
+	    for(uint64_t j = 0; j < dirty[i].size(); j++)
 	    {
 		save_file << dirty[i][j] << " ";
 	    }
@@ -468,10 +468,10 @@ void GCFtl::saveNVState(void)
 
 	// save the used table
 	save_file << "Used";
-	for(uint i = 0; i < used.size(); i++)
+	for(uint64_t i = 0; i < used.size(); i++)
 	{
 	    save_file << "\n";
-	    for(uint j = 0; j < used[i].size()-1; j++)
+	    for(uint64_t j = 0; j < used[i].size()-1; j++)
 	    {
 		save_file << used[i][j] << " ";
 	    }

@@ -77,11 +77,11 @@ Logger::Logger()
 	    first_state_log = true;
 	
 	    plane_states = new PlaneStateType **[NUM_PACKAGES];
-	    for(uint i = 0; i < NUM_PACKAGES; i++){
+	    for(uint64_t i = 0; i < NUM_PACKAGES; i++){
 		plane_states[i] = new PlaneStateType *[DIES_PER_PACKAGE];
-		for(uint j = 0; j < DIES_PER_PACKAGE; j++){
+		for(uint64_t j = 0; j < DIES_PER_PACKAGE; j++){
 		    plane_states[i][j] = new PlaneStateType[PLANES_PER_DIE];
-		    for(uint k = 0; k < PLANES_PER_DIE; k++){
+		    for(uint64_t k = 0; k < PLANES_PER_DIE; k++){
 			plane_states[i][j][k] = IDLE;
 		    }
 		}
@@ -95,7 +95,7 @@ Logger::Logger()
 	    first_ctrl_read_log = new bool [NUM_PACKAGES];
 	    first_crtl_write_log = new bool [NUM_PACKAGES];
 	    
-	    for(uint i = 0; i < NUM_PACKAGES; i++){
+	    for(uint64_t i = 0; i < NUM_PACKAGES; i++){
 		first_ctrl_read_log[i] = true;
 		first_crtl_write_log[i] = true;
 	    }
@@ -109,7 +109,7 @@ void Logger::update()
 {
     	//update idle energy
 	//since this is already subtracted from the access energies we just do it every time
-	for(uint i = 0; i < (NUM_PACKAGES); i++)
+	for(uint64_t i = 0; i < (NUM_PACKAGES); i++)
 	{
 	  idle_energy[i] += STANDBY_I;
 	}
@@ -177,7 +177,7 @@ void Logger::access_start(uint64_t addr, TransactionType op)
 }
 
 // Using virtual addresses here right now
-void Logger::access_process(uint64_t addr, uint64_t paddr, uint package, ChannelPacketType op)
+void Logger::access_process(uint64_t addr, uint64_t paddr, uint64_t package, ChannelPacketType op)
 {
         // Get entry off of the access_queue.
 	uint64_t start_cycle = 0;
@@ -591,9 +591,9 @@ void Logger::ftlQueueLength(uint64_t length, uint64_t length2)
 
 void Logger::ctrlQueueLength(vector<vector <uint64_t> > length)
 {
-    for(uint i = 0; i < length.size(); i++)
+    for(uint64_t i = 0; i < length.size(); i++)
     {
-	for(uint j = 0; j < length[i].size(); j++)
+	for(uint64_t j = 0; j < length[i].size(); j++)
 	{
 	    if(length[i][j] > ctrl_queue_length[i][j])
 	    {
@@ -607,7 +607,7 @@ void Logger::ctrlQueueLength(vector<vector <uint64_t> > length)
     }
 }
 
-void Logger::ctrlQueueSingleLength(uint package, uint die, uint64_t length)
+void Logger::ctrlQueueSingleLength(uint64_t package, uint64_t die, uint64_t length)
 {
     if(length > ctrl_queue_length[package][die])
     {
@@ -626,16 +626,16 @@ void Logger::ftlQueueReset()
 
 void Logger::ctrlQueueReset()
 {
-    for(uint i = 0; i < ctrl_queue_length.size(); i++)
+    for(uint64_t i = 0; i < ctrl_queue_length.size(); i++)
     {
-	for(uint j = 0; j < ctrl_queue_length[i].size(); j++)
+	for(uint64_t j = 0; j < ctrl_queue_length[i].size(); j++)
 	{
 	    ctrl_queue_length[i][j] = 0;
 	}
     }
 }
 
-void Logger::save(uint64_t cycle, uint epoch) 
+void Logger::save(uint64_t cycle, uint64_t epoch) 
 {
         // Power stuff
 	// Total power used
@@ -646,7 +646,7 @@ void Logger::save(uint64_t cycle, uint epoch)
 	vector<double> ave_access_power = vector<double>(NUM_PACKAGES, 0.0);
 	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
 
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	    if(cycle != 0)
 	    {
@@ -720,9 +720,9 @@ void Logger::save(uint64_t cycle, uint epoch)
 	savefile<<"\nQueue Length Data: \n";
 	savefile<<"========================\n";
 	savefile<<"Maximum Length of Ftl Queue: " <<max_ftl_queue_length<<"\n";
-	for(uint i = 0; i < max_ctrl_queue_length.size(); i++)
+	for(uint64_t i = 0; i < max_ctrl_queue_length.size(); i++)
 	{
-	    for(uint j = 0; j < max_ctrl_queue_length[i].size(); j++)
+	    for(uint64_t j = 0; j < max_ctrl_queue_length[i].size(); j++)
 	    {
 		savefile<<"Maximum Length of Controller Queue for Package " << i << ", Die " << j << ": "<<max_ctrl_queue_length[i][j]<<"\n";
 	    }
@@ -742,7 +742,7 @@ void Logger::save(uint64_t cycle, uint epoch)
 	savefile<<"\nPower Data: \n";
 	savefile<<"========================\n";
 
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	    savefile<<"Package: "<<i<<"\n";
 	    savefile<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
@@ -779,7 +779,7 @@ void Logger::print(uint64_t cycle)
 	vector<double> ave_access_power = vector<double>(NUM_PACKAGES, 0.0);
 	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
 
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	    total_energy[i] = (idle_energy[i] + access_energy[i]) * VCC;
 	    ave_idle_power[i] = (idle_energy[i] * VCC) / cycle;
@@ -793,7 +793,7 @@ void Logger::print(uint64_t cycle)
 	cout<<"\nPower Data: \n";
 	cout<<"========================\n";
 
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	    cout<<"Package: "<<i<<"\n";
 	    cout<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
@@ -809,7 +809,7 @@ void Logger::print(uint64_t cycle)
 vector<vector<double> > Logger::getEnergyData(void)
 {
     vector<vector<double> > temp = vector<vector<double> >(2, vector<double>(NUM_PACKAGES, 0.0));
-    for(uint i = 0; i < NUM_PACKAGES; i++)
+    for(uint64_t i = 0; i < NUM_PACKAGES; i++)
     {
 	temp[0][i] = idle_energy[i];
 	temp[1][i] = access_energy[i];
@@ -817,7 +817,7 @@ vector<vector<double> > Logger::getEnergyData(void)
     return temp;
 }
 
-void Logger::save_epoch(uint64_t cycle, uint epoch)
+void Logger::save_epoch(uint64_t cycle, uint64_t epoch)
 {
     EpochEntry this_epoch;
     this_epoch.cycle = cycle;
@@ -844,15 +844,15 @@ void Logger::save_epoch(uint64_t cycle, uint epoch)
 
     this_epoch.writes_per_address = writes_per_address;
 
-    for(uint i = 0; i < ctrl_queue_length.size(); i++)
+    for(uint64_t i = 0; i < ctrl_queue_length.size(); i++)
     {
-	for(uint j = 0; j < ctrl_queue_length[i].size(); j++)
+	for(uint64_t j = 0; j < ctrl_queue_length[i].size(); j++)
 	{
 	    this_epoch.ctrl_queue_length[i][j] = ctrl_queue_length[i][j];
 	}
     }
 
-    for(uint i = 0; i < NUM_PACKAGES; i++)
+    for(uint64_t i = 0; i < NUM_PACKAGES; i++)
     {	
 	this_epoch.idle_energy[i] = idle_energy[i]; 
 	this_epoch.access_energy[i] = access_energy[i]; 
@@ -883,7 +883,7 @@ void Logger::save_epoch(uint64_t cycle, uint epoch)
 	this_epoch.average_write_latency -= last_epoch.average_write_latency;
 	this_epoch.average_queue_latency -= last_epoch.average_queue_latency;
 	
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{	
 	    this_epoch.idle_energy[i] -= last_epoch.idle_energy[i]; 
 	    this_epoch.access_energy[i] -= last_epoch.access_energy[i]; 
@@ -936,7 +936,7 @@ void Logger::write_epoch(EpochEntry *e)
 	vector<double> ave_access_power = vector<double>(NUM_PACKAGES, 0.0);
 	vector<double> average_power = vector<double>(NUM_PACKAGES, 0.0);
 
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	    if(e->cycle != 0)
 	    {
@@ -984,9 +984,9 @@ void Logger::write_epoch(EpochEntry *e)
 	savefile<<"\nQueue Length Data: \n";
 	savefile<<"========================\n";
 	savefile<<"Length of Ftl Queue: " <<e->ftl_queue_length<<"\n";
-	for(uint i = 0; i < e->ctrl_queue_length.size(); i++)
+	for(uint64_t i = 0; i < e->ctrl_queue_length.size(); i++)
 	{
-	    for(uint j = 0; j < e->ctrl_queue_length[i].size(); j++)
+	    for(uint64_t j = 0; j < e->ctrl_queue_length[i].size(); j++)
 	    {
 		savefile<<"Length of Controller Queue for Package " << i << ", Die " << j << ": "<<e->ctrl_queue_length[i][j]<<"\n";
 	    }
@@ -1006,7 +1006,7 @@ void Logger::write_epoch(EpochEntry *e)
 	savefile<<"\nPower Data: \n";
 	savefile<<"========================\n";
 
-	for(uint i = 0; i < NUM_PACKAGES; i++)
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	    savefile<<"Package: "<<i<<"\n";
 	    savefile<<"Accumulated Idle Energy: "<<(e->idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";

@@ -88,13 +88,13 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 
 	// the maximum amount of time we can wait before we're sure we've deadlocked
 	// time it takes to read all of the pages in a block
-	deadlock_time = PAGES_PER_BLOCK * (READ_TIME + ((divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
-					   ((divide_params(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME));
+	deadlock_time = PAGES_PER_BLOCK * (READ_TIME + ((divide_params_64b((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
+					   ((divide_params_64b(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME));
 	// plus the time it takes to write all of the pages in a block
-	deadlock_time += PAGES_PER_BLOCK * (WRITE_TIME + ((divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
-					   ((divide_params(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME));
+	deadlock_time += PAGES_PER_BLOCK * (WRITE_TIME + ((divide_params_64b((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
+					   ((divide_params_64b(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME));
 	// plus the time it takes to erase the block
-	deadlock_time += ERASE_TIME + ((divide_params(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME);
+	deadlock_time += ERASE_TIME + ((divide_params_64b(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME);
 
 	write_wait_count = DELAY_WRITE_CYCLES;
 
@@ -130,7 +130,7 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 
 ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr){
 
-	uint package, die, plane, block, page;
+	uint64_t package, die, plane, block, page;
 	//uint64_t tempA, tempB, physicalAddress = pAddr;
 	uint64_t physicalAddress = pAddr;
 
@@ -1120,10 +1120,10 @@ void Ftl::saveNVState(void)
 
 		// save the used table
 		save_file << "Used \n";
-		for(uint i = 0; i < used.size(); i++)
+		for(uint64_t i = 0; i < used.size(); i++)
 		{
 			save_file << "\n";
-			for(uint j = 0; j < used[i].size()-1; j++)
+			for(uint64_t j = 0; j < used[i].size()-1; j++)
 			{
 				save_file << used[i][j] << " ";
 			}

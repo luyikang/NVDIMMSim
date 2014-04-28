@@ -55,11 +55,11 @@ Die::Die(NVDIMM *parent, Logger *l, uint64_t idNum){
 
 	dataCyclesLeft= 0;
 	deviceBeatsLeft= 0;
-	controlCyclesLeft= new uint[PLANES_PER_DIE];
+	controlCyclesLeft= new uint64_t[PLANES_PER_DIE];
 
 	currentClockCycle= 0;
 
-	critBeat = ((divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH)-divide_params((uint)512,DEVICE_WIDTH)) * DEVICE_CYCLE) / CYCLE_TIME; // cache line is 64 bytes
+	critBeat = ((divide_params_64b((NV_PAGE_SIZE*8192),DEVICE_WIDTH)-divide_params_64b((uint64_t)512,DEVICE_WIDTH)) * DEVICE_CYCLE) / CYCLE_TIME; // cache line is 64 bytes
 }
 
 void Die::attachToBuffer(Buffer *buff){
@@ -256,8 +256,8 @@ void Die::update(void){
 		   (buffer->dataReady(returnDataPackets.front()->die, returnDataPackets.front()->plane) == false ||
 		    currentCommands[returnDataPackets.front()->plane] != NULL))
 		{
-		    dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
-		    deviceBeatsLeft = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
+		    dataCyclesLeft = divide_params_64b(DEVICE_CYCLE,CYCLE_TIME);
+		    deviceBeatsLeft = divide_params_64b((NV_PAGE_SIZE*8192),DEVICE_WIDTH);
 		    sending = true;
 		}
 		    
@@ -267,7 +267,7 @@ void Die::update(void){
 		    if(success == true)
 		    {
 			deviceBeatsLeft--;
-			dataCyclesLeft = divide_params(DEVICE_CYCLE,CYCLE_TIME);
+			dataCyclesLeft = divide_params_64b(DEVICE_CYCLE,CYCLE_TIME);
 		    }
 		    else
 		    {
@@ -310,7 +310,7 @@ void Die::update(void){
 		    {
 			if(buffer->channel->obtainChannel(id, BUFFER, NULL))
 			{
-			    dataCyclesLeft = (divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
+			    dataCyclesLeft = (divide_params_64b((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME;
 			}
 		    }
 		}

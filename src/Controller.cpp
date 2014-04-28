@@ -44,7 +44,7 @@ Controller::Controller(NVDIMM* parent, Logger* l){
 	parentNVDIMM = parent;
 	log = l;
 
-	channelBeatsLeft = vector<uint>(NUM_PACKAGES, 0);
+	channelBeatsLeft = vector<uint64_t>(NUM_PACKAGES, 0);
 
 	readQueues = vector<vector<list <ChannelPacket *> > >(NUM_PACKAGES, vector<list<ChannelPacket *> >(DIES_PER_PACKAGE, list<ChannelPacket * >()));
 	writeQueues = vector<vector<list <ChannelPacket *> > >(NUM_PACKAGES, vector<list<ChannelPacket *> >(DIES_PER_PACKAGE, list<ChannelPacket * >()));
@@ -98,7 +98,7 @@ void Controller::returnPowerData(vector<double> idle_energy, vector<double> acce
 		vector<double> vpp_idle_energy, vector<double> vpp_access_energy, vector<double> vpp_erase_energy) {
 	if(parentNVDIMM->ReturnPowerData!=NULL){
 		vector<vector<double>> power_data = vector<vector<double>>(6, vector<double>(NUM_PACKAGES, 0.0));
-		for(uint i = 0; i < NUM_PACKAGES; i++)
+		for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 		{
 			power_data[0][i] = idle_energy[i] * VCC;
 			power_data[1][i] = access_energy[i] * VCC;
@@ -115,7 +115,7 @@ void Controller::returnPowerData(vector<double> idle_energy, vector<double> acce
 		vector<double> vpp_access_energy) {
 	if(parentNVDIMM->ReturnPowerData!=NULL){
 		vector<vector<double>> power_data = vector<vector<double>>(4, vector<double>(NUM_PACKAGES, 0.0));
-		for(uint i = 0; i < NUM_PACKAGES; i++)
+		for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 		{
 			power_data[0][i] = idle_energy[i] * VCC;
 			power_data[1][i] = access_energy[i] * VCC;
@@ -129,7 +129,7 @@ void Controller::returnPowerData(vector<double> idle_energy, vector<double> acce
 void Controller::returnPowerData(vector<double> idle_energy, vector<double> access_energy, vector<double> erase_energy) {
 	if(parentNVDIMM->ReturnPowerData!=NULL){
 		vector<vector<double>> power_data = vector<vector<double>>(3, vector<double>(NUM_PACKAGES, 0.0));
-		for(uint i = 0; i < NUM_PACKAGES; i++)
+		for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 		{
 			power_data[0][i] = idle_energy[i] * VCC;
 			power_data[1][i] = access_energy[i] * VCC;
@@ -142,7 +142,7 @@ void Controller::returnPowerData(vector<double> idle_energy, vector<double> acce
 void Controller::returnPowerData(vector<double> idle_energy, vector<double> access_energy) {
 	if(parentNVDIMM->ReturnPowerData!=NULL){
 		vector<vector<double>> power_data = vector<vector<double>>(2, vector<double>(NUM_PACKAGES, 0.0));
-		for(uint i = 0; i < NUM_PACKAGES; i++)
+		for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 		{
 			power_data[0][i] = idle_energy[i] * VCC;
 			power_data[1][i] = access_energy[i] * VCC;
@@ -728,9 +728,9 @@ bool Controller::dataReady(uint64_t package, uint64_t die, uint64_t plane)
 void Controller::sendQueueLength(void)
 {
     vector<vector<uint64_t> > temp = vector<vector<uint64_t> >(NUM_PACKAGES, vector<uint64_t>(DIES_PER_PACKAGE, 0));
-	for(uint i = 0; i < readQueues.size(); i++)
+	for(uint64_t i = 0; i < readQueues.size(); i++)
 	{
-	    for(uint j = 0; j < readQueues[i].size(); j++)
+	    for(uint64_t j = 0; j < readQueues[i].size(); j++)
 	    {
 		temp[i][j] = writeQueues[i][j].size();
 	    }
@@ -748,7 +748,7 @@ void Controller::writeToPackage(ChannelPacket *packet)
 
 void Controller::bufferDone(uint64_t package, uint64_t die, uint64_t plane)
 {
-	for (uint i = 0; i < pendingPackets.size(); i++){
+	for (uint64_t i = 0; i < pendingPackets.size(); i++){
 		std::list<ChannelPacket *>::iterator it;
 		for(it = pendingPackets[i].begin(); it != pendingPackets[i].end(); it++){
 		    if ((*it) != NULL && (*it)->package == package && (*it)->die == die && (*it)->plane == plane){

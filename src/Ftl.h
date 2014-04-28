@@ -104,12 +104,11 @@ namespace NVDSim{
 			FlashTransaction writeTransaction;
 
 			bool gc_flag;
-			uint offset,  pageBitWidth, blockBitWidth, planeBitWidth, dieBitWidth, packageBitWidth;
 			uint64_t channel, die, plane, lookupCounter;
 			uint64_t temp_channel, temp_die, temp_plane;
 			uint64_t max_queue_length;
 			FlashTransaction currentTransaction;
-			uint busy;
+			bool busy;
 
 			uint64_t deadlock_counter;
 			uint64_t deadlock_time;
@@ -124,7 +123,7 @@ namespace NVDSim{
 			bool write_queues_full;
 			bool flushing_write;
 
-			uint queue_access_counter; // time it takes to get the data out of the write queue
+			uint64_t queue_access_counter; // time it takes to get the data out of the write queue
 			uint64_t read_iterator_counter; // double check for the end() function
 			std::list<FlashTransaction>::iterator reading_write;
 

@@ -115,6 +115,66 @@ uint divide_params(float num, float denom)
     return temp;
 }
 
+uint64_t divide_params_64b(uint64_t num, uint denom)
+{
+    stringstream ss;
+    uint64_t temp;
+    ss << (((float)num / (float)denom) + 0.99f);
+    ss >> temp;
+
+    if(temp <= 0)
+    {
+	return 1;
+    }
+
+    return temp;
+}
+
+uint64_t divide_params_64b(uint num, uint64_t denom)
+{
+    stringstream ss;
+    uint64_t temp;
+    ss << (((float)num / (float)denom) + 0.99f);
+    ss >> temp;
+
+    if(temp <= 0)
+    {
+	return 1;
+    }
+    
+    return temp;
+}
+
+uint64_t divide_params_64b(uint64_t num, uint64_t denom)
+{
+    stringstream ss;
+    uint64_t temp;
+    ss << (((float)num / (float)denom) + 0.99f);
+    ss >> temp;
+
+    if(temp <= 0)
+    {
+	return 1;
+    }
+    
+    return temp;
+}
+
+uint64_t divide_params_64b(float num, float denom)
+{
+    stringstream ss;
+    uint64_t temp;
+    ss << (uint)((num / denom) + 0.99f);
+    ss >> temp;
+
+    if(temp <= 0)
+    {
+	return 1;
+    }
+    
+    return temp;
+}
+
 uint64_t subtract_params(uint64_t a, uint64_t b)
 {
     if(a < b)

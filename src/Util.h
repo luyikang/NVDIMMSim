@@ -48,6 +48,10 @@ uint divide_params(uint64_t num, uint denom);
 uint divide_params(uint num, uint64_t denom);
 uint divide_params(uint64_t num, uint64_t denom);
 uint divide_params(float num, float denom);
+uint64_t divide_params_64b(uint64_t num, uint denom);
+uint64_t divide_params_64b(uint num, uint64_t denom);
+uint64_t divide_params_64b(uint64_t num, uint64_t denom);
+uint64_t divide_params_64b(float num, float denom);
 
 uint64_t subtract_params(uint64_t a, uint64_t b);
 

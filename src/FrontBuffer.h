@@ -81,7 +81,6 @@ namespace NVDSim{
 			NVDIMM *parentNVDIMM;
 
 		private:
-			uint transType;
 			int sender;
 			
 			// transaction pointer queues

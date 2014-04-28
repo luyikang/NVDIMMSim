@@ -44,7 +44,7 @@ using namespace std;
 
 namespace NVDSim
 {
-    NVDIMM::NVDIMM(uint id, string deviceFile, string sysFile, string pwd, string trc) :
+    NVDIMM::NVDIMM(uint64_t id, string deviceFile, string sysFile, string pwd, string trc) :
 	dev(deviceFile),
 	sys(sysFile),
 	cDirectory(pwd)
@@ -276,7 +276,7 @@ namespace NVDSim
     }
 
 // static allocator for the library interface
-    NVDIMM *getNVDIMMInstance(uint id, string deviceFile, string sysFile, string pwd, string trc)
+    NVDIMM *getNVDIMMInstance(uint64_t id, string deviceFile, string sysFile, string pwd, string trc)
     {
 	return new NVDIMM(id, deviceFile, sysFile, pwd, trc);
     }

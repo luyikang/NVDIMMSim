@@ -53,13 +53,13 @@ namespace NVDSim{
 			Channel(void);
 			void attachBuffer(Buffer *b);
 			void attachController(Controller *c);
-			int obtainChannel(uint s, SenderType t, ChannelPacket *p);
-			int releaseChannel(SenderType t, uint s);
-			int hasChannel(SenderType t, uint s);		
+			int obtainChannel(uint64_t s, SenderType t, ChannelPacket *p);
+			int releaseChannel(SenderType t, uint64_t s);
+			int hasChannel(SenderType t, uint64_t s);		
 			void sendToBuffer(ChannelPacket *busPacket);
 			void sendToController(ChannelPacket *busPacket);
-			void sendPiece(SenderType t, uint type, uint die, uint plane);
-			bool isBufferFull(SenderType t, ChannelPacketType bt, uint die);
+			void sendPiece(SenderType t, int type, uint64_t die, uint64_t plane);
+			bool isBufferFull(SenderType t, ChannelPacketType bt, uint64_t die);
 			int notBusy(void);
 
 			void update(void);
@@ -69,14 +69,14 @@ namespace NVDSim{
 			Controller *controller;
 		private:
 			SenderType sType;
-			uint packetType;
-			int sender;
+			int packetType;
+			uint64_t sender;
 			int busy;
 			int firstCheck;
 			Buffer *buffer;
 
-			uint currentDie;
-			uint currentPlane;
+			uint64_t currentDie;
+			uint64_t currentPlane;
 	};
 }
 #endif

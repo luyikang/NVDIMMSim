@@ -51,7 +51,7 @@ namespace NVDSim{
 	    void sendToDie(ChannelPacket *busPacket);
 	    void sendToController(ChannelPacket *busPacket);
 
-	    bool sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane);
+	    bool sendPiece(SenderType t, int type, uint64_t die, uint64_t plane);
 	    bool isFull(SenderType t, ChannelPacketType bt, uint64_t die);
 	    
 	    void update(void);
@@ -72,7 +72,7 @@ namespace NVDSim{
 	    class BufferPacket{
 	        public:
 		// type of packet
-		uint type;
+		int type;
 		// how many bits are outstanding for this page
 		uint64_t number;
 		// plane that this page is for

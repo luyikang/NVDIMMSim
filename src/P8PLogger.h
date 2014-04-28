@@ -28,8 +28,7 @@
 *  SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
 *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 *  OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-*  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*********************************************************************************/
+*  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. *********************************************************************************/
 
 #ifndef NVP8PLOGGER_H
 #define NVP8PLOGGER_H
@@ -48,7 +47,7 @@ namespace NVDSim
     public:
 	P8PLogger();
 	
-	void save(uint64_t cycle, uint epoch);
+	void save(uint64_t cycle, uint64_t epoch);
 	void print(uint64_t cycle);
 
 	void update();
@@ -59,7 +58,7 @@ namespace NVDSim
 	//Writing correct object oriented code up in this piece, what now?
 	std::vector<std::vector<double>> getEnergyData(void);
 
-	void save_epoch(uint64_t cycle, uint epoch);
+	void save_epoch(uint64_t cycle, uint64_t epoch);
 
 	// State
 	// Power Stuff

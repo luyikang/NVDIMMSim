@@ -106,17 +106,17 @@ namespace NVDSim{
 // Scheduling Options
 extern bool SCHEDULE;
 extern bool WRITE_ON_QUEUE_SIZE;
-extern uint WRITE_QUEUE_LIMIT;
+extern uint64_t WRITE_QUEUE_LIMIT;
 extern bool IDLE_WRITE;
 extern bool CTRL_SCHEDULE;
 extern bool CTRL_WRITE_ON_QUEUE_SIZE;
-extern uint CTRL_WRITE_QUEUE_LIMIT;
+extern uint64_t CTRL_WRITE_QUEUE_LIMIT;
 extern bool CTRL_IDLE_WRITE;
 extern bool PERFECT_SCHEDULE;
 extern bool ENABLE_WRITE_SCRIPT;
 extern std::string NV_WRITE_SCRIPT;
 extern bool DELAY_WRITE;
-extern uint DELAY_WRITE_CYCLES;
+extern uint64_t DELAY_WRITE_CYCLES;
 
 // SSD Options
 extern bool DISK_READ;
@@ -174,7 +174,7 @@ extern uint64_t REQUEST_CHANNEL_WIDTH;
 // does the device use garbage collection 
 extern bool GARBAGE_COLLECT;
 extern bool PRESTATE;
-extern uint PERCENT_FULL;
+extern float PERCENT_FULL;
 
 #define GC GARBAGE_COLLECT
 
@@ -193,23 +193,23 @@ extern float PBLOCKS_PER_VBLOCK;
 #define VIRTUAL_PACKAGE_SIZE (NV_PAGE_SIZE * DIES_PER_PACKAGE * PLANES_PER_DIE * VIRTUAL_BLOCKS_PER_PLANE * PAGES_PER_BLOCK)
 #define VIRTUAL_TOTAL_SIZE (NV_PAGE_SIZE * NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * VIRTUAL_BLOCKS_PER_PLANE * PAGES_PER_BLOCK)
 
-extern uint READ_TIME;
-extern uint WRITE_TIME;
-extern uint ERASE_TIME;
-extern uint COMMAND_LENGTH; //in bits, including address
-extern uint LOOKUP_TIME;
-extern uint BUFFER_LOOKUP_TIME;
-extern uint QUEUE_ACCESS_TIME; //time it takes to read data out of the write queue
+extern uint64_t READ_TIME;
+extern uint64_t WRITE_TIME;
+extern uint64_t ERASE_TIME;
+extern uint64_t COMMAND_LENGTH; //in bits, including address
+extern uint64_t LOOKUP_TIME;
+extern uint64_t BUFFER_LOOKUP_TIME;
+extern uint64_t QUEUE_ACCESS_TIME; //time it takes to read data out of the write queue
 // in nanoseconds
 extern float CYCLE_TIME;
 extern float SYSTEM_CYCLE;
 
-extern uint EPOCH_TIME;
+extern uint64_t EPOCH_TIME;
 #define USE_EPOCHS (EPOCH_TIME > 0)
-extern uint FTL_READ_QUEUE_LENGTH;
-extern uint FTL_WRITE_QUEUE_LENGTH;
-extern uint CTRL_READ_QUEUE_LENGTH;
-extern uint CTRL_WRITE_QUEUE_LENGTH;
+extern uint64_t FTL_READ_QUEUE_LENGTH;
+extern uint64_t FTL_WRITE_QUEUE_LENGTH;
+extern uint64_t CTRL_READ_QUEUE_LENGTH;
+extern uint64_t CTRL_WRITE_QUEUE_LENGTH;
 
 // Power stuff
 extern double READ_I;
@@ -228,9 +228,9 @@ extern double VPP_WRITE_I;
 extern double VPP_ERASE_I;
 extern double VPP;
 
-extern uint OUTPUT;
+extern bool OUTPUT;
 
 //namespace NVDSim{
-	typedef void (*returnCallBack_t)(uint id, uint64_t addr, uint64_t clockcycle);
+	typedef void (*returnCallBack_t)(uint64_t id, uint64_t addr, uint64_t clockcycle);
 }
 #endif

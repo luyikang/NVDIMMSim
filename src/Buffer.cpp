@@ -54,7 +54,7 @@ Buffer::Buffer(uint64_t i){
     inDataLeft = new uint64_t [DIES_PER_PACKAGE];
     waiting =  new bool [DIES_PER_PACKAGE];
 
-    for(uint i = 0; i < DIES_PER_PACKAGE; i++){
+    for(uint64_t i = 0; i < DIES_PER_PACKAGE; i++){
 	outDataSize[i] = 0;
 	inDataSize[i] = 0;
 	cyclesLeft[i] = 0;
@@ -89,7 +89,7 @@ void Buffer::sendToController(ChannelPacket *busPacket){
     channel->sendToController(busPacket);
 }
 
-bool Buffer::sendPiece(SenderType t, uint type, uint64_t die, uint64_t plane){
+bool Buffer::sendPiece(SenderType t, int type, uint64_t die, uint64_t plane){
     if(t == CONTROLLER)
     {
       if(IN_BUFFER_SIZE == 0 || inDataSize[die] <= (IN_BUFFER_SIZE-(CHANNEL_WIDTH)))

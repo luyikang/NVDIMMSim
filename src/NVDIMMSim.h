@@ -36,7 +36,7 @@ namespace NVDSim
 	void loadNVState(string filename);
     };
 
-    NVDIMM *getNVDIMMInstance(uint id, string deviceFile, string sysFile, string pwd, string trc);
+    NVDIMM *getNVDIMMInstance(uint64_t id, string deviceFile, string sysFile, string pwd, string trc);
 }
 
 #endif

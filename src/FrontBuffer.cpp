@@ -205,7 +205,7 @@ void FrontBuffer::updateResponse(void){
 	{
 	    // number of channel cycles to go equals the total number of data bits divided by the bits 
 	    // moved per channel cycle
-	    responseCyclesLeft = divide_params((NV_PAGE_SIZE*BITS_PER_KB), CHANNEL_WIDTH);
+	    responseCyclesLeft = divide_params_64b((NV_PAGE_SIZE*BITS_PER_KB), CHANNEL_WIDTH);
 	}
 	// no request channel to handle request data and commands so we need to handle those cases
 	else if(!ENABLE_REQUEST_CHANNEL)
@@ -298,7 +298,7 @@ void FrontBuffer::updateCommand(void){
     // need to figure out how many cycles we need to move the command to the FTL
     if(commandCyclesLeft == 0 && commandTrans.transactionType != EMPTY)
     {
-	commandCyclesLeft = divide_params(COMMAND_LENGTH, COMMAND_CHANNEL_WIDTH);
+	commandCyclesLeft = divide_params_64b(COMMAND_LENGTH, COMMAND_CHANNEL_WIDTH);
     }
 
     // we're updating so command bits have moved
@@ -322,7 +322,7 @@ uint64_t FrontBuffer::setDataCycles(FlashTransaction transaction, uint64_t width
 	{
 	    // number of channel cycles to go equals the total number of command bits
 	    // divided by the bits moved per channel cycle
-	    return divide_params(COMMAND_LENGTH, width);
+	    return divide_params_64b(COMMAND_LENGTH, width);
 	}
 	// command channel is handling the read command so do nothing
 	// set to one so that the decrement doesn't break things
@@ -337,13 +337,13 @@ uint64_t FrontBuffer::setDataCycles(FlashTransaction transaction, uint64_t width
 	{
 	    // number of channel cycles to go equals the total number of data bits plus the number of command bits
 	    // divided by the bits moved per channel cycle
-	    return divide_params(((NV_PAGE_SIZE*BITS_PER_KB)+COMMAND_LENGTH), width);
+	    return divide_params_64b(((NV_PAGE_SIZE*BITS_PER_KB)+COMMAND_LENGTH), width);
 	}
 	else
 	{
 	    // number of channel cycles to go equals the total number of data bits divided by the bits 
 	    // moved per channel cycle
-	    return divide_params((NV_PAGE_SIZE*BITS_PER_KB), width);
+	    return divide_params_64b((NV_PAGE_SIZE*BITS_PER_KB), width);
 	}
     }
     ERROR("Something bad happened in setDataCycles");

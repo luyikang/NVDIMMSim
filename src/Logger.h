@@ -97,7 +97,7 @@ namespace NVDSim
 	void ftlQueueLength(uint64_t length);
 	virtual void ftlQueueLength(uint64_t length, uint64_t length2);
 	void ctrlQueueLength(std::vector<std::vector<uint64_t> > length);
-	void ctrlQueueSingleLength(uint package, uint die, uint64_t length);
+	void ctrlQueueSingleLength(uint64_t package, uint64_t die, uint64_t length);
 
 	virtual void ftlQueueReset();
 	void ctrlQueueReset();
@@ -106,7 +106,7 @@ namespace NVDSim
 	//Writing correct object oriented code up in this piece, what now?
 	virtual std::vector<std::vector<double>> getEnergyData(void);
 	
-	virtual void save(uint64_t cycle, uint epoch);
+	virtual void save(uint64_t cycle, uint64_t epoch);
 	virtual void print(uint64_t cycle);
 
 	virtual void update();
@@ -114,10 +114,10 @@ namespace NVDSim
 	void access_start(uint64_t addr);
 	// overloaded access start for perfect scheduling analysis
 	void access_start(uint64_t addr, TransactionType op);
-	void access_process(uint64_t addr, uint64_t paddr, uint package, ChannelPacketType op);
+	void access_process(uint64_t addr, uint64_t paddr, uint64_t package, ChannelPacketType op);
 	virtual void access_stop(uint64_t addr, uint64_t paddr);
 
-	virtual void save_epoch(uint64_t cycle, uint epoch);
+	virtual void save_epoch(uint64_t cycle, uint64_t epoch);
 	
 	// State
 	std::ofstream savefile;

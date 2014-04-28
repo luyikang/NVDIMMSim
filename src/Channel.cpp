@@ -55,7 +55,7 @@ void Channel::attachController(Controller *c){
 	controller = c;
 }
 
-int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
+int Channel::obtainChannel(uint64_t s, SenderType t, ChannelPacket *p){
     if( p ==  NULL && t == CONTROLLER)
     {
 	cout << "something weird happened \n";
@@ -73,22 +73,22 @@ int Channel::obtainChannel(uint s, SenderType t, ChannelPacket *p){
     else
     {
 	sType = t;
-	sender = (int) s;
+	sender = s;
 	return 1;
     }
     return 0;
 }
 
-int Channel::releaseChannel(SenderType t, uint s){       
-	if (t == sType && sender == (int) s){
+int Channel::releaseChannel(SenderType t, uint64_t s){       
+	if (t == sType && sender == s){
 		sender = -1;
 		return 1;
 	}
 	return 0;
 }
 
-int Channel::hasChannel(SenderType t, uint s){
-	if (t == sType && sender == (int) s)
+int Channel::hasChannel(SenderType t, uint64_t s){
+	if (t == sType && sender == s)
 		return 1;
 	return 0;
 }
@@ -101,14 +101,14 @@ void Channel::sendToController(ChannelPacket *busPacket){
         controller->receiveFromChannel(busPacket);
 }
 
-void Channel::sendPiece(SenderType t, uint type, uint die, uint plane){
+void Channel::sendPiece(SenderType t, int type, uint64_t die, uint64_t plane){
 	busy = 1;
 	currentDie = die;
 	currentPlane = plane;
 	packetType = type;
 }
 
-bool Channel::isBufferFull(SenderType t, ChannelPacketType bt, uint die)
+bool Channel::isBufferFull(SenderType t, ChannelPacketType bt, uint64_t die)
 {
     return buffer->isFull(t, bt, die);
 }
