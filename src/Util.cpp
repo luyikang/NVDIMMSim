@@ -160,6 +160,21 @@ uint64_t divide_params_64b(uint64_t num, uint64_t denom)
     return temp;
 }
 
+uint64_t divide_params_64b(uint64_t num, float denom)
+{
+    stringstream ss;
+    uint64_t temp;
+    ss << (((float)num / denom) + 0.99f);
+    ss >> temp;
+
+    if(temp <= 0)
+    {
+	return 1;
+    }
+    
+    return temp;
+}
+
 uint64_t divide_params_64b(float num, float denom)
 {
     stringstream ss;

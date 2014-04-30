@@ -48,6 +48,7 @@
 #include <stdint.h>
 #include <limits.h>
 
+#include "Util.h"
 
 //sloppily reusing #defines from dramsim
 #ifndef ERROR
@@ -194,18 +195,24 @@ extern float PBLOCKS_PER_VBLOCK;
 #define VIRTUAL_TOTAL_SIZE (NV_PAGE_SIZE * NUM_PACKAGES * DIES_PER_PACKAGE * PLANES_PER_DIE * VIRTUAL_BLOCKS_PER_PLANE * PAGES_PER_BLOCK)
 
 extern uint64_t READ_TIME;
+#define READ_CYCLES (divide_params_64b(READ_TIME, CYCLE_TIME))
 extern uint64_t WRITE_TIME;
+#define WRITE_CYCLES (divide_params_64b(WRITE_TIME, CYCLE_TIME))
 extern uint64_t ERASE_TIME;
+#define ERASE_CYCLES (divide_params_64b(ERASE_TIME, CYCLE_TIME))
 extern uint64_t COMMAND_LENGTH; //in bits, including address
 extern uint64_t LOOKUP_TIME;
+#define LOOKUP_CYCLES (divide_params_64b(LOOKUP_TIME, CYCLE_TIME))
 extern uint64_t BUFFER_LOOKUP_TIME;
+#define BUFFER_LOOKUP_CYCLES (divide_params_64b(BUFFER_LOOKUP_TIME, CHANNEL_CYCLE)) // we use chcannel cycles here cause that is how the buffer is updated
 extern uint64_t QUEUE_ACCESS_TIME; //time it takes to read data out of the write queue
+#define QUEUE_ACCESS_CYCLES (divide_params_64b(QUEUE_ACCESS_TIME, CYCLE_TIME))
 // in nanoseconds
 extern float CYCLE_TIME;
 extern float SYSTEM_CYCLE;
 
-extern uint64_t EPOCH_TIME;
-#define USE_EPOCHS (EPOCH_TIME > 0)
+extern uint64_t EPOCH_CYCLES;
+#define USE_EPOCHS (EPOCH_CYCLES > 0)
 extern uint64_t FTL_READ_QUEUE_LENGTH;
 extern uint64_t FTL_WRITE_QUEUE_LENGTH;
 extern uint64_t CTRL_READ_QUEUE_LENGTH;

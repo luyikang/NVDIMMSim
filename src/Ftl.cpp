@@ -88,13 +88,13 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 
 	// the maximum amount of time we can wait before we're sure we've deadlocked
 	// time it takes to read all of the pages in a block
-	deadlock_time = PAGES_PER_BLOCK * (READ_TIME + ((divide_params_64b((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
+	deadlock_time = PAGES_PER_BLOCK * (READ_CYCLES + ((divide_params_64b((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
 					   ((divide_params_64b(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME));
 	// plus the time it takes to write all of the pages in a block
-	deadlock_time += PAGES_PER_BLOCK * (WRITE_TIME + ((divide_params_64b((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
+	deadlock_time += PAGES_PER_BLOCK * (WRITE_CYCLES + ((divide_params_64b((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
 					   ((divide_params_64b(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME));
 	// plus the time it takes to erase the block
-	deadlock_time += ERASE_TIME + ((divide_params_64b(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME);
+	deadlock_time += ERASE_CYCLES + ((divide_params_64b(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME);
 
 	write_wait_count = DELAY_WRITE_CYCLES;
 
@@ -280,13 +280,13 @@ void Ftl::scheduleCurrentTransaction(void)
     {
 	busy = 1;
 	currentTransaction = writeQueue.front();
-	lookupCounter = LOOKUP_TIME;
+	lookupCounter = LOOKUP_CYCLES;
     }
     // no? then issue a read
     else if (!readQueue.empty()) {
 	    busy = 1;		
 	    currentTransaction = (*read_pointer);
-	    lookupCounter = LOOKUP_TIME;
+	    lookupCounter = LOOKUP_CYCLES;
     }
     // no reads to issue? then issue a write if we have opted to issue writes during idle
     else if(IDLE_WRITE == true && !writeQueue.empty())
@@ -299,7 +299,7 @@ void Ftl::scheduleCurrentTransaction(void)
 	{
 	    busy = 1;
 	    currentTransaction = writeQueue.front();
-	    lookupCounter = LOOKUP_TIME;
+	    lookupCounter = LOOKUP_CYCLES;
 	    write_wait_count = DELAY_WRITE_CYCLES;
 	}
     }
@@ -318,14 +318,14 @@ void Ftl::scriptCurrentTransaction(void)
     {
 	busy = 1;
 	currentTransaction = writeQueue.front();
-	lookupCounter = LOOKUP_TIME;
+	lookupCounter = LOOKUP_CYCLES;
     }
     // no? then issue a read
     else if(!readQueue.empty())
     {
 	busy = 1;
 	currentTransaction = readQueue.front();
-	lookupCounter = LOOKUP_TIME;
+	lookupCounter = LOOKUP_CYCLES;
     }
     // otherwise do nothing
     else
@@ -388,7 +388,7 @@ void Ftl::update(void){
 		if (!readQueue.empty()) {
 		    busy = 1;
 		    currentTransaction = readQueue.front();
-		    lookupCounter = LOOKUP_TIME;
+		    lookupCounter = LOOKUP_CYCLES;
 		}
 	    }
 	}
@@ -552,7 +552,7 @@ void Ftl::handle_read(bool gc)
 	    {
 		if((*reading_write).address == vAddr)
 		{
-		    queue_access_counter = QUEUE_ACCESS_TIME;
+		    queue_access_counter = QUEUE_ACCESS_CYCLES;
 		    write_queue_handled = true;
 		    if(LOGGING)
 		    {

@@ -274,13 +274,13 @@ void P8PGCLogger::save(uint64_t cycle, uint64_t epoch)
 	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	    savefile<<"Package: "<<i<<"\n";
-	    savefile<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-	    savefile<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-	    savefile<<"Accumulated Erase Energy: "<<(erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-	    savefile<<"Accumulated VPP Idle Energy: "<<(vpp_idle_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-	    savefile<<"Accumulated VPP Access Energy: "<<(vpp_access_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";		 
-	    savefile<<"Accumulated VPP Erase Energy: "<<(vpp_erase_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-	    savefile<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<" mJ\n\n";
+	    savefile<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * 0.000000001)<<" mJ\n";
+	    savefile<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * 0.000000001)<<" mJ\n";
+	    savefile<<"Accumulated Erase Energy: "<<(erase_energy[i] * VCC * 0.000000001)<<" mJ\n";
+	    savefile<<"Accumulated VPP Idle Energy: "<<(vpp_idle_energy[i] * VPP * 0.000000001)<<" mJ\n";
+	    savefile<<"Accumulated VPP Access Energy: "<<(vpp_access_energy[i] * VPP * 0.000000001)<<" mJ\n";		 
+	    savefile<<"Accumulated VPP Erase Energy: "<<(vpp_erase_energy[i] * VPP * 0.000000001)<<" mJ\n";
+	    savefile<<"Total Energy: "<<(total_energy[i] * 0.000000001)<<" mJ\n\n";
 	 
 	    savefile<<"Average Idle Power: "<<ave_idle_power[i]<<" mW\n";
 	    savefile<<"Average Access Power: "<<ave_access_power[i]<<" mW\n";
@@ -342,14 +342,14 @@ void P8PGCLogger::print(uint64_t cycle) {
 	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	    cout<<"Package: "<<i<<"\n";
-	    cout<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    cout<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    cout<<"Accumulated Erase Energy: "<<(erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    cout<<"Accumulated VPP Idle Energy: "<<(vpp_idle_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";
-	    cout<<"Accumulated VPP Access Energy: "<<(vpp_access_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";		 
-	    cout<<"Accumulated VPP Erase Energy: "<<(vpp_erase_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<"mJ\n";
+	    cout<<"Accumulated Idle Energy: "<<(idle_energy[i] * VCC * 0.000000001)<<"mJ\n";
+	    cout<<"Accumulated Access Energy: "<<(access_energy[i] * VCC * 0.000000001)<<"mJ\n";
+	    cout<<"Accumulated Erase Energy: "<<(erase_energy[i] * VCC * 0.000000001)<<"mJ\n";
+	    cout<<"Accumulated VPP Idle Energy: "<<(vpp_idle_energy[i] * VPP * 0.000000001)<<"mJ\n";
+	    cout<<"Accumulated VPP Access Energy: "<<(vpp_access_energy[i] * VPP * 0.000000001)<<"mJ\n";		 
+	    cout<<"Accumulated VPP Erase Energy: "<<(vpp_erase_energy[i] * VPP * 0.000000001)<<"mJ\n";
 
-	    cout<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<"mJ\n\n";
+	    cout<<"Total Energy: "<<(total_energy[i] * 0.000000001)<<"mJ\n\n";
 	 
 	    cout<<"Average Idle Power: "<<ave_idle_power[i]<<"mW\n";
 	    cout<<"Average Access Power: "<<ave_access_power[i]<<"mW\n";
@@ -614,13 +614,13 @@ void P8PGCLogger::write_epoch(EpochEntry *e)
 	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
 	{
 	    savefile<<"Package: "<<i<<"\n";
-	    savefile<<"Accumulated Idle Energy: "<<(e->idle_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-	    savefile<<"Accumulated Access Energy: "<<(e->access_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-	    savefile<<"Accumulated Erase Energy: "<<(e->erase_energy[i] * VCC * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-	    savefile<<"Accumulated VPP Idle Energy: "<<(e->vpp_idle_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-	    savefile<<"Accumulated VPP Access Energy: "<<(e->vpp_access_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";		 
-	    savefile<<"Accumulated VPP Erase Energy: "<<(e->vpp_erase_energy[i] * VPP * (CYCLE_TIME * 0.000000001))<<" mJ\n";
-	    savefile<<"Total Energy: "<<(total_energy[i] * (CYCLE_TIME * 0.000000001))<<" mJ\n\n";
+	    savefile<<"Accumulated Idle Energy: "<<(e->idle_energy[i] * VCC * 0.000000001)<<" mJ\n";
+	    savefile<<"Accumulated Access Energy: "<<(e->access_energy[i] * VCC * 0.000000001)<<" mJ\n";
+	    savefile<<"Accumulated Erase Energy: "<<(e->erase_energy[i] * VCC * 0.000000001)<<" mJ\n";
+	    savefile<<"Accumulated VPP Idle Energy: "<<(e->vpp_idle_energy[i] * VPP * 0.000000001)<<" mJ\n";
+	    savefile<<"Accumulated VPP Access Energy: "<<(e->vpp_access_energy[i] * VPP * 0.000000001)<<" mJ\n";		 
+	    savefile<<"Accumulated VPP Erase Energy: "<<(e->vpp_erase_energy[i] * VPP * 0.000000001)<<" mJ\n";
+	    savefile<<"Total Energy: "<<(total_energy[i] * 0.000000001)<<" mJ\n\n";
 	 
 	    savefile<<"Average Idle Power: "<<ave_idle_power[i]<<" mW\n";
 	    savefile<<"Average Access Power: "<<ave_access_power[i]<<" mW\n";

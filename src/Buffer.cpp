@@ -68,7 +68,7 @@ Buffer::Buffer(uint64_t i){
     sendingPlane = 0;
 
     dieLookingUp = DIES_PER_PACKAGE + 1;
-    lookupTimeLeft = BUFFER_LOOKUP_TIME;
+    lookupTimeLeft = BUFFER_LOOKUP_CYCLES;
     
 
 }
@@ -217,12 +217,12 @@ void Buffer::update(void){
 		// first time we've dealt with this command so we need to set our values
 		if(inDataLeft[i] == 0 && waiting[i] != true && inData[i].front()->number >= COMMAND_LENGTH)
 		{
-			if(BUFFER_LOOKUP_TIME != 0)
+			if(BUFFER_LOOKUP_CYCLES != 0)
 			{
 				if(dieLookingUp == DIES_PER_PACKAGE+1)
 				{
 					dieLookingUp = i;
-					lookupTimeLeft = BUFFER_LOOKUP_TIME;
+					lookupTimeLeft = BUFFER_LOOKUP_CYCLES;
 				}
 				else if(dieLookingUp == i)
 				{

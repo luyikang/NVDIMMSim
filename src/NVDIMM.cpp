@@ -114,7 +114,7 @@ namespace NVDSim
 	{
 	    PRINT("Device is using epoch data logging");
 	}
-	PRINT("Epoch Time: "<<EPOCH_TIME);
+	PRINT("Epoch Time: "<<EPOCH_CYCLES);
 	PRINT("");
 
 	if(GARBAGE_COLLECT == 0 && (DEVICE_TYPE.compare("NAND") == 0 || DEVICE_TYPE.compare("NOR") == 0))
@@ -480,7 +480,7 @@ namespace NVDSim
 	    {
 		ftl->sendQueueLength();
 		controller->sendQueueLength();
-		if(epoch_cycles >= EPOCH_TIME)
+		if(epoch_cycles >= EPOCH_CYCLES)
 		{
 		    if(LOGGING == true)
 		    {

@@ -403,7 +403,7 @@ void Controller::update(void){
 				    log->access_process(readQueues[i][die_pointers[i]].front()->virtualAddress, readQueues[i][die_pointers[i]].front()->physicalAddress, 
 							readQueues[i][die_pointers[i]].front()->package, READ);
 				}
-				queue_access_counter = QUEUE_ACCESS_TIME;
+				queue_access_counter = QUEUE_ACCESS_CYCLES;
 				write_queue_handled = true;
 				break;
 				// done for now with this channel and die but don't advance the die counter

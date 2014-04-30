@@ -80,7 +80,7 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 			case READ:
 		        case GC_READ:
 			        planes[busPacket->plane].read(busPacket);
-				controlCyclesLeft[busPacket->plane]= READ_TIME;
+				controlCyclesLeft[busPacket->plane]= READ_CYCLES;
 				// log the new state of this plane
 				if(LOGGING && PLANE_STATE_LOG)
 				{
@@ -100,11 +100,11 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 				parentNVDIMM->numWrites++;			
 			        if((DEVICE_TYPE.compare("PCM") == 0 || DEVICE_TYPE.compare("P8P") == 0) && GARBAGE_COLLECT == 0)
 				{
-					controlCyclesLeft[busPacket->plane]= ERASE_TIME;
+					controlCyclesLeft[busPacket->plane]= ERASE_CYCLES;
 				}
 				else
 				{
-					controlCyclesLeft[busPacket->plane]= WRITE_TIME;
+					controlCyclesLeft[busPacket->plane]= WRITE_CYCLES;
 				}
 				// log the new state of this plane
 				if(LOGGING && PLANE_STATE_LOG)
@@ -122,7 +122,7 @@ void Die::receiveFromBuffer(ChannelPacket *busPacket){
 			case ERASE:
 			        planes[busPacket->plane].erase(busPacket);
 			        parentNVDIMM->numErases++;
-			        controlCyclesLeft[busPacket->plane]= ERASE_TIME;
+			        controlCyclesLeft[busPacket->plane]= ERASE_CYCLES;
 
 				// log the new state of this plane
 				if(LOGGING && PLANE_STATE_LOG)
