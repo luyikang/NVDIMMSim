@@ -552,7 +552,20 @@ void Controller::update(void){
 			}
 			readQueues[i][die_pointers[i]].pop_front();
 			parentNVDIMM->queuesNotFull();
-			if(FRONT_BUFFER)
+			if(BUFFERED)
+			{
+			  switch (outgoingPackets[i]->busPacketType){
+			    case DATA:
+				// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
+				// are in 1 KB (1024 * 8).
+				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
+				break;
+			    default:
+				channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
+				break;
+			    }			    
+			}
+			else
 			{
 			    switch (outgoingPackets[i]->busPacketType){
 			    case DATA:
@@ -562,19 +575,6 @@ void Controller::update(void){
 				break;
 			    default:
 				channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,DEVICE_WIDTH);
-				break;
-			    }
-			}
-			else
-			{
-			    switch (outgoingPackets[i]->busPacketType){
-			    case DATA:
-				// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
-				// are in 1 KB (1024 * 8).
-				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
-				break;
-			    default:
-				channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
 				break;
 			    }
 			}
