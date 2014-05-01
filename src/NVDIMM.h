@@ -49,6 +49,7 @@
 #include "P8PLogger.h"
 #include "P8PGCLogger.h"
 #include "FrontBuffer.h"
+#include "Util.h"
 
 using std::string;
 
