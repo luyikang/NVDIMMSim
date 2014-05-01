@@ -39,6 +39,8 @@
 #include <sstream>
 
 using namespace std;
+
+typedef unsigned int uint;
    
 // Utilites used by NVDIMM
 uint64_t convert_uint64_t(string value);

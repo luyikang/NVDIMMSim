@@ -33,8 +33,6 @@
 
 #include "Util.h"
 
-typedef unsigned int uint;
-
 //mostly shamelessly stolen from HybridSim
 uint64_t convert_uint64_t(string value)
 {

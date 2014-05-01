@@ -87,7 +87,7 @@ namespace NVDSim
 	PRINT("Plane Size: "<<PLANE_SIZE);
 	PRINT("Die Size: "<<DIE_SIZE);
 	PRINT("Package Size: "<<PACKAGE_SIZE);
-	PRINT("Total Size: "<<TOTAL_SIZE);
+	PRINT("Total Size (KB): "<<TOTAL_SIZE);
 	PRINT("Packages/Channels: "<<NUM_PACKAGES);
 	PRINT("Page size (KB): "<<NV_PAGE_SIZE);
 	if(GARBAGE_COLLECT == 1)

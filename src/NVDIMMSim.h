@@ -20,8 +20,8 @@ using std::string;
 
 namespace NVDSim
 {
-    typedef CallbackBase<void,uint,uint64_t,uint64_t,bool> Callback_t;
-    typedef CallbackBase<void,uint,std::vector<std::vector<double> >,uint64_t,bool> Callback_v;
+    typedef CallbackBase<void,uint64_t,uint64_t,uint64_t,bool> Callback_t;
+    typedef CallbackBase<void,uint64_t,std::vector<std::vector<double> >,uint64_t,bool> Callback_v;
     class NVDIMM
     {
     public:
