@@ -214,7 +214,7 @@ void GCFtl::update(void){
 		if (!gcQueue.empty()) {
 		    busy = 1;
 		    currentTransaction = gcQueue.front();
-		    lookupCounter = LOOKUP_TIME;
+		    lookupCounter = LOOKUP_CYCLES;
 		}
 		// do nothing
 		else
@@ -245,7 +245,7 @@ void GCFtl::update(void){
 		if (!readQueue.empty()) {
 		    busy = 1;
 		    currentTransaction = readQueue.front();
-		    lookupCounter = LOOKUP_TIME;
+		    lookupCounter = LOOKUP_CYCLES;
 		}
 		// do nothing
 		else
@@ -258,7 +258,7 @@ void GCFtl::update(void){
 	    // Check to see if GC needs to run.
 	    // just using lookupCounter here as an indicator or whether or not something was done 
 	    // before we got here
-	    if (lookupCounter != LOOKUP_TIME && checkGC() && !gc_status && dirty_page_count != 0)
+	    if (lookupCounter != LOOKUP_CYCLES && checkGC() && !gc_status && dirty_page_count != 0)
 	    {
 		// Run the GC.
 		start_erase = parent->numErases;
