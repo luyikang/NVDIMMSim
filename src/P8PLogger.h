@@ -136,7 +136,8 @@ namespace NVDSim
 	// Store the data from each epoch for printing at the end of the simulation
 	std::list<EpochEntry> epoch_queue;
 
-	void write_epoch(EpochEntry *e);
+	using Logger::write_epoch; // This is to make Clang happy since Logger::EpochEntry is different from P8PLogger::EpochEntry.
+	virtual void write_epoch(EpochEntry *e);
     };
 }
 

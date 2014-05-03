@@ -60,7 +60,7 @@ int Channel::obtainChannel(uint64_t s, SenderType t, ChannelPacket *p){
     {
 	cout << "something weird happened \n";
     }
-    if ((sender != -1) ||
+    if ((sender != ULLONG_MAX) ||
 	(t == CONTROLLER && !BUFFERED && (buffer->dies[p->die]->isDieBusy(p->plane) == 1)) ||
 	// should allow us to send write data to a buffer that is currently writing
 	(t == CONTROLLER && !BUFFERED && p->busPacketType != DATA && buffer->dies[p->die]->isDieBusy(p->plane) == 2) ||

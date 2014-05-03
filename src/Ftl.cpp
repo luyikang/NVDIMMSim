@@ -134,7 +134,7 @@ ChannelPacket *Ftl::translate(ChannelPacketType type, uint64_t vAddr, uint64_t p
 	//uint64_t tempA, tempB, physicalAddress = pAddr;
 	uint64_t physicalAddress = pAddr;
 
-	if (physicalAddress > TOTAL_SIZE - 1 || physicalAddress < 0){
+	if (physicalAddress > TOTAL_SIZE - 1){
 		ERROR("Inavlid address in Ftl: "<<physicalAddress);
 		exit(1);
 	}
