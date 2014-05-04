@@ -5,20 +5,20 @@
 *                             Ishwar Bhati
 *                             Mu-Tien Chang
 *                             Bruce Jacob
-*                             University of Maryland 
+*                             University of Maryland
 *                             pkt3c [at] umd [dot] edu
 *  All rights reserved.
-*  
+*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions are met:
-*  
+*
 *     * Redistributions of source code must retain the above copyright notice,
 *        this list of conditions and the following disclaimer.
-*  
+*
 *     * Redistributions in binary form must reproduce the above copyright notice,
 *        this list of conditions and the following disclaimer in the documentation
 *        and/or other materials provided with the distribution.
-*  
+*
 *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -43,41 +43,43 @@
 #include "Logger.h"
 #include "Util.h"
 
-namespace NVDSim{
+namespace NVDSim
+{
 
-	class Buffer;
-	class Controller;
-	class NVDIMM;
-	class Ftl;
-	class Die : public SimObj{
-		public:
-	                Die(NVDIMM *parent, Logger *l, uint64_t id);
-			void attachToBuffer(Buffer *buff);
-			void receiveFromBuffer(ChannelPacket *busPacket);
-			int isDieBusy(uint64_t plane);
-			void update(void);
-			void channelDone(void);
-			void bufferDone(uint64_t plane);
-			void bufferLoaded(void);
-			void critLineDone(void);
+class Buffer;
+class Controller;
+class NVDIMM;
+class Ftl;
+class Die : public SimObj
+{
+public:
+	Die(NVDIMM *parent, Logger *l, uint64_t id);
+	void attachToBuffer(Buffer *buff);
+	void receiveFromBuffer(ChannelPacket *busPacket);
+	int isDieBusy(uint64_t plane);
+	void update(void);
+	void channelDone(void);
+	void bufferDone(uint64_t plane);
+	void bufferLoaded(void);
+	void critLineDone(void);
 
-			// for fast forwarding
-			void writeToPlane(ChannelPacket *packet);
+	// for fast forwarding
+	void writeToPlane(ChannelPacket *packet);
 
-		private:
-			uint64_t id;
-			NVDIMM *parentNVDIMM;
-			Buffer *buffer;
-			Logger *log;
-			bool sending;
-			uint64_t dataCyclesLeft; //cycles per device beat
-			uint64_t deviceBeatsLeft; //device beats per page
-			uint64_t critBeat; //device beat when first cache line will have been sent, used for crit line first
-			std::queue<ChannelPacket *> returnDataPackets;
-			std::queue<ChannelPacket *> pendingDataPackets;
-			std::vector<Plane> planes;
-			std::vector<ChannelPacket *> currentCommands;
-			uint64_t *controlCyclesLeft;
-	};
+private:
+	uint64_t id;
+	NVDIMM *parentNVDIMM;
+	Buffer *buffer;
+	Logger *log;
+	bool sending;
+	uint64_t dataCyclesLeft; //cycles per device beat
+	uint64_t deviceBeatsLeft; //device beats per page
+	uint64_t critBeat; //device beat when first cache line will have been sent, used for crit line first
+	std::queue<ChannelPacket *> returnDataPackets;
+	std::queue<ChannelPacket *> pendingDataPackets;
+	std::vector<Plane> planes;
+	std::vector<ChannelPacket *> currentCommands;
+	uint64_t *controlCyclesLeft;
+};
 }
 #endif

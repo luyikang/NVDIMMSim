@@ -5,20 +5,20 @@
 *                             Ishwar Bhati
 *                             Mu-Tien Chang
 *                             Bruce Jacob
-*                             University of Maryland 
+*                             University of Maryland
 *                             pkt3c [at] umd [dot] edu
 *  All rights reserved.
-*  
+*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions are met:
-*  
+*
 *     * Redistributions of source code must retain the above copyright notice,
 *        this list of conditions and the following disclaimer.
-*  
+*
 *     * Redistributions in binary form must reproduce the above copyright notice,
 *        this list of conditions and the following disclaimer in the documentation
 *        and/or other materials provided with the distribution.
-*  
+*
 *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -47,90 +47,92 @@
 #include "Logger.h"
 #include "Util.h"
 
-namespace NVDSim{
-        class NVDIMM;
-	class Ftl : public SimObj{
-		public:
-	                Ftl(Controller *c, Logger *l, NVDIMM *p);
+namespace NVDSim
+{
+class NVDIMM;
+class Ftl : public SimObj
+{
+public:
+	Ftl(Controller *c, Logger *l, NVDIMM *p);
 
-			ChannelPacket *translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr);
-			bool attemptAdd(FlashTransaction &t, std::list<FlashTransaction> *queue, uint64_t queue_limit);
-			bool addScheduledTransaction(FlashTransaction &t);
-			bool addPerfectTransaction(FlashTransaction &t);
-			virtual bool addTransaction(FlashTransaction &t);
-			void scriptCurrentTransaction(void);
-			void scheduleCurrentTransaction(void);
-			virtual void update(void);
-			void handle_disk_read(bool gc);
-			void handle_read(bool gc);
-			virtual void write_used_handler(uint64_t vAddr);
-			void write_success(uint64_t block, uint64_t page, uint64_t vAddr, uint64_t pAddr, bool gc, bool mapped);
-			void handle_scripted_write(void);
-			void handle_write(bool gc);
-			uint64_t get_ptr(void); 
-			void inc_ptr(void); 
+	ChannelPacket *translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr);
+	bool attemptAdd(FlashTransaction &t, std::list<FlashTransaction> *queue, uint64_t queue_limit);
+	bool addScheduledTransaction(FlashTransaction &t);
+	bool addPerfectTransaction(FlashTransaction &t);
+	virtual bool addTransaction(FlashTransaction &t);
+	void scriptCurrentTransaction(void);
+	void scheduleCurrentTransaction(void);
+	virtual void update(void);
+	void handle_disk_read(bool gc);
+	void handle_read(bool gc);
+	virtual void write_used_handler(uint64_t vAddr);
+	void write_success(uint64_t block, uint64_t page, uint64_t vAddr, uint64_t pAddr, bool gc, bool mapped);
+	void handle_scripted_write(void);
+	void handle_write(bool gc);
+	uint64_t get_ptr(void);
+	void inc_ptr(void);
 
-			virtual void popFront(ChannelPacketType type);
+	virtual void popFront(ChannelPacketType type);
 
-			void sendQueueLength(void);
-			
-			void powerCallback(void);
+	void sendQueueLength(void);
 
-			virtual void saveNVState(void);
-			virtual void loadNVState(void);
+	void powerCallback(void);
 
-			void queuesNotFull(void);
-			void flushWriteQueues(void);
+	virtual void saveNVState(void);
+	virtual void loadNVState(void);
 
-			virtual void GCReadDone(uint64_t vAddr);
-		       
-			Controller *controller;
+	void queuesNotFull(void);
+	void flushWriteQueues(void);
 
-			NVDIMM *parent;
+	virtual void GCReadDone(uint64_t vAddr);
 
-			Logger *log;
+	Controller *controller;
 
-			// temp stuff **************************
-			uint64_t locked_counter;
-			// *************************************
+	NVDIMM *parent;
 
-		protected:
-			std::ifstream scriptfile;
-			uint64_t write_cycle;
-			uint64_t write_addr;
-			uint64_t write_pack;
-			uint64_t write_die;
-			uint64_t write_plane;
-			FlashTransaction writeTransaction;
+	Logger *log;
 
-			bool gc_flag;
-			uint64_t channel, die, plane, lookupCounter;
-			uint64_t temp_channel, temp_die, temp_plane;
-			uint64_t max_queue_length;
-			FlashTransaction currentTransaction;
-			bool busy;
+	// temp stuff **************************
+	uint64_t locked_counter;
+	// *************************************
 
-			uint64_t deadlock_counter;
-			uint64_t deadlock_time;
-			uint64_t write_counter;
-			uint64_t used_page_count;
-			uint64_t write_wait_count;
-			std::list<FlashTransaction>::iterator read_pointer; // stores location of the last place we tried in the read queue
+protected:
+	std::ifstream scriptfile;
+	uint64_t write_cycle;
+	uint64_t write_addr;
+	uint64_t write_pack;
+	uint64_t write_die;
+	uint64_t write_plane;
+	FlashTransaction writeTransaction;
 
-			bool saved;
-			bool loaded;
-			bool read_queues_full;
-			bool write_queues_full;
-			bool flushing_write;
+	bool gc_flag;
+	uint64_t channel, die, plane, lookupCounter;
+	uint64_t temp_channel, temp_die, temp_plane;
+	uint64_t max_queue_length;
+	FlashTransaction currentTransaction;
+	bool busy;
 
-			uint64_t queue_access_counter; // time it takes to get the data out of the write queue
-			uint64_t read_iterator_counter; // double check for the end() function
-			std::list<FlashTransaction>::iterator reading_write;
+	uint64_t deadlock_counter;
+	uint64_t deadlock_time;
+	uint64_t write_counter;
+	uint64_t used_page_count;
+	uint64_t write_wait_count;
+	std::list<FlashTransaction>::iterator read_pointer; // stores location of the last place we tried in the read queue
 
-			std::unordered_map<uint64_t,uint64_t> addressMap;
-			std::vector<vector<bool>> used;
-			std::list<FlashTransaction> readQueue; 
-			std::list<FlashTransaction> writeQueue;
-	};
+	bool saved;
+	bool loaded;
+	bool read_queues_full;
+	bool write_queues_full;
+	bool flushing_write;
+
+	uint64_t queue_access_counter; // time it takes to get the data out of the write queue
+	uint64_t read_iterator_counter; // double check for the end() function
+	std::list<FlashTransaction>::iterator reading_write;
+
+	std::unordered_map<uint64_t,uint64_t> addressMap;
+	std::vector<vector<bool>> used;
+	std::list<FlashTransaction> readQueue;
+	std::list<FlashTransaction> writeQueue;
+};
 }
 #endif

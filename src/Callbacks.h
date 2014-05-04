@@ -5,20 +5,20 @@
 *                             Ishwar Bhati
 *                             Mu-Tien Chang
 *                             Bruce Jacob
-*                             University of Maryland 
+*                             University of Maryland
 *                             pkt3c [at] umd [dot] edu
 *  All rights reserved.
-*  
+*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions are met:
-*  
+*
 *     * Redistributions of source code must retain the above copyright notice,
 *        this list of conditions and the following disclaimer.
-*  
+*
 *     * Redistributions in binary form must reproduce the above copyright notice,
 *        this list of conditions and the following disclaimer in the documentation
 *        and/or other materials provided with the distribution.
-*  
+*
 *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -35,46 +35,50 @@
 #ifndef NVDSIMCALLBACK_H
 #define NVDSIMCALLBACK_H
 
-namespace NVDSim {
+namespace NVDSim
+{
 
-template <typename ReturnT, typename Param1T, typename Param2T, 
-    typename Param3T, typename Param4T>
+template <typename ReturnT, typename Param1T, typename Param2T,
+         typename Param3T, typename Param4T>
 class CallbackBase
 {
-    public:
-        virtual ~CallbackBase() = 0;
-        virtual ReturnT operator()(Param1T, Param2T, Param3T, Param4T) = 0;
+public:
+	virtual ~CallbackBase() = 0;
+	virtual ReturnT operator()(Param1T, Param2T, Param3T, Param4T) = 0;
 };
 
 template <typename Return, typename Param1T, typename Param2T, typename Param3T, typename Param4T>
-    NVDSim::CallbackBase<Return,Param1T,Param2T,Param3T,Param4T>::~CallbackBase(){}
+NVDSim::CallbackBase<Return,Param1T,Param2T,Param3T,Param4T>::~CallbackBase() {}
 
-template <typename ConsumerT, typename ReturnT, 
-    typename Param1T, typename Param2T, typename Param3T, typename Param4T >
+template <typename ConsumerT, typename ReturnT,
+         typename Param1T, typename Param2T, typename Param3T, typename Param4T >
 class Callback: public CallbackBase<ReturnT,Param1T,Param2T,Param3T,Param4T>
 {
-    private:
-    typedef ReturnT (ConsumerT::*PtrMember)(Param1T,Param2T,Param3T,Param4T); 
+private:
+	typedef ReturnT (ConsumerT::*PtrMember)(Param1T,Param2T,Param3T,Param4T);
 
-    public:
-        Callback( ConsumerT* const object, PtrMember member) :
-                object(object), member(member) {
-        }
+public:
+	Callback( ConsumerT* const object, PtrMember member) :
+		object(object), member(member)
+	{
+	}
 
-Callback( const Callback<ConsumerT,ReturnT,Param1T,Param2T,Param3T,Param4T>& e ) :
-                object(e.object), member(e.member) {
-        }
+	Callback( const Callback<ConsumerT,ReturnT,Param1T,Param2T,Param3T,Param4T>& e ) :
+		object(e.object), member(e.member)
+	{
+	}
 
-		ReturnT operator()(Param1T param1, Param2T param2, Param3T param3, Param4T param4) {
-		    return (const_cast<ConsumerT*>(object)->*member)(param1,param2,param3,param4);
-        }
+	ReturnT operator()(Param1T param1, Param2T param2, Param3T param3, Param4T param4)
+	{
+		return (const_cast<ConsumerT*>(object)->*member)(param1,param2,param3,param4);
+	}
 
-    private:
+private:
 
-        ConsumerT* const object;
-        const PtrMember  member;
+	ConsumerT* const object;
+	const PtrMember  member;
 };
 
-} // namespace FDSim 
+} // namespace FDSim
 
 #endif

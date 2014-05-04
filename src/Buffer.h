@@ -5,20 +5,20 @@
 *                             Ishwar Bhati
 *                             Mu-Tien Chang
 *                             Bruce Jacob
-*                             University of Maryland 
+*                             University of Maryland
 *                             pkt3c [at] umd [dot] edu
 *  All rights reserved.
-*  
+*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions are met:
-*  
+*
 *     * Redistributions of source code must retain the above copyright notice,
 *        this list of conditions and the following disclaimer.
-*  
+*
 *     * Redistributions in binary form must reproduce the above copyright notice,
 *        this list of conditions and the following disclaimer in the documentation
 *        and/or other materials provided with the distribution.
-*  
+*
 *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -42,35 +42,38 @@
 #include "Die.h"
 #include "Channel.h"
 
-namespace NVDSim{
-    class Buffer : public SimObj{
-        public:
-	    Buffer(uint64_t i);
-	    void attachDie(Die *d);
-	    void attachChannel(Channel *c);
-	    void sendToDie(ChannelPacket *busPacket);
-	    void sendToController(ChannelPacket *busPacket);
+namespace NVDSim
+{
+class Buffer : public SimObj
+{
+public:
+	Buffer(uint64_t i);
+	void attachDie(Die *d);
+	void attachChannel(Channel *c);
+	void sendToDie(ChannelPacket *busPacket);
+	void sendToController(ChannelPacket *busPacket);
 
-	    bool sendPiece(SenderType t, int type, uint64_t die, uint64_t plane);
-	    bool isFull(SenderType t, ChannelPacketType bt, uint64_t die);
-	    
-	    void update(void);
+	bool sendPiece(SenderType t, int type, uint64_t die, uint64_t plane);
+	bool isFull(SenderType t, ChannelPacketType bt, uint64_t die);
 
-	    void prepareOutChannel(uint64_t die);
+	void update(void);
 
-	    void processInData(uint64_t die);
-	    void processOutData(uint64_t die);
+	void prepareOutChannel(uint64_t die);
 
-	    bool dataReady(uint64_t die, uint64_t plane); // die asking to send data back
+	void processInData(uint64_t die);
+	void processOutData(uint64_t die);
 
-	    Channel *channel;
-	    std::vector<Die *> dies;
+	bool dataReady(uint64_t die, uint64_t plane); // die asking to send data back
 
-	    uint64_t id;
+	Channel *channel;
+	std::vector<Die *> dies;
 
-        private:
-	    class BufferPacket{
-	        public:
+	uint64_t id;
+
+private:
+	class BufferPacket
+	{
+	public:
 		// type of packet
 		int type;
 		// how many bits are outstanding for this page
@@ -78,30 +81,31 @@ namespace NVDSim{
 		// plane that this page is for
 		uint64_t plane;
 
-		BufferPacket(){
-		    type = 0;
-		    number = 0;
-		    plane = 0;
+		BufferPacket()
+		{
+			type = 0;
+			number = 0;
+			plane = 0;
 		}
-	    };
-	    
-	    uint64_t* cyclesLeft;	    
-	    uint64_t* outDataLeft;
-	    uint64_t* critData; // burst on which the critical line will be done
-	    uint64_t* inDataLeft;
-	    bool* waiting;
-	    bool* sending;
-	    uint64_t lookupTimeLeft;
-	    uint64_t dieLookingUp;
+	};
 
-	    uint64_t sendingDie;
-	    uint64_t sendingPlane;
+	uint64_t* cyclesLeft;
+	uint64_t* outDataLeft;
+	uint64_t* critData; // burst on which the critical line will be done
+	uint64_t* inDataLeft;
+	bool* waiting;
+	bool* sending;
+	uint64_t lookupTimeLeft;
+	uint64_t dieLookingUp;
 
-	    uint64_t* outDataSize;
-	    std::vector<std::list<BufferPacket *> >  outData;
-	    uint64_t* inDataSize;
-	    std::vector<std::list<BufferPacket *> > inData;
-    };
-} 
+	uint64_t sendingDie;
+	uint64_t sendingPlane;
+
+	uint64_t* outDataSize;
+	std::vector<std::list<BufferPacket *> >  outData;
+	uint64_t* inDataSize;
+	std::vector<std::list<BufferPacket *> > inData;
+};
+}
 
 #endif

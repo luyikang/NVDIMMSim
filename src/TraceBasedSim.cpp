@@ -5,20 +5,20 @@
 *                             Ishwar Bhati
 *                             Mu-Tien Chang
 *                             Bruce Jacob
-*                             University of Maryland 
+*                             University of Maryland
 *                             pkt3c [at] umd [dot] edu
 *  All rights reserved.
-*  
+*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions are met:
-*  
+*
 *     * Redistributions of source code must retain the above copyright notice,
 *        this list of conditions and the following disclaimer.
-*  
+*
 *     * Redistributions in binary form must reproduce the above copyright notice,
 *        this list of conditions and the following disclaimer in the documentation
 *        and/or other materials provided with the distribution.
-*  
+*
 *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -73,71 +73,103 @@ uint COMMAND_TIME= 10;
 
 namespace NVDSim
 {
-	bool OUTPUT= 1;
+bool OUTPUT= 1;
 }
 
 using namespace NVDSim;
 using namespace std;
 
-int main(void){
+int main(void)
+{
 	test_obj t;
 	t.run_test();
 	return 0;
 }
 
-void test_obj::read_cb(uint64_t id, uint64_t address, uint64_t cycle, bool mapped){
-    cout<<"[Callback] read complete: "<<id<<" "<<address<<" cycle="<<cycle<<" mapped="<<mapped<<endl;
+void test_obj::read_cb(uint64_t id, uint64_t address, uint64_t cycle, bool mapped)
+{
+	cout<<"[Callback] read complete: "<<id<<" "<<address<<" cycle="<<cycle<<" mapped="<<mapped<<endl;
 }
 
-void test_obj::crit_cb(uint64_t id, uint64_t address, uint64_t cycle, bool mapped){
+void test_obj::crit_cb(uint64_t id, uint64_t address, uint64_t cycle, bool mapped)
+{
 	cout<<"[Callback] crit line done: "<<id<<" "<<address<<" cycle="<<cycle<<endl;
 }
 
-void test_obj::write_cb(uint64_t id, uint64_t address, uint64_t cycle, bool mapped){
+void test_obj::write_cb(uint64_t id, uint64_t address, uint64_t cycle, bool mapped)
+{
 	cout<<"[Callback] write complete: "<<id<<" "<<address<<" cycle="<<cycle<<endl;
 }
 
-void test_obj::power_cb(uint64_t id, vector<vector<double>> data, uint64_t cycle, bool mapped){
-        cout<<"[Callback] Power Data for cycle: "<<cycle<<endl;
-	for(uint64_t i = 0; i < NUM_PACKAGES; i++){
-	  for(uint64_t j = 0; j < data.size(); j++){
-	    if(DEVICE_TYPE.compare("PCM") == 0){
-	      if(j == 0){
-		cout<<"    Package: "<<i<<" Idle Energy: "<<data[0][i]<<"\n";
-	      }else if(j == 1){
-		cout<<"    Package: "<<i<<" Access Energy: "<<data[1][i]<<"\n";
-	      }
-	      if(GARBAGE_COLLECT == 1){
-		if(j == 2){
-		  cout<<"    Package: "<<i<<" Erase Energy: "<<data[2][i]<<"\n";
-		}else if(j == 3){
-		  cout<<"    Package: "<<i<<" VPP Idle Energy: "<<data[3][i]<<"\n";
-		}else if(j == 4){
-		  cout<<"    Package: "<<i<<" VPP Access Energy: "<<data[4][i]<<"\n";
-		}else if(j == 5){
-		  cout<<"    Package: "<<i<<" VPP Erase Energy: "<<data[5][i]<<"\n";
+void test_obj::power_cb(uint64_t id, vector<vector<double>> data, uint64_t cycle, bool mapped)
+{
+	cout<<"[Callback] Power Data for cycle: "<<cycle<<endl;
+	for(uint64_t i = 0; i < NUM_PACKAGES; i++)
+	{
+		for(uint64_t j = 0; j < data.size(); j++)
+		{
+			if(DEVICE_TYPE.compare("PCM") == 0)
+			{
+				if(j == 0)
+				{
+					cout<<"    Package: "<<i<<" Idle Energy: "<<data[0][i]<<"\n";
+				}
+				else if(j == 1)
+				{
+					cout<<"    Package: "<<i<<" Access Energy: "<<data[1][i]<<"\n";
+				}
+				if(GARBAGE_COLLECT == 1)
+				{
+					if(j == 2)
+					{
+						cout<<"    Package: "<<i<<" Erase Energy: "<<data[2][i]<<"\n";
+					}
+					else if(j == 3)
+					{
+						cout<<"    Package: "<<i<<" VPP Idle Energy: "<<data[3][i]<<"\n";
+					}
+					else if(j == 4)
+					{
+						cout<<"    Package: "<<i<<" VPP Access Energy: "<<data[4][i]<<"\n";
+					}
+					else if(j == 5)
+					{
+						cout<<"    Package: "<<i<<" VPP Erase Energy: "<<data[5][i]<<"\n";
+					}
+				}
+				else
+				{
+					if(j == 2)
+					{
+						cout<<"    Package: "<<i<<" VPP Idle Energy: "<<data[2][i]<<"\n";
+					}
+					else if(j == 3)
+					{
+						cout<<"    Package: "<<i<<" VPP Access Energy: "<<data[3][i]<<"\n";
+					}
+				}
+			}
+			else
+			{
+				if(j == 0)
+				{
+					cout<<"    Package: "<<i<<" Idle Energy: "<<data[0][i]<<"\n";
+				}
+				else if(j == 1)
+				{
+					cout<<"    Package: "<<i<<" Access Energy: "<<data[1][i]<<"\n";
+				}
+				else if(j == 2)
+				{
+					cout<<"    Package: "<<i<<" Erase Energy: "<<data[2][i]<<"\n";
+				}
+			}
 		}
-	      }else{
-		if(j == 2){
-		  cout<<"    Package: "<<i<<" VPP Idle Energy: "<<data[2][i]<<"\n";
-		}else if(j == 3){
-		  cout<<"    Package: "<<i<<" VPP Access Energy: "<<data[3][i]<<"\n";
-		}
-	      }
-	    }else{
-	      if(j == 0){
-		cout<<"    Package: "<<i<<" Idle Energy: "<<data[0][i]<<"\n";
-	      }else if(j == 1){
-		cout<<"    Package: "<<i<<" Access Energy: "<<data[1][i]<<"\n";
-	      }else if(j == 2){
-		cout<<"    Package: "<<i<<" Erase Energy: "<<data[2][i]<<"\n";
-	      }
-	    }
-	  }
 	}
 }
 
-void test_obj::run_test(void){
+void test_obj::run_test(void)
+{
 	clock_t start= clock(), end;
 	uint64_t cycle;
 	NVDIMM *NVDimm= new NVDIMM(1,"ini/samsung_K9XXG08UXM_gc_test.ini","ini/def_system.ini","","");
@@ -148,7 +180,7 @@ void test_obj::run_test(void){
 	Callback_t *w = new Callback<test_obj, void, uint64_t, uint64_t, uint64_t, bool>(this, &test_obj::write_cb);
 	Callback_v *p = new Callback<test_obj, void, uint64_t, vector<vector<double>>, uint64_t, bool>(this, &test_obj::power_cb);
 	NVDimm->RegisterCallbacks(r, c, w, p);
-	
+
 	FlashTransaction t;
 
 	/*for (write= 0; write<NUM_WRITES; write++){
@@ -161,23 +193,25 @@ void test_obj::run_test(void){
 	int writes = 0;
 	bool result = 0;
 	int write_addr = 0;
-	
-	for (cycle= 0; cycle<SIM_CYCLES; cycle++){
-	  if(writes < NUM_WRITES){
-	      t = FlashTransaction(DATA_WRITE, write_addr, (void *)0xdeadbeef);
-	      result = (*NVDimm).add(t);
-	      if(result == 1)
-	      {
-		  writes++;
-		  write_addr++;
-		  if(write_addr > 6)
-		  {
-		      write_addr = 0;
-		  }
-	      }
-	  }
 
-	  (*NVDimm).update();
+	for (cycle= 0; cycle<SIM_CYCLES; cycle++)
+	{
+		if(writes < NUM_WRITES)
+		{
+			t = FlashTransaction(DATA_WRITE, write_addr, (void *)0xdeadbeef);
+			result = (*NVDimm).add(t);
+			if(result == 1)
+			{
+				writes++;
+				write_addr++;
+				if(write_addr > 6)
+				{
+					write_addr = 0;
+				}
+			}
+		}
+
+		(*NVDimm).update();
 		/*if (cycle < NUM_WRITES){
 			t= FlashTransaction(DATA_READ, cycle, (void *)0xfeedface);
 

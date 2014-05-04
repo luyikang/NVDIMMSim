@@ -5,20 +5,20 @@
 *                             Ishwar Bhati
 *                             Mu-Tien Chang
 *                             Bruce Jacob
-*                             University of Maryland 
+*                             University of Maryland
 *                             pkt3c [at] umd [dot] edu
 *  All rights reserved.
-*  
+*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions are met:
-*  
+*
 *     * Redistributions of source code must retain the above copyright notice,
 *        this list of conditions and the following disclaimer.
-*  
+*
 *     * Redistributions in binary form must reproduce the above copyright notice,
 *        this list of conditions and the following disclaimer in the documentation
 *        and/or other materials provided with the distribution.
-*  
+*
 *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -50,33 +50,33 @@ using namespace std;
 #define DEFINE_BOOL_PARAM(name, paramtype) {#name, &name, BOOL, paramtype, false}
 #define DEFINE_UINT64_PARAM(name, paramtype) {#name, &name, UINT64, paramtype, false}
 
-namespace NVDSim 
+namespace NVDSim
 {
 
-        typedef enum _variableType {STRING, UINT, UINT64, FLOAT, DOUBLE, BOOL} varType;
-	typedef enum _paramType {SYS_PARAM, DEV_PARAM} paramType;
-	typedef struct _configMap 
-	{
-		string iniKey; //for example "tRCD"
+typedef enum _variableType {STRING, UINT, UINT64, FLOAT, DOUBLE, BOOL} varType;
+typedef enum _paramType {SYS_PARAM, DEV_PARAM} paramType;
+typedef struct _configMap
+{
+	string iniKey; //for example "tRCD"
 
-		void *variablePtr;
-		varType variableType;
-		paramType parameterType;
-		bool wasSet; 
-	} ConfigMap;
+	void *variablePtr;
+	varType variableType;
+	paramType parameterType;
+	bool wasSet;
+} ConfigMap;
 
-	class Init 
-	{		
-		public:
-			static void SetKey(string key, string value, bool isSystemParam = false, size_t lineNumber = 0);
-			static void OverrideKeys(vector<string> keys, vector<string> values);
-			static void ReadIniFile(string filename, bool isSystemParam);
-			//static void InitEnumsFromStrings();
-			static bool CheckIfAllSet();
-			static void WriteValuesOut(std::ofstream &visDataOut);
-		private:
-			static void Trim(string &str);
-	};
+class Init
+{
+public:
+	static void SetKey(string key, string value, bool isSystemParam = false, size_t lineNumber = 0);
+	static void OverrideKeys(vector<string> keys, vector<string> values);
+	static void ReadIniFile(string filename, bool isSystemParam);
+	//static void InitEnumsFromStrings();
+	static bool CheckIfAllSet();
+	static void WriteValuesOut(std::ofstream &visDataOut);
+private:
+	static void Trim(string &str);
+};
 }
 
 

@@ -5,20 +5,20 @@
 *                             Ishwar Bhati
 *                             Mu-Tien Chang
 *                             Bruce Jacob
-*                             University of Maryland 
+*                             University of Maryland
 *                             pkt3c [at] umd [dot] edu
 *  All rights reserved.
-*  
+*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions are met:
-*  
+*
 *     * Redistributions of source code must retain the above copyright notice,
 *        this list of conditions and the following disclaimer.
-*  
+*
 *     * Redistributions in binary form must reproduce the above copyright notice,
 *        this list of conditions and the following disclaimer in the documentation
 *        and/or other materials provided with the distribution.
-*  
+*
 *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -49,25 +49,26 @@
 
 namespace NVDSim
 {
-    enum PlaneStateType{
+enum PlaneStateType
+{
 	IDLE,
 	READING,
 	GC_READING,
 	WRITING,
 	GC_WRITING,
 	ERASING
-    };
-    
-    class Logger: public SimObj
-    {
-    public:
+};
+
+class Logger: public SimObj
+{
+public:
 	Logger();
 
 	// extended logging options
 	void log_ftl_queue_event(bool write, std::list<FlashTransaction> *queue);
 	void log_ctrl_queue_event(bool write, uint64_t number, std::list<ChannelPacket*> *queue);
 	void log_plane_state(uint64_t address, uint64_t package, uint64_t die, uint64_t plane, PlaneStateType op);
-	
+
 	// operations
 	void read();
 	void write();
@@ -105,12 +106,12 @@ namespace NVDSim
 	//Accessor for power data
 	//Writing correct object oriented code up in this piece, what now?
 	virtual std::vector<std::vector<double>> getEnergyData(void);
-	
+
 	virtual void save(uint64_t cycle, uint64_t epoch);
 	virtual void print(uint64_t cycle);
 
 	virtual void update();
-	
+
 	void access_start(uint64_t addr);
 	// overloaded access start for perfect scheduling analysis
 	void access_start(uint64_t addr, TransactionType op);
@@ -118,7 +119,7 @@ namespace NVDSim
 	virtual void access_stop(uint64_t addr, uint64_t paddr);
 
 	virtual void save_epoch(uint64_t cycle, uint64_t epoch);
-	
+
 	// State
 	std::ofstream savefile;
 
@@ -139,7 +140,7 @@ namespace NVDSim
 	uint64_t num_read_mapped;
 	uint64_t num_write_unmapped;
 	uint64_t num_write_mapped;
-		
+
 	uint64_t average_latency;
 	uint64_t average_read_latency;
 	uint64_t average_write_latency;
@@ -171,7 +172,7 @@ namespace NVDSim
 
 	class AccessMapEntry
 	{
-		public:
+	public:
 		uint64_t start; // Starting cycle of access
 		uint64_t process; // Cycle when processing starts
 		uint64_t stop; // Stopping cycle of access
@@ -199,62 +200,62 @@ namespace NVDSim
 	class EpochEntry
 	{
 	public:
-	    uint64_t cycle;
-	    uint64_t epoch;
+		uint64_t cycle;
+		uint64_t epoch;
 
-	    uint64_t num_accesses;
-	    uint64_t num_reads;
-	    uint64_t num_writes;
+		uint64_t num_accesses;
+		uint64_t num_reads;
+		uint64_t num_writes;
 
-	    uint64_t num_unmapped;
-	    uint64_t num_mapped;
+		uint64_t num_unmapped;
+		uint64_t num_mapped;
 
-	    uint64_t num_read_unmapped;
-	    uint64_t num_read_mapped;
-	    uint64_t num_write_unmapped;
-	    uint64_t num_write_mapped;
-		
-	    uint64_t average_latency;
-	    uint64_t average_read_latency;
-	    uint64_t average_write_latency;
-	    uint64_t average_queue_latency;
+		uint64_t num_read_unmapped;
+		uint64_t num_read_mapped;
+		uint64_t num_write_unmapped;
+		uint64_t num_write_mapped;
 
-	    uint64_t ftl_queue_length;
-	    std::vector<std::vector<uint64_t> > ctrl_queue_length;
-	    
-	    std::unordered_map<uint64_t, uint64_t> writes_per_address;
+		uint64_t average_latency;
+		uint64_t average_read_latency;
+		uint64_t average_write_latency;
+		uint64_t average_queue_latency;
 
-	    std::vector<double> idle_energy;
-	    std::vector<double> access_energy;
+		uint64_t ftl_queue_length;
+		std::vector<std::vector<uint64_t> > ctrl_queue_length;
 
-	    EpochEntry()
-	    {
-		cycle = 0;
-		epoch = 0;
+		std::unordered_map<uint64_t, uint64_t> writes_per_address;
 
-		num_accesses = 0;
-		num_reads = 0;
-		num_writes = 0;
-	
-		num_unmapped = 0;
-		num_mapped = 0;
+		std::vector<double> idle_energy;
+		std::vector<double> access_energy;
 
-		num_read_unmapped = 0;
-		num_read_mapped = 0;
-		num_write_unmapped = 0;
-		num_write_mapped = 0;
-		
-		average_latency = 0;
-		average_read_latency = 0;
-		average_write_latency = 0;
-		average_queue_latency = 0;
-		
-		ftl_queue_length = 0;
-		ctrl_queue_length = std::vector<std::vector<uint64_t> >(NUM_PACKAGES, std::vector<uint64_t>(DIES_PER_PACKAGE, 0));
-	
-		idle_energy = std::vector<double>(NUM_PACKAGES, 0.0); 
-		access_energy = std::vector<double>(NUM_PACKAGES, 0.0);
-	    }
+		EpochEntry()
+		{
+			cycle = 0;
+			epoch = 0;
+
+			num_accesses = 0;
+			num_reads = 0;
+			num_writes = 0;
+
+			num_unmapped = 0;
+			num_mapped = 0;
+
+			num_read_unmapped = 0;
+			num_read_mapped = 0;
+			num_write_unmapped = 0;
+			num_write_mapped = 0;
+
+			average_latency = 0;
+			average_read_latency = 0;
+			average_write_latency = 0;
+			average_queue_latency = 0;
+
+			ftl_queue_length = 0;
+			ctrl_queue_length = std::vector<std::vector<uint64_t> >(NUM_PACKAGES, std::vector<uint64_t>(DIES_PER_PACKAGE, 0));
+
+			idle_energy = std::vector<double>(NUM_PACKAGES, 0.0);
+			access_energy = std::vector<double>(NUM_PACKAGES, 0.0);
+		}
 	};
 
 	// Store system snapshot from last epoch to compute this epoch
@@ -264,7 +265,7 @@ namespace NVDSim
 	std::list<EpochEntry> epoch_queue;
 
 	virtual void write_epoch(EpochEntry *e);
-    };
+};
 }
 
 #endif

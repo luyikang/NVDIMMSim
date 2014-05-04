@@ -5,20 +5,20 @@
 *                             Ishwar Bhati
 *                             Mu-Tien Chang
 *                             Bruce Jacob
-*                             University of Maryland 
+*                             University of Maryland
 *                             pkt3c [at] umd [dot] edu
 *  All rights reserved.
-*  
+*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions are met:
-*  
+*
 *     * Redistributions of source code must retain the above copyright notice,
 *        this list of conditions and the following disclaimer.
-*  
+*
 *     * Redistributions in binary form must reproduce the above copyright notice,
 *        this list of conditions and the following disclaimer in the documentation
 *        and/or other materials provided with the distribution.
-*  
+*
 *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -60,144 +60,144 @@ uint64_t convert_uint64_t(string value)
 //preserved in case something else needs it
 uint divide_params(uint num, uint denom)
 {
-    uint temp = (uint)(((float)num / (float)denom) + 0.99f);
-    if(temp <= 0)
-    {
-	return 1;
-    }
-    
-    return temp;
+	uint temp = (uint)(((float)num / (float)denom) + 0.99f);
+	if(temp <= 0)
+	{
+		return 1;
+	}
+
+	return temp;
 }
 
 //used to divide the ini parameters so that they don't result in a zero
 
 uint divide_params(uint64_t num, uint denom)
 {
-    uint temp = (uint)(((float)num / (float)denom) + 0.99f);
-    if(temp <= 0)
-    {
-	return 1;
-    }
-    
-    return temp;
+	uint temp = (uint)(((float)num / (float)denom) + 0.99f);
+	if(temp <= 0)
+	{
+		return 1;
+	}
+
+	return temp;
 }
 
 uint divide_params(uint num, uint64_t denom)
 {
-    uint temp = (uint)(((float)num / (float)denom) + 0.99f);
-    if(temp <= 0)
-    {
-	return 1;
-    }
-    
-    return temp;
+	uint temp = (uint)(((float)num / (float)denom) + 0.99f);
+	if(temp <= 0)
+	{
+		return 1;
+	}
+
+	return temp;
 }
 
 uint divide_params(uint64_t num, uint64_t denom)
 {
-    uint temp = (uint)(((float)num / (float)denom) + 0.99f);
-    if(temp <= 0)
-    {
-	return 1;
-    }
-    
-    return temp;
+	uint temp = (uint)(((float)num / (float)denom) + 0.99f);
+	if(temp <= 0)
+	{
+		return 1;
+	}
+
+	return temp;
 }
 
 uint divide_params(float num, float denom)
 {
-    uint temp = (uint)((num / denom) + 0.99f);
-    if(temp <= 0)
-    {
-	return 1;
-    }
-    
-    return temp;
+	uint temp = (uint)((num / denom) + 0.99f);
+	if(temp <= 0)
+	{
+		return 1;
+	}
+
+	return temp;
 }
 
 uint64_t divide_params_64b(uint64_t num, uint denom)
 {
-    stringstream ss;
-    uint64_t temp;
-    ss << (((float)num / (float)denom) + 0.99f);
-    ss >> temp;
+	stringstream ss;
+	uint64_t temp;
+	ss << (((float)num / (float)denom) + 0.99f);
+	ss >> temp;
 
-    if(temp <= 0)
-    {
-	return 1;
-    }
+	if(temp <= 0)
+	{
+		return 1;
+	}
 
-    return temp;
+	return temp;
 }
 
 uint64_t divide_params_64b(uint num, uint64_t denom)
 {
-    stringstream ss;
-    uint64_t temp;
-    ss << (((float)num / (float)denom) + 0.99f);
-    ss >> temp;
+	stringstream ss;
+	uint64_t temp;
+	ss << (((float)num / (float)denom) + 0.99f);
+	ss >> temp;
 
-    if(temp <= 0)
-    {
-	return 1;
-    }
-    
-    return temp;
+	if(temp <= 0)
+	{
+		return 1;
+	}
+
+	return temp;
 }
 
 uint64_t divide_params_64b(uint64_t num, uint64_t denom)
 {
-    stringstream ss;
-    uint64_t temp;
-    ss << (((float)num / (float)denom) + 0.99f);
-    ss >> temp;
+	stringstream ss;
+	uint64_t temp;
+	ss << (((float)num / (float)denom) + 0.99f);
+	ss >> temp;
 
-    if(temp <= 0)
-    {
-	return 1;
-    }
-    
-    return temp;
+	if(temp <= 0)
+	{
+		return 1;
+	}
+
+	return temp;
 }
 
 uint64_t divide_params_64b(uint64_t num, float denom)
 {
-    stringstream ss;
-    uint64_t temp;
-    ss << (((float)num / denom) + 0.99f);
-    ss >> temp;
+	stringstream ss;
+	uint64_t temp;
+	ss << (((float)num / denom) + 0.99f);
+	ss >> temp;
 
-    if(temp <= 0)
-    {
-	return 1;
-    }
-    
-    return temp;
+	if(temp <= 0)
+	{
+		return 1;
+	}
+
+	return temp;
 }
 
 uint64_t divide_params_64b(float num, float denom)
 {
-    stringstream ss;
-    uint64_t temp;
-    ss << (uint)((num / denom) + 0.99f);
-    ss >> temp;
+	stringstream ss;
+	uint64_t temp;
+	ss << (uint)((num / denom) + 0.99f);
+	ss >> temp;
 
-    if(temp <= 0)
-    {
-	return 1;
-    }
-    
-    return temp;
+	if(temp <= 0)
+	{
+		return 1;
+	}
+
+	return temp;
 }
 
 uint64_t subtract_params(uint64_t a, uint64_t b)
 {
-    if(a < b)
-    {
-	return 0;
-    }
-    else
-    {
-	return (a - b);
-    }
+	if(a < b)
+	{
+		return 0;
+	}
+	else
+	{
+		return (a - b);
+	}
 }

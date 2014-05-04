@@ -5,20 +5,20 @@
 *                             Ishwar Bhati
 *                             Mu-Tien Chang
 *                             Bruce Jacob
-*                             University of Maryland 
+*                             University of Maryland
 *                             pkt3c [at] umd [dot] edu
 *  All rights reserved.
-*  
+*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions are met:
-*  
+*
 *     * Redistributions of source code must retain the above copyright notice,
 *        this list of conditions and the following disclaimer.
-*  
+*
 *     * Redistributions in binary form must reproduce the above copyright notice,
 *        this list of conditions and the following disclaimer in the documentation
 *        and/or other materials provided with the distribution.
-*  
+*
 *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -38,17 +38,19 @@
 
 #include "FlashConfiguration.h"
 
-namespace NVDSim{
-	class Block{
-		public:
-			Block(uint block);
-			Block();
-			void *read(uint page_num);
-			void write(uint page_num, void *data);
-			void erase(void);
-		private:
-			uint block_num;
-	                std::unordered_map<uint, void *> page_data;
-	};
+namespace NVDSim
+{
+class Block
+{
+public:
+	Block(uint block);
+	Block();
+	void *read(uint page_num);
+	void write(uint page_num, void *data);
+	void erase(void);
+private:
+	uint block_num;
+	std::unordered_map<uint, void *> page_data;
+};
 }
 #endif

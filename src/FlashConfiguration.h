@@ -5,20 +5,20 @@
 *                             Ishwar Bhati
 *                             Mu-Tien Chang
 *                             Bruce Jacob
-*                             University of Maryland 
+*                             University of Maryland
 *                             pkt3c [at] umd [dot] edu
 *  All rights reserved.
-*  
+*
 *  Redistribution and use in source and binary forms, with or without
 *  modification, are permitted provided that the following conditions are met:
-*  
+*
 *     * Redistributions of source code must retain the above copyright notice,
 *        this list of conditions and the following disclaimer.
-*  
+*
 *     * Redistributions in binary form must reproduce the above copyright notice,
 *        this list of conditions and the following disclaimer in the documentation
 *        and/or other materials provided with the distribution.
-*  
+*
 *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -60,46 +60,47 @@
 #endif
 
 #ifdef DEBUG_BUILD
-	#ifndef DEBUG
-	#define DEBUG(str) std::cout<< str <<std::endl;
-	#endif
-	#ifndef DEBUGN
-	#define DEBUGN(str) std::cout<< str;
-	#endif
+#ifndef DEBUG
+#define DEBUG(str) std::cout<< str <<std::endl;
+#endif
+#ifndef DEBUGN
+#define DEBUGN(str) std::cout<< str;
+#endif
 #else
-	#ifndef DEBUG
-	#define DEBUG(str) ;
-	#endif
-	#ifndef DEBUGN
-	#define DEBUGN(str) ;
-	#endif
+#ifndef DEBUG
+#define DEBUG(str) ;
+#endif
+#ifndef DEBUGN
+#define DEBUGN(str) ;
+#endif
 #endif
 
 #ifndef NO_OUTPUT
-	#ifndef PRINT
-	#define PRINT(str)  if(OUTPUT) { std::cerr <<str<<std::endl; }
-	#endif
-	#ifndef PRINTN
-	#define PRINTN(str) if(OUTPUT) { std::cerr <<str; }
-	#endif
+#ifndef PRINT
+#define PRINT(str)  if(OUTPUT) { std::cerr <<str<<std::endl; }
+#endif
+#ifndef PRINTN
+#define PRINTN(str) if(OUTPUT) { std::cerr <<str; }
+#endif
 #else
-	#undef DEBUG
-	#undef DEBUGN
-	#define DEBUG(str) ;
-	#define DEBUGN(str) ;
-	#ifndef PRINT
-	#define PRINT(str) ;
-	#endif
-	#ifndef PRINTN
-	#define PRINTN(str) ;
-	#endif
+#undef DEBUG
+#undef DEBUGN
+#define DEBUG(str) ;
+#define DEBUGN(str) ;
+#ifndef PRINT
+#define PRINT(str) ;
+#endif
+#ifndef PRINTN
+#define PRINTN(str) ;
+#endif
 #endif
 
 // Power Callback Options
 #define Power_Callback 1
 #define Verbose_Power_Callback 0
 
-namespace NVDSim{
+namespace NVDSim
+{
 
 // constants
 #define BITS_PER_KB 8192
@@ -131,7 +132,7 @@ extern bool CUT_THROUGH;
 extern uint64_t IN_BUFFER_SIZE;
 extern uint64_t OUT_BUFFER_SIZE;
 
-// Critical Cache Line First Options 
+// Critical Cache Line First Options
 extern bool CRIT_LINE_FIRST;
 
 // Logging Options
@@ -172,7 +173,7 @@ extern uint64_t COMMAND_CHANNEL_WIDTH;
 extern bool ENABLE_REQUEST_CHANNEL;
 extern uint64_t REQUEST_CHANNEL_WIDTH;
 
-// does the device use garbage collection 
+// does the device use garbage collection
 extern bool GARBAGE_COLLECT;
 extern bool PRESTATE;
 extern float PERCENT_FULL;
@@ -236,6 +237,6 @@ extern double VPP;
 extern bool OUTPUT;
 
 //namespace NVDSim{
-	typedef void (*returnCallBack_t)(uint64_t id, uint64_t addr, uint64_t clockcycle);
+typedef void (*returnCallBack_t)(uint64_t id, uint64_t addr, uint64_t clockcycle);
 }
 #endif
