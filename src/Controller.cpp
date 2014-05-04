@@ -355,9 +355,8 @@ void Controller::update(void){
 			    
 			    switch (outgoingPackets[i]->busPacketType){
 			    case DATA:
-				// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
-				// are in 1 KB (1024 * 8).
-				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
+				// Note: NV_PAGE_SIZE is multiplied by 8 since the parameter is given in bytes and we need it in bits.
+				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8),CHANNEL_WIDTH); 
 				break;
 			    default:
 				channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
@@ -486,9 +485,8 @@ void Controller::update(void){
 			
 			switch (outgoingPackets[i]->busPacketType){
 			case DATA:
-			    // Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
-			    // are in 1 KB (1024 * 8).
-			    channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
+				// Note: NV_PAGE_SIZE is multiplied by 8 since the parameter is given in bytes and we need it in bits.
+			    channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8),CHANNEL_WIDTH); 
 			    break;
 			default:
 			    channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
@@ -556,9 +554,8 @@ void Controller::update(void){
 			{
 			  switch (outgoingPackets[i]->busPacketType){
 			    case DATA:
-				// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
-				// are in 1 KB (1024 * 8).
-				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH); 
+				// Note: NV_PAGE_SIZE is multiplied by 8 since the parameter is given in bytes and we need it in bits.
+				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8),CHANNEL_WIDTH); 
 				break;
 			    default:
 				channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,CHANNEL_WIDTH);
@@ -569,9 +566,8 @@ void Controller::update(void){
 			{
 			    switch (outgoingPackets[i]->busPacketType){
 			    case DATA:
-				// Note: NV_PAGE_SIZE is multiplied by 8192 since the parameter is given in KB and this is how many bits
-				// are in 1 KB (1024 * 8).
-				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8192),DEVICE_WIDTH); 
+				// Note: NV_PAGE_SIZE is multiplied by 8 since the parameter is given in bytes and we need it in bits.
+				channelBeatsLeft[i] = divide_params((NV_PAGE_SIZE*8),DEVICE_WIDTH); 
 				break;
 			    default:
 				channelBeatsLeft[i] = divide_params(COMMAND_LENGTH,DEVICE_WIDTH);
@@ -640,7 +636,7 @@ void Controller::update(void){
 			    }
 			    else
 			    {
-				if((outgoingPackets[i]->busPacketType == DATA && channelBeatsLeft[i] == divide_params((NV_PAGE_SIZE*8192),CHANNEL_WIDTH)) ||
+				if((outgoingPackets[i]->busPacketType == DATA && channelBeatsLeft[i] == divide_params((NV_PAGE_SIZE*8),CHANNEL_WIDTH)) ||
 				   (outgoingPackets[i]->busPacketType != DATA && channelBeatsLeft[i] == divide_params(COMMAND_LENGTH,CHANNEL_WIDTH)))
 				{
 				    if(!(*packages)[outgoingPackets[i]->package].channel->isBufferFull(CONTROLLER, outgoingPackets[i]->busPacketType, 

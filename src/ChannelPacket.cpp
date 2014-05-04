@@ -59,7 +59,7 @@ void ChannelPacket::print(uint64_t currentClockCycle){
 	if (this == NULL)
 		return;
 
-	PRINT("Cycle: "<<currentClockCycle<<" Type: " << busPacketType << " addr: "<<physicalAddress<<" die: "<<die<<" plane: "<<
+	PRINT("Cycle: "<<currentClockCycle<<" Type: " << busPacketType << " addr: "<<physicalAddress<<" package: "<<package<<" die: "<<die<<" plane: "<<
 			plane<<" block: "<<block<<" page: "<<page<<" data: "<<data);
 }
 

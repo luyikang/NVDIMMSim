@@ -88,10 +88,10 @@ Ftl::Ftl(Controller *c, Logger *l, NVDIMM *p){
 
 	// the maximum amount of time we can wait before we're sure we've deadlocked
 	// time it takes to read all of the pages in a block
-	deadlock_time = PAGES_PER_BLOCK * (READ_CYCLES + ((divide_params_64b((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
+	deadlock_time = PAGES_PER_BLOCK * (READ_CYCLES + ((divide_params_64b((NV_PAGE_SIZE*8),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
 					   ((divide_params_64b(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME));
 	// plus the time it takes to write all of the pages in a block
-	deadlock_time += PAGES_PER_BLOCK * (WRITE_CYCLES + ((divide_params_64b((NV_PAGE_SIZE*8192),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
+	deadlock_time += PAGES_PER_BLOCK * (WRITE_CYCLES + ((divide_params_64b((NV_PAGE_SIZE*8),DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME) +
 					   ((divide_params_64b(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME));
 	// plus the time it takes to erase the block
 	deadlock_time += ERASE_CYCLES + ((divide_params_64b(COMMAND_LENGTH,DEVICE_WIDTH) * DEVICE_CYCLE) / CYCLE_TIME);
