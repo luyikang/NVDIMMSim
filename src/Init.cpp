@@ -341,7 +341,6 @@ namespace NVDSim
 		    
 		    break;
 		case BOOL:
-		  cout << configMap[i].iniKey << " was " << valueString << "\n";
 		    if (valueString == "true" || valueString == "1") {
 			*((bool *)configMap[i].variablePtr) = true;
 		    } else {

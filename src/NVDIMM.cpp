@@ -91,7 +91,6 @@ namespace NVDSim
 	PRINT("Total Size (KB): "<<TOTAL_SIZE);
 	PRINT("Packages/Channels: "<<NUM_PACKAGES);
 	PRINT("Page size: "<<NV_PAGE_SIZE);
-	cout << "garbage collect value was: " << GARBAGE_COLLECT << "\n";
 	if(GARBAGE_COLLECT == 1)
 	{
 	  PRINT("Device is using garbage collection");
