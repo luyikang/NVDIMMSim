@@ -500,7 +500,6 @@ namespace NVDSim
 		    break;
 		case BOOL:
 		    *((bool *)configMap[i].variablePtr) = false;
-		    cout << "Setting Default: "<<configMap[i].iniKey<<"=false \n";
 		    DEBUG("\tSetting Default: "<<configMap[i].iniKey<<"=false");
 		    break;
 		case STRING:

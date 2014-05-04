@@ -119,7 +119,7 @@ namespace NVDSim
 	PRINT("");
 	
 	
-	if(GARBAGE_COLLECT == 0 && (DEVICE_TYPE.compare("NAND") == 0 || DEVICE_TYPE.compare("NOR") == 0))
+	if((GARBAGE_COLLECT == 0) && (DEVICE_TYPE.compare("NAND") == 0 || DEVICE_TYPE.compare("NOR") == 0))
 	{
 	  ERROR("Device is Flash and must use garbage collection");
 	  exit(-1);
