@@ -91,6 +91,7 @@ namespace NVDSim
 	PRINT("Total Size (KB): "<<TOTAL_SIZE);
 	PRINT("Packages/Channels: "<<NUM_PACKAGES);
 	PRINT("Page size: "<<NV_PAGE_SIZE);
+	cout << "garbage collect value was: " << GARBAGE_COLLECT << "\n";
 	if(GARBAGE_COLLECT == 1)
 	{
 	  PRINT("Device is using garbage collection");
@@ -117,7 +118,8 @@ namespace NVDSim
 	}
 	PRINT("Epoch Time: "<<EPOCH_CYCLES);
 	PRINT("");
-
+	
+	
 	if(GARBAGE_COLLECT == 0 && (DEVICE_TYPE.compare("NAND") == 0 || DEVICE_TYPE.compare("NOR") == 0))
 	{
 	  ERROR("Device is Flash and must use garbage collection");

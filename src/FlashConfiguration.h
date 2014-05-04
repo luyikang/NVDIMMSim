@@ -177,8 +177,6 @@ extern bool GARBAGE_COLLECT;
 extern bool PRESTATE;
 extern float PERCENT_FULL;
 
-#define GC GARBAGE_COLLECT
-
 extern float IDLE_GC_THRESHOLD;
 extern float FORCE_GC_THRESHOLD;
 extern float PBLOCKS_PER_VBLOCK;

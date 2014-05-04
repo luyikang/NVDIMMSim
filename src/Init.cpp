@@ -156,7 +156,7 @@ namespace NVDSim
 	DEFINE_BOOL_PARAM(ENABLE_WRITE_SCRIPT, DEV_PARAM),
 	DEFINE_STRING_PARAM(NV_WRITE_SCRIPT, DEV_PARAM),
 	DEFINE_BOOL_PARAM(DELAY_WRITE, DEV_PARAM),
-	DEFINE_UINT_PARAM(DELAY_WRITE_CYCLES, DEV_PARAM),
+	DEFINE_UINT64_PARAM(DELAY_WRITE_CYCLES, DEV_PARAM),
 	DEFINE_BOOL_PARAM(DISK_READ, DEV_PARAM),
 	DEFINE_BOOL_PARAM(FRONT_BUFFER, DEV_PARAM),
 	DEFINE_UINT64_PARAM(REQUEST_BUFFER_SIZE, DEV_PARAM),
@@ -197,7 +197,7 @@ namespace NVDSim
 	DEFINE_UINT64_PARAM(REQUEST_CHANNEL_WIDTH,DEV_PARAM),
 	DEFINE_BOOL_PARAM(GARBAGE_COLLECT,DEV_PARAM),
 	DEFINE_BOOL_PARAM(PRESTATE,DEV_PARAM),
-	DEFINE_UINT64_PARAM(PERCENT_FULL,DEV_PARAM),
+	DEFINE_FLOAT_PARAM(PERCENT_FULL,DEV_PARAM),
 	DEFINE_UINT64_PARAM(READ_TIME,DEV_PARAM),
 	DEFINE_UINT64_PARAM(WRITE_TIME,DEV_PARAM),
 	DEFINE_UINT64_PARAM(ERASE_TIME,DEV_PARAM),
@@ -341,6 +341,7 @@ namespace NVDSim
 		    
 		    break;
 		case BOOL:
+		  cout << configMap[i].iniKey << " was " << valueString << "\n";
 		    if (valueString == "true" || valueString == "1") {
 			*((bool *)configMap[i].variablePtr) = true;
 		    } else {
@@ -468,8 +469,7 @@ namespace NVDSim
 		{
 		    //the string and bool values can be defaulted, but generally we need all the numeric values to be set to continue
 		case UINT: 
-		    if (configMap[i].iniKey.compare((std::string)"EPOCH_TIME") == 0 ||
-			configMap[i].iniKey.compare((std::string)"FTL_QUEUE_LENGTH") == 0 ||
+		    if (configMap[i].iniKey.compare((std::string)"FTL_QUEUE_LENGTH") == 0 ||
 			configMap[i].iniKey.compare((std::string)"CTRL_QUEUE_LENGTH") == 0 ||
 			configMap[i].iniKey.compare((std::string)"WRITE_QUEUE_LIMIT") == 0)
 		    {
@@ -501,6 +501,7 @@ namespace NVDSim
 		    break;
 		case BOOL:
 		    *((bool *)configMap[i].variablePtr) = false;
+		    cout << "Setting Default: "<<configMap[i].iniKey<<"=false \n";
 		    DEBUG("\tSetting Default: "<<configMap[i].iniKey<<"=false");
 		    break;
 		case STRING:
