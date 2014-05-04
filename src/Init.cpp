@@ -341,7 +341,6 @@ namespace NVDSim
 		    
 		    break;
 		case BOOL:
-		  cout << configMap[i].iniKey << " was " << valueString << "\n";
 		    if (valueString == "true" || valueString == "1") {
 			*((bool *)configMap[i].variablePtr) = true;
 		    } else {
@@ -501,7 +500,6 @@ namespace NVDSim
 		    break;
 		case BOOL:
 		    *((bool *)configMap[i].variablePtr) = false;
-		    cout << "Setting Default: "<<configMap[i].iniKey<<"=false \n";
 		    DEBUG("\tSetting Default: "<<configMap[i].iniKey<<"=false");
 		    break;
 		case STRING:
