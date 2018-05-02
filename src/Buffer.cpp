@@ -43,10 +43,10 @@ Buffer::Buffer(uint64_t i){
 
     id = i;
 
-    outData = vector<list <BufferPacket *> >(DIES_PER_PACKAGE, list<BufferPacket *>());
+    outData = vector<list <BufferPacket *> >(DIES_PER_PACKAGE, list<BufferPacket *>()); //establish a buffer per die.. the buffer is a list of buffer packet.
     inData = vector<list <BufferPacket *> >(DIES_PER_PACKAGE, list<BufferPacket *>());
 
-    outDataSize = new uint64_t [DIES_PER_PACKAGE];
+    outDataSize = new uint64_t [DIES_PER_PACKAGE]; //all vectors...
     inDataSize = new uint64_t [DIES_PER_PACKAGE];
     cyclesLeft = new uint64_t [DIES_PER_PACKAGE];
     outDataLeft = new uint64_t [DIES_PER_PACKAGE];
@@ -67,7 +67,7 @@ Buffer::Buffer(uint64_t i){
     sendingDie = 0;
     sendingPlane = 0;
 
-    dieLookingUp = DIES_PER_PACKAGE + 1;
+    dieLookingUp = DIES_PER_PACKAGE + 1; //????
     lookupTimeLeft = BUFFER_LOOKUP_CYCLES;
     
 

@@ -105,7 +105,7 @@ void Plane::erase(ChannelPacket *busPacket){ //???erase the location of the pack
 }
 
 
-void Plane::storeInData(ChannelPacket *busPacket){
+void Plane::storeInData(ChannelPacket *busPacket){//each plane gets two regs?
     if(cacheReg == NULL)
     {
 	cacheReg= busPacket; //the size of cache reg or data reg??
