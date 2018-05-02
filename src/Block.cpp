@@ -49,7 +49,7 @@ Block::Block(){
 
 void *Block::read(uint page_num){
 	if (page_data.find(page_num) == page_data.end()){
-		DEBUG("Request to read page "<<page_num<<" failed: nothing has been written to that address");
+		DEBUG("Request to read page "<<page_num<<" failed: nothing has been written to that address"); //exceeding the range 
 		return (void *)0x0;
 	} else{
 		return page_data[page_num];
@@ -62,7 +62,7 @@ void Block::write(uint page_num, void *data){
 	} else{
 	  if(GARBAGE_COLLECT == 1)
 	  {
-		ERROR("Request to write page "<<page_num<<" failed: page has been written to and not erased"); 
+		ERROR("Request to write page "<<page_num<<" failed: page has been written to and not erased"); //add a statement to check if writing address is overflowing..
 		exit(1);
 	  }
 	  else

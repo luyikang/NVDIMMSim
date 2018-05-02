@@ -45,15 +45,15 @@ Plane::Plane(void){
 	cacheReg= NULL;
 }
 
-void Plane::read(ChannelPacket *busPacket){
-	if (blocks.find(busPacket->block) != blocks.end()){
+void Plane::read(ChannelPacket *busPacket){ //read at the plane level
+	if (blocks.find(busPacket->block) != blocks.end()){ //find the block... the block will be constructed only if it has been written to..
 	    busPacket->data= blocks[busPacket->block].read(busPacket->page);
 	} else{
 		ERROR("Invalid read: Block "<<busPacket->block<<" hasn't been written to");
 	}
 
 	// Put this packet on the data register if the cache register is occupied,
-	if(dataReg == NULL)
+	if(dataReg == NULL) //what is data register and cache register... how are they organized..
 	{
 	    dataReg = busPacket;
 	}
@@ -65,10 +65,10 @@ void Plane::read(ChannelPacket *busPacket){
 	}
 }
 
-void Plane::write(ChannelPacket *busPacket){
+void Plane::write(ChannelPacket *busPacket){ // write at the plane level
         // if this block has not been accessed yet, construct a new block and add it to the blocks map
-	if (blocks.find(busPacket->block) == blocks.end())
-		blocks[busPacket->block] = Block(busPacket->block);
+	if (blocks.find(busPacket->block) == blocks.end()) //if not finding the block
+		blocks[busPacket->block] = Block(busPacket->block); //construct
 
 	if(busPacket->busPacketType == FAST_WRITE)
 	{
@@ -97,7 +97,7 @@ void Plane::writeDone(ChannelPacket *busPacket)
 }
 
 // should only ever erase blocks
-void Plane::erase(ChannelPacket *busPacket){
+void Plane::erase(ChannelPacket *busPacket){ //???erase the location of the packet?
 	if (blocks.find(busPacket->block) != blocks.end()){
 		blocks[busPacket->block].erase();
 		blocks.erase(busPacket->block);
@@ -108,7 +108,7 @@ void Plane::erase(ChannelPacket *busPacket){
 void Plane::storeInData(ChannelPacket *busPacket){
     if(cacheReg == NULL)
     {
-	cacheReg= busPacket;
+	cacheReg= busPacket; //the size of cache reg or data reg??
     }
     else
     {
