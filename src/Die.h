@@ -51,7 +51,7 @@ namespace NVDSim{
 	class Ftl;
 	class Die : public SimObj{
 		public:
-	                Die(NVDIMM *parent, Logger *l, uint64_t id);
+	        Die(NVDIMM *parent, Logger *l, uint64_t id);
 			void attachToBuffer(Buffer *buff);
 			void receiveFromBuffer(ChannelPacket *busPacket);
 			int isDieBusy(uint64_t plane);

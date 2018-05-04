@@ -54,9 +54,9 @@ Buffer::Buffer(uint64_t i){
     inDataLeft = new uint64_t [DIES_PER_PACKAGE];
     waiting =  new bool [DIES_PER_PACKAGE];
 
-    for(uint64_t i = 0; i < DIES_PER_PACKAGE; i++){
+    for(uint64_t i = 0; i < DIES_PER_PACKAGE; i++){ //initialize with vectors...
 	outDataSize[i] = 0;
-	inDataSize[i] = 0;
+	inDataSize[i] = 0; //size of in_data buffer, per die
 	cyclesLeft[i] = 0;
 	outDataLeft[i] = 0;
 	critData[i] = 0;
@@ -67,8 +67,8 @@ Buffer::Buffer(uint64_t i){
     sendingDie = 0;
     sendingPlane = 0;
 
-    dieLookingUp = DIES_PER_PACKAGE + 1; //????
-    lookupTimeLeft = BUFFER_LOOKUP_CYCLES;
+    dieLookingUp = DIES_PER_PACKAGE + 1; // what is this?
+    lookupTimeLeft = BUFFER_LOOKUP_CYCLES; //Initialize the looking up time.
     
 
 }
@@ -82,38 +82,39 @@ void Buffer::attachChannel(Channel *c){
 }
 
 void Buffer::sendToDie(ChannelPacket *busPacket){
-    dies[busPacket->die]->receiveFromBuffer(busPacket);
+    dies[busPacket->die]->receiveFromBuffer(busPacket);  //buffer to die a packet, downward
 }
 
 void Buffer::sendToController(ChannelPacket *busPacket){
-    channel->sendToController(busPacket);
+    channel->sendToController(busPacket);  //buffer to controller a packet, upward	
 }
 
-bool Buffer::sendPiece(SenderType t, int type, uint64_t die, uint64_t plane){
-    if(t == CONTROLLER)
+bool Buffer::sendPiece(SenderType t, int type, uint64_t die, uint64_t plane){//todo -- get to know the mechanism, rewrite if possible
+    if(t == CONTROLLER) 
     {
-      if(IN_BUFFER_SIZE == 0 || inDataSize[die] <= (IN_BUFFER_SIZE-(CHANNEL_WIDTH)))
+      if(IN_BUFFER_SIZE == 0 || inDataSize[die] <= (IN_BUFFER_SIZE-(CHANNEL_WIDTH))) //
 	{
 	    if(!inData[die].empty() && inData[die].back()->type == type && inData[die].back()->plane == plane &&
-	       type == 5 && inData[die].back()->number < (NV_PAGE_SIZE*8))
+	       type == 5 && inData[die].back()->number < (NV_PAGE_SIZE*8)) //indata of the die is nonempty, type (5), plane matches
+		   //Last buffer packet->number < page_size * 8
 	    {
-		inData[die].back()->number = inData[die].back()->number + CHANNEL_WIDTH;
-		inDataSize[die] = inDataSize[die] + CHANNEL_WIDTH;
+		inData[die].back()->number = inData[die].back()->number + CHANNEL_WIDTH; //maintain the newest buffer packet
+		inDataSize[die] = inDataSize[die] + CHANNEL_WIDTH; //update indata_size per die
 	    }
 	    else if(!inData[die].empty() && inData[die].back()->type == type && inData[die].back()->plane == plane && 
-		    type != 5 && inData[die].back()->number < COMMAND_LENGTH)
+		    type != 5 && inData[die].back()->number < COMMAND_LENGTH) // not good coding...
 	    {
 		inData[die].back()->number = inData[die].back()->number + CHANNEL_WIDTH;
 		inDataSize[die] = inDataSize[die] + CHANNEL_WIDTH;
 	    }
 	    else
 	    {	
-		BufferPacket* myPacket = new BufferPacket();
+		BufferPacket* myPacket = new BufferPacket(); //new packet
 		myPacket->type = type;
-		myPacket->number = CHANNEL_WIDTH;
+		myPacket->number = CHANNEL_WIDTH; //max size
 		myPacket->plane = plane;
 		inData[die].push_back(myPacket);
-		inDataSize[die] = inDataSize[die] + CHANNEL_WIDTH;
+		inDataSize[die] = inDataSize[die] + CHANNEL_WIDTH; //update stats
 	    }
 	    return true;
 	}
@@ -126,7 +127,7 @@ bool Buffer::sendPiece(SenderType t, int type, uint64_t die, uint64_t plane){
     }
     else if(t == BUFFER)
     {
-	if(OUT_BUFFER_SIZE == 0 || outDataSize[die] <= (OUT_BUFFER_SIZE-DEVICE_WIDTH))
+	if(OUT_BUFFER_SIZE == 0 || outDataSize[die] <= (OUT_BUFFER_SIZE-DEVICE_WIDTH)) //device width here...
 	{
 	    if(!outData[die].empty() && outData[die].back()->type == type && outData[die].back()->plane == plane &&
 	       outData[die].back()->number < (NV_PAGE_SIZE*8)){
@@ -163,9 +164,9 @@ bool Buffer::isFull(SenderType t, ChannelPacketType bt, uint64_t die)
       {
 	      return false;
       }
-      else if(CUT_THROUGH && inDataSize[die] <= (IN_BUFFER_SIZE-CHANNEL_WIDTH) && waiting[die] == false)
+      else if(CUT_THROUGH && inDataSize[die] <= (IN_BUFFER_SIZE-CHANNEL_WIDTH) && waiting[die] == false) //replace the index of bus packet type
       {
-	      return false;
+	      return false; //figure out what is cut_through...
       }
       else if(!CUT_THROUGH && bt == 5 && inDataSize[die] <= (IN_BUFFER_SIZE-(divide_params((NV_PAGE_SIZE*8), CHANNEL_WIDTH)*CHANNEL_WIDTH)))
       {
@@ -304,7 +305,7 @@ void Buffer::update(void){
     }
 }
 
-void Buffer::prepareOutChannel(uint64_t die)
+void Buffer::prepareOutChannel(uint64_t die) //bad coding...
 {
     // see if we have control of the channel
     if (channel->hasChannel(BUFFER, id) && sendingDie == die && sendingPlane == outData[die].front()->plane)
