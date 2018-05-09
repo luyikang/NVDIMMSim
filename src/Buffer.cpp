@@ -337,7 +337,7 @@ void Buffer::processInData(uint64_t die){
     if(cyclesLeft[die] == 0)
     {	    
 	// do we have data to send
-	if(inDataLeft[die] > 0)
+	if(inDataLeft[die] > 0) 
 	{
 	    // set the device latching cycle for this next piece of data
 	    cyclesLeft[die] = divide_params(DEVICE_CYCLE,CYCLE_TIME);

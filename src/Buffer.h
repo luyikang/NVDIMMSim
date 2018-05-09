@@ -99,7 +99,7 @@ namespace NVDSim{
 
 	    uint64_t* outDataSize;
 	    std::vector<std::list<BufferPacket *> >  outData;
-	    uint64_t* inDataSize;
+	    uint64_t* inDataSize; //vector 
 	    std::vector<std::list<BufferPacket *> > inData;
     };
 } 

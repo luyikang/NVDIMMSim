@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "ios": "cpp"
-    }
+        "ios": "cpp",
+        "memory": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "Disabled"
 }

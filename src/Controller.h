@@ -49,7 +49,7 @@
 namespace NVDSim{
 	typedef struct {
 		Channel *channel;
-	        Buffer *buffer;
+	    Buffer *buffer;
 		std::vector<Die *> dies;
 	} Package;
 
@@ -57,7 +57,7 @@ namespace NVDSim{
 	class NVDIMM;
 	class Controller : public SimObj{
 		public:
-	                Controller(NVDIMM* parent, Logger* l);
+	        Controller(NVDIMM* parent, Logger* l);
 
 			void attachPackages(vector<Package> *packages);
 			void attachFrontBuffer(FrontBuffer *fb);

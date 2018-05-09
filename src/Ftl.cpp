@@ -200,7 +200,7 @@ bool Ftl::addScheduledTransaction(FlashTransaction &t)
 	for (it = writeQueue.begin(); it != writeQueue.end(); it++)
 	{
 	    // don't replace the write if we're already working on it
-	    if((*it).address == t.address && currentTransaction.address != t.address)
+	    if((*it).address == t.address && currentTransaction.address != t.address) //???what is current transaction..?
 	    {
 		if(LOGGING)
 		{

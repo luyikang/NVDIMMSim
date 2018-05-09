@@ -49,9 +49,9 @@
 
 namespace NVDSim{
         class NVDIMM;
-	class Ftl : public SimObj{
+	    class Ftl : public SimObj{
 		public:
-	                Ftl(Controller *c, Logger *l, NVDIMM *p);
+	        Ftl(Controller *c, Logger *l, NVDIMM *p);
 
 			ChannelPacket *translate(ChannelPacketType type, uint64_t vAddr, uint64_t pAddr);
 			bool attemptAdd(FlashTransaction &t, std::list<FlashTransaction> *queue, uint64_t queue_limit);
